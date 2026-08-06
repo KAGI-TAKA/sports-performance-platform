@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   Light mode tokens
+───────────────────────────────────────────────────────────── */
+:root {
+  --background: 220 18% 96%;
+  --foreground: 222 25% 10%;
+  --surface-1: 0 0% 100%;
+  --surface-2: 220 16% 94%;
+  --surface-3: 220 14% 89%;
+  --border-color: 220 16% 87%;
+  --border-strong: 220 12% 76%;
+  --text-secondary: 222 10% 36%;
+  --text-muted: 220 7% 55%;
+  --accent: 230 85% 58%;
+  --accent-bg: 228 100% 96%;
+  --signature: 20 90% 52%;
+  --signature-bg: 20 100% 96%;
+  --success: 152 58% 28%;
+  --success-bg: 150 48% 93%;
+  --warning: 40 80% 30%;
+  --warning-bg: 44 80% 92%;
+  --danger: 3 60% 46%;
+  --danger-bg: 3 70% 95%;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Dark mode tokens — navy/slate warm, bukan abu generik
+───────────────────────────────────────────────────────────── */
+[data-mode="dark"] {
+  --background: 224 20% 7%;
+  --foreground: 216 18% 91%;
+  --surface-1: 224 18% 10%;
+  --surface-2: 224 16% 13%;
+  --surface-3: 224 14% 17%;
+  --border-color: 224 14% 20%;
+  --border-strong: 224 12% 28%;
+  --text-secondary: 216 10% 62%;
+  --text-muted: 216 8% 42%;
+  --accent: 230 90% 67%;
+  --accent-bg: 228 50% 20%;
+  --signature: 20 100% 63%;
+  --signature-bg: 20 48% 16%;
+  --success: 150 52% 52%;
+  --success-bg: 155 46% 12%;
+  --warning: 40 80% 62%;
+  --warning-bg: 40 64% 14%;
+  --danger: 3 74% 68%;
+  --danger-bg: 4 46% 16%;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tailwind v4 @theme inline mapping
+───────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-surface-1: hsl(var(--surface-1));
+  --color-surface-2: hsl(var(--surface-2));
+  --color-surface-3: hsl(var(--surface-3));
+  --color-border: hsl(var(--border-color));
+  --color-border-strong: hsl(var(--border-strong));
+  --color-muted: hsl(var(--text-muted));
+  --color-secondary: hsl(var(--text-secondary));
+  --color-accent: hsl(var(--accent));
+  --color-accent-bg: hsl(var(--accent-bg));
+  --color-signature: hsl(var(--signature));
+  --color-signature-bg: hsl(var(--signature-bg));
+  --color-success: hsl(var(--success));
+  --color-success-bg: hsl(var(--success-bg));
+  --color-warning: hsl(var(--warning));
+  --color-warning-bg: hsl(var(--warning-bg));
+  --color-danger: hsl(var(--danger));
+  --color-danger-bg: hsl(var(--danger-bg));
+
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base resets & global styles
+───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-inter, system-ui, sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+::selection {
+  background-color: hsl(var(--accent) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Scrollbar — minimal track */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-strong));
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-muted));
+}

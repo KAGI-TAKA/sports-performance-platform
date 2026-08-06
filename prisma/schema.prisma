@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// BETTER AUTH — CORE
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  members         Member[]
+  invitationsSent Invitation[] @relation("InvitationInviter")
+
+  @@map("user")
+}
+
+model Session {
+  id                    String   @id @default(cuid())
+  userId                String
+  token                 String   @unique
+  expiresAt             DateTime
+  ipAddress             String?
+  userAgent             String?
+  activeOrganizationId  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ============================================================
+// BETTER AUTH — ORGANIZATION PLUGIN (fondasi multi-tenant)
+// ============================================================
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  members     Member[]
+  invitations Invitation[]
+  athletes    Athlete[]
+  testItems   TestItem[]
+  assessments Assessment[]
+  benchmarks  Benchmark[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String   @default("assistant_coach")
+  createdAt      DateTime @default(now())
+
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentsCreated   Assessment[]
+  reportsGenerated     Report[]
+
+  @@unique([organizationId, userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  role           String   @default("assistant_coach")
+  status         String   @default("pending")
+  inviterId      String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter      User         @relation("InvitationInviter", fields: [inviterId], references: [id])
+
+  @@map("invitation")
+}
+
+// ============================================================
+// ATHLETE
+// ============================================================
+
+enum AthletePosition {
+  POINT_GUARD
+  SHOOTING_GUARD
+  SMALL_FORWARD
+  POWER_FORWARD
+  CENTER
+  UNSPECIFIED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Athlete {
+  id             String @id @default(cuid())
+  organizationId String
+
+  fullName     String
+  jerseyNumber Int?
+  position     AthletePosition @default(UNSPECIFIED)
+  gender       Gender
+  dateOfBirth  DateTime
+  photoUrl     String?
+
+  heightCm   Decimal? @db.Decimal(5, 1)
+  weightKg   Decimal? @db.Decimal(5, 1)
+  wingspanCm Decimal? @db.Decimal(5, 1)
+
+  competitionLevel String?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  injuryHistories AthleteInjuryHistory[]
+  assessments     Assessment[]
+
+  @@index([organizationId])
+  @@map("athlete")
+}
+
+model AthleteInjuryHistory {
+  id          String    @id @default(cuid())
+  athleteId   String
+  injuryType  String
+  description String?
+  injuryDate  DateTime
+  recoveredAt DateTime?
+  severity    String?
+  createdAt   DateTime  @default(now())
+
+  athlete Athlete @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@index([athleteId])
+  @@map("athlete_injury_history")
+}
+
+// ============================================================
+// TEST ITEM & ASSESSMENT
+// ============================================================
+
+enum PhysicalComponent {
+  FLEXIBILITY
+  SPEED
+  POWER
+  AGILITY
+  MUSCULAR_ENDURANCE
+  ANAEROBIC_ENDURANCE
+  AEROBIC_ENDURANCE
+}
+
+enum ScoreDirection {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+}
+
+enum MeasurementUnit {
+  CM
+  M
+  KG
+  SECOND
+  REPETITION
+  ML_KG_MIN
+  SCORE
+}
+
+model TestItem {
+  id             String @id @default(cuid())
+  organizationId String
+
+  physicalComponent PhysicalComponent
+  name              String
+  unit              MeasurementUnit
+  scoreDirection    ScoreDirection
+
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  resultItems  AssessmentResultItem[]
+  benchmarks   Benchmark[]
+
+  @@index([organizationId, physicalComponent])
+  @@map("test_item")
+}
+
+enum AssessmentStatus {
+  DRAFT
+  COMPLETED
+}
+
+model Assessment {
+  id                String @id @default(cuid())
+  organizationId    String
+  athleteId         String
+  createdByMemberId String
+
+  assessmentDate DateTime
+  status         AssessmentStatus @default(DRAFT)
+
+  overallScore Decimal? @db.Decimal(5, 2)
+  overallGrade String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete                @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy    Member                 @relation(fields: [createdByMemberId], references: [id])
+  resultItems  AssessmentResultItem[]
+  analysis     AssessmentAnalysis?
+  reports      Report[]
+
+  @@index([organizationId])
+  @@index([athleteId, assessmentDate])
+  @@map("assessment")
+}
+
+model AssessmentResultItem {
+  id           String  @id @default(cuid())
+  assessmentId String
+  testItemId   String
+
+  rawValue Decimal  @db.Decimal(8, 2)
+  score    Decimal? @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  testItem   TestItem   @relation(fields: [testItemId], references: [id])
+
+  @@unique([assessmentId, testItemId])
+  @@map("assessment_result_item")
+}
+
+// ============================================================
+// BENCHMARK
+// ============================================================
+
+model Benchmark {
+  id             String @id @default(cuid())
+  organizationId String
+  testItemId     String
+
+  ageMin           Int
+  ageMax           Int
+  gender           Gender?
+  position         AthletePosition?
+  competitionLevel String?
+
+  // Ambang 0-100 -> grade A/B/C/D, dibaca sesuai TestItem.scoreDirection
+  thresholdA Decimal @db.Decimal(8, 2)
+  thresholdB Decimal @db.Decimal(8, 2)
+  thresholdC Decimal @db.Decimal(8, 2)
+  thresholdD Decimal @db.Decimal(8, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  testItem     TestItem     @relation(fields: [testItemId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, testItemId])
+  @@map("benchmark")
+}
+
+// ============================================================
+// ANALYSIS & REPORT
+// ============================================================
+
+model AssessmentAnalysis {
+  id           String @id @default(cuid())
+  assessmentId String @unique
+
+  componentScores Json // { FLEXIBILITY: 74, SPEED: 81, ... } — dipakai langsung oleh radar chart
+  bestComponent      PhysicalComponent?
+  weakestComponents  PhysicalComponent[]
+
+  insightText       String
+  recommendationText String
+  ruleEngineVersion  String // mis. "v1.0" — supaya hasil lama bisa ditandai kalau rule berubah
+
+  generatedAt DateTime @default(now())
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_analysis")
+}
+
+model Report {
+  id           String @id @default(cuid())
+  assessmentId String
+
+  filePath           String // path di Supabase Storage
+  version            Int     @default(1)
+  isLatest           Boolean @default(true)
+  generatedByMemberId String
+
+  generatedAt DateTime @default(now())
+
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  generatedBy   Member     @relation(fields: [generatedByMemberId], references: [id])
+
+  @@index([assessmentId, isLatest])
+  @@map("report")
+}
