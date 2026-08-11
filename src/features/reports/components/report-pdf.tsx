@@ -285,8 +285,8 @@ export function AssessmentReportPDF({
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>KINETIQ</Text>
-            <Text style={styles.headerSub}>Sports Performance Assessment Report</Text>
+            <Text style={styles.headerTitle}>POWER UP PRIVATE TRAINING</Text>
+            <Text style={styles.headerSub}>Sports Performance Assessment Report (Powered by Kinetiq)</Text>
             <Text style={[styles.headerSub, { marginTop: 4, color: C.textSecondary }]}>
               {orgName}
             </Text>

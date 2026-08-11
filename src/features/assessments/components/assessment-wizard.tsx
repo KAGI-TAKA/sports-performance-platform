@@ -12,6 +12,7 @@ interface TestItemProp {
   name: string;
   unit: MeasurementUnit;
   scoreDirection: ScoreDirection;
+  testType?: string;
   benchmarks: Array<{
     thresholdA: number;
     thresholdB: number;
@@ -27,6 +28,36 @@ interface AssessmentWizardProps {
     position: string;
   };
   testItems: TestItemProp[];
+}
+
+// ─── Slider Range Helper ─────────────────────────────────────────────────────
+// Menghitung nilai maksimum slider berdasarkan benchmark aktual item tes.
+// Lebih intuitif daripada angka hardcoded per unit.
+function getSliderMax(item: TestItemProp): number {
+  const bm = item.benchmarks[0];
+
+  if (bm) {
+    if (item.scoreDirection === "HIGHER_IS_BETTER") {
+      // Beri 30% ruang di atas threshold A (nilai terbaik)
+      return Math.ceil(Number(bm.thresholdA) * 1.3);
+    } else {
+      // LOWER_IS_BETTER: thresholdD = nilai paling buruk (angka paling tinggi).
+      // Beri 50% ruang supaya bisa input angka jelek sekalipun.
+      return Math.ceil(Number(bm.thresholdD) * 1.5);
+    }
+  }
+
+  // Fallback berbasis unit jika belum ada benchmark
+  const unitFallback: Partial<Record<MeasurementUnit, number>> = {
+    SECOND: 60,
+    CM: 300,
+    M: 20,
+    REPETITION: 100,
+    KG: 200,
+    ML_KG_MIN: 80,
+    SCORE: 100,
+  };
+  return unitFallback[item.unit] ?? 100;
 }
 
 const STEP_COMPONENTS: { key: PhysicalComponent; label: string }[] = [
@@ -201,7 +232,48 @@ export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) 
           ) : (
             <div className="space-y-6">
               {componentTestItems.map((item) => {
+                const isQualitative = item.testType === "QUALITATIVE";
                 const val = rawValues[item.id] ?? 0;
+
+                if (isQualitative) {
+                  const RUBRICS = [
+                    { label: "Sangat Baik", score: 100, color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" },
+                    { label: "Baik", score: 75, color: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+                    { label: "Cukup", score: 50, color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+                    { label: "Kurang", score: 25, color: "bg-rose-500/20 text-rose-400 border-rose-500/40" },
+                  ];
+
+                  return (
+                    <div key={item.id} className="space-y-2 rounded-lg bg-surface-2/40 border border-border p-3">
+                      <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                        <span>{item.name} (Rubrik Teknik)</span>
+                        <span className="text-[10px] font-mono text-purple-400">QUALITATIVE</span>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-2 pt-1">
+                        {RUBRICS.map((r) => {
+                          const isSelected = rawValues[item.id] === r.score;
+                          return (
+                            <button
+                              key={r.label}
+                              type="button"
+                              onClick={() => handleValueChange(item.id, r.score)}
+                              className={`rounded-lg border px-2 py-2 text-center text-xs font-bold transition ${
+                                isSelected
+                                  ? `${r.color} shadow-sm ring-1 ring-accent`
+                                  : "border-border bg-surface-1 text-muted hover:text-foreground hover:bg-surface-2"
+                              }`}
+                            >
+                              <div>{r.label}</div>
+                              <div className="text-[9px] font-mono opacity-70 mt-0.5">{r.score}%</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={item.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -220,7 +292,7 @@ export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) 
                     <input
                       type="range"
                       min="0"
-                      max={item.unit === "SECOND" ? 60 : item.unit === "CM" ? 300 : item.unit === "M" ? 20 : 100}
+                      max={getSliderMax(item)}
                       step="0.5"
                       value={val}
                       onChange={(e) => handleValueChange(item.id, Number(e.target.value))}

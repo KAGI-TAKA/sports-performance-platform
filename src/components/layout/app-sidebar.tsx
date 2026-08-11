@@ -12,10 +12,17 @@ import {
   FileText,
   Settings,
   Activity,
+  Calendar,
+  Dumbbell,
+  ClipboardCheck,
+  Zap,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/schedule", label: "Jadwal Latihan", icon: Calendar },
+  { href: "/training-plans", label: "Program Latihan", icon: Dumbbell },
+  { href: "/session-logs", label: "Catatan Sesi", icon: ClipboardCheck },
   { href: "/athletes", label: "Atlet", icon: Users },
   { href: "/assessments/new", label: "Assessment", icon: ClipboardList },
   { href: "/benchmarks", label: "Benchmark", icon: SlidersHorizontal },
@@ -31,19 +38,19 @@ export function AppSidebar() {
   return (
     <aside className="w-[220px] shrink-0 flex flex-col min-h-screen border-r border-border bg-surface-1">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
+      <div className="flex items-center gap-2.5 px-4 py-5 border-b border-border">
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
           style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
         >
-          <Activity className="h-4 w-4" />
+          <Zap className="h-4 w-4 fill-amber-300 text-amber-300" />
         </div>
         <div className="overflow-hidden">
-          <span className="block font-display text-[13px] font-extrabold tracking-widest text-foreground uppercase leading-none">
-            KINETIQ
+          <span className="block font-display text-[12px] font-extrabold tracking-wider text-foreground uppercase leading-none truncate">
+            POWER UP
           </span>
-          <span className="block text-[10px] text-muted font-medium leading-tight mt-0.5">
-            Performance Platform
+          <span className="block text-[9px] text-accent font-semibold leading-tight mt-0.5 truncate">
+            Private Training
           </span>
         </div>
       </div>

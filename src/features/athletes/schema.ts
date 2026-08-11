@@ -19,6 +19,10 @@ export const createAthleteSchema = z.object({
   heightCm: z.coerce.number().positive().optional(),
   weightKg: z.coerce.number().positive().optional(),
   wingspanCm: z.coerce.number().positive().optional(),
+  parentName: z.string().optional(),
+  parentPhone: z.string().optional(),
+  allergies: z.string().optional(),
+  healthNotes: z.string().optional(),
   competitionLevel: z.string().optional(),
 });
 export type CreateAthleteInput = z.infer<typeof createAthleteSchema>;

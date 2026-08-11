@@ -42,15 +42,31 @@ export async function getPreviousAssessment(organizationId: string, athleteId: s
   });
 }
 
-export async function listAssessments(organizationId: string, limit = 10) {
-  return prisma.assessment.findMany({
-    where: { organizationId },
-    include: {
-      athlete: {
-        select: { fullName: true, position: true, photoUrl: true },
+export const REPORTS_PER_PAGE = 10;
+
+export async function listAssessments(
+  organizationId: string,
+  page = 1
+) {
+  const skip = (Math.max(1, page) - 1) * REPORTS_PER_PAGE;
+
+  const where = { organizationId };
+
+  const [assessments, total] = await prisma.$transaction([
+    prisma.assessment.findMany({
+      where,
+      include: {
+        athlete: {
+          select: { fullName: true, position: true, photoUrl: true },
+        },
       },
-    },
-    orderBy: { assessmentDate: "desc" },
-    take: limit,
-  });
+      orderBy: { assessmentDate: "desc" },
+      take: REPORTS_PER_PAGE,
+      skip,
+    }),
+    prisma.assessment.count({ where }),
+  ]);
+
+  return { assessments, total };
 }
+

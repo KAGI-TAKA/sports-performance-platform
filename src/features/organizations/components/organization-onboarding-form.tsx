@@ -7,6 +7,7 @@ import {
   createOrganizationSchema,
   slugify,
 } from "@/features/organizations/schema";
+import { seedOrgDefaults } from "@/features/organizations/actions";
 
 export function OrganizationOnboardingForm({
   userName,
@@ -49,6 +50,11 @@ export function OrganizationOnboardingForm({
       setError(createError?.message ?? "Gagal membuat organisasi, coba lagi");
       return;
     }
+
+    // Seed TestItem & Benchmark default untuk organisasi baru ini.
+    // Dipanggil di sini (bukan saat render benchmarks/page.tsx) agar data
+    // sudah tersedia begitu user pertama kali membuka halaman Benchmark.
+    await seedOrgDefaults(data.id);
 
     // Jadikan organisasi baru ini aktif di sesi
     await authClient.organization.setActive({ organizationId: data.id });

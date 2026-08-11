@@ -30,7 +30,7 @@ export default async function NewAssessmentPage({
   }));
 
   if (!athleteId) {
-    const athletes = await listAthletes(ctx.organizationId);
+   const { athletes } = await listAthletes(ctx.organizationId);
 
     return (
       <div className="mx-auto max-w-xl p-7">

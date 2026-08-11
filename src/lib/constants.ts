@@ -34,3 +34,12 @@ export function scoreToGrade(score: number): string {
 // Role coach di dalam satu organisasi (String di skema Better Auth, divalidasi di sini)
 export const MEMBER_ROLES = ["admin", "head_coach", "assistant_coach"] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
+
+// ─── Satu sumber kebenaran untuk label & urutan komponen fisik ───────────────
+// Semua halaman (benchmarks, report, engine) HARUS import dari sini — jangan
+// redefinisi lokal.
+export const COMPONENT_LABELS: Record<string, string> = Object.fromEntries(
+  PHYSICAL_COMPONENTS.map((c) => [c.value, c.label])
+);
+
+export const COMPONENT_ORDER: string[] = PHYSICAL_COMPONENTS.map((c) => c.value);

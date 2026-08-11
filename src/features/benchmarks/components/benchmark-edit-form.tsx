@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { updateBenchmark } from "../actions";
 import { Check, X, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface BenchmarkEditFormProps {
   benchmarkId: string;
@@ -11,6 +12,8 @@ interface BenchmarkEditFormProps {
   thresholdC: number;
   thresholdD: number;
   scoreDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER";
+  /** Hanya admin dan head_coach yang boleh mengedit benchmark. */
+  canEdit: boolean;
 }
 
 export function BenchmarkEditForm({
@@ -20,6 +23,7 @@ export function BenchmarkEditForm({
   thresholdC,
   thresholdD,
   scoreDirection,
+  canEdit,
 }: BenchmarkEditFormProps) {
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -38,9 +42,10 @@ export function BenchmarkEditForm({
     startTransition(async () => {
       const res = await updateBenchmark(benchmarkId, fd);
       if (res.success) {
+        toast.success('Threshold berhasil disimpan');
         setEditing(false);
       } else {
-        setError(res.error ?? "Gagal menyimpan.");
+        toast.error(res.error ?? 'Gagal menyimpan threshold');
       }
     });
   }
@@ -54,14 +59,20 @@ export function BenchmarkEditForm({
           <ThresholdChip label="C" value={thresholdC} color="amber" />
           <ThresholdChip label="D" value={thresholdD} color="red" />
         </div>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted hover:text-accent hover:bg-accent/10 transition border border-border"
-          title="Edit threshold"
-        >
-          <Pencil className="h-3 w-3" />
-          Edit
-        </button>
+        {canEdit ? (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted hover:text-accent hover:bg-accent/10 transition border border-border"
+            title="Edit threshold"
+          >
+            <Pencil className="h-3 w-3" />
+            Edit
+          </button>
+        ) : (
+          <span className="rounded-md border border-border px-2 py-0.5 text-[10px] text-muted select-none">
+            Hanya Admin
+          </span>
+        )}
       </div>
     );
   }
@@ -107,14 +118,13 @@ export function BenchmarkEditForm({
         </button>
         <button
           type="button"
-          onClick={() => { setEditing(false); setError(null); }}
+          onClick={() => { setEditing(false); }}
           className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-3 text-muted hover:text-foreground transition"
           title="Batal"
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
-      {error && <p className="text-[11px] text-danger self-start">{error}</p>}
     </form>
   );
 }

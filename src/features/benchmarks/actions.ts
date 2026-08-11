@@ -50,3 +50,83 @@ export async function updateBenchmark(benchmarkId: string, formData: FormData) {
   revalidatePath("/benchmarks");
   return { success: true };
 }
+
+export async function createTestItem(formData: FormData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const ctx = await requireOrgContext();
+    if (ctx.role === "assistant_coach") {
+      return { success: false, error: "Tidak ada akses" };
+    }
+
+    const name = formData.get("name") as string;
+    const physicalComponent = formData.get("physicalComponent") as any;
+    const unit = formData.get("unit") as any;
+    const scoreDirection = formData.get("scoreDirection") as any;
+    const testType = (formData.get("testType") as any) || "NUMERIC";
+    const orderStr = formData.get("order") as string;
+    
+    if (!name || !physicalComponent || !unit || !scoreDirection || !orderStr) {
+      return { success: false, error: "Data tidak lengkap" };
+    }
+
+    const order = parseInt(orderStr, 10);
+
+    const created = await prisma.testItem.create({
+      data: {
+        organizationId: ctx.organizationId,
+        physicalComponent,
+        name,
+        unit,
+        scoreDirection,
+        testType,
+        order,
+        isActive: true,
+      },
+    });
+
+    await prisma.benchmark.create({
+      data: {
+        testItemId: created.id,
+        organizationId: ctx.organizationId,
+        thresholdA: 80,
+        thresholdB: 65,
+        thresholdC: 50,
+        thresholdD: 35,
+        ageMin: 0,
+        ageMax: 99,
+      },
+    });
+
+    revalidatePath("/benchmarks");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message ?? "Gagal menambahkan item tes" };
+  }
+}
+
+export async function deactivateTestItem(testItemId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const ctx = await requireOrgContext();
+    if (ctx.role === "assistant_coach") {
+      return { success: false, error: "Tidak ada akses" };
+    }
+
+    const existing = await prisma.testItem.findFirst({
+      where: { id: testItemId, organizationId: ctx.organizationId },
+    });
+
+    if (!existing) {
+      return { success: false, error: "Item tes tidak ditemukan" };
+    }
+
+    await prisma.testItem.update({
+      where: { id: testItemId },
+      data: { isActive: false },
+    });
+
+    revalidatePath("/benchmarks");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message ?? "Gagal menonaktifkan item tes" };
+  }
+}

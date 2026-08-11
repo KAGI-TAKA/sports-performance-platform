@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   TrendingUp,
   ClipboardList,
+  ClipboardCheck,
   ShieldAlert,
   Plus,
 } from "lucide-react";
@@ -46,11 +47,16 @@ const GRADE_COLORS: Record<string, { text: string; bg: string }> = {
 export function AthleteDetailPanel({
   athlete,
   age,
+  role,
 }: {
   athlete: AthleteWithRelations | null;
   age: number | null;
+  /** Role member saat ini — dipakai untuk menyembunyikan aksi destructive. */
+  role: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"assessment" | "progress" | "cedera">("assessment");
+  const [activeTab, setActiveTab] = useState<"assessment" | "progress" | "cedera" | "sessionLogs">("assessment");
+  // assistant_coach tidak memiliki izin athlete:delete
+  const canDelete = role !== "assistant_coach";
 
   if (!athlete) {
     return (
@@ -79,13 +85,39 @@ export function AthleteDetailPanel({
       ? Number(lastAssessment.overallScore) - Number(firstAssessment.overallScore)
       : null;
 
+  // Calculate BMI dynamically
+  const heightM = athlete.heightCm ? Number(athlete.heightCm) / 100 : null;
+  const weightKg = athlete.weightKg ? Number(athlete.weightKg) : null;
+  const bmiValue = heightM && weightKg && heightM > 0 ? weightKg / (heightM * heightM) : null;
+  const bmiFormatted = bmiValue ? bmiValue.toFixed(1) : "—";
+
+  let bmiCategory = "";
+  let bmiColor = "text-muted";
+  if (bmiValue) {
+    if (bmiValue < 18.5) {
+      bmiCategory = "Kurang";
+      bmiColor = "text-blue-400";
+    } else if (bmiValue <= 24.9) {
+      bmiCategory = "Ideal";
+      bmiColor = "text-emerald-400";
+    } else if (bmiValue <= 29.9) {
+      bmiCategory = "Berlebih";
+      bmiColor = "text-amber-400";
+    } else {
+      bmiCategory = "Obesa";
+      bmiColor = "text-rose-400";
+    }
+  }
+
   return (
-    <div className="h-full flex flex-col gap-5">
-      {/* Athlete Header */}
-      <div className="flex items-start gap-4">
+    <div className="flex h-full flex-col gap-4">
+      {/* Profile Header */}
+      <div className="flex items-start gap-3">
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-base font-bold text-white"
-          style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-display text-base font-bold text-white shadow-sm"
+          style={{
+            background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))",
+          }}
         >
           {athlete.fullName
             .split(" ")
@@ -108,6 +140,30 @@ export function AthleteDetailPanel({
             {athlete.gender === "FEMALE" ? "Perempuan" : "Laki-laki"} ·{" "}
             Lahir {formatDate(athlete.dateOfBirth)}
           </p>
+
+          {/* Parent contact info */}
+          {(athlete.parentName || athlete.parentPhone) && (
+            <p className="mt-1 text-[11px] text-accent font-medium">
+              Ortu: {athlete.parentName || "—"}{" "}
+              {athlete.parentPhone && `(${athlete.parentPhone})`}
+            </p>
+          )}
+
+          {/* Allergies / Health Notes */}
+          {(athlete.allergies || athlete.healthNotes) && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {athlete.allergies && (
+                <span className="rounded bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-rose-400">
+                  Alergi: {athlete.allergies}
+                </span>
+              )}
+              {athlete.healthNotes && (
+                <span className="rounded bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
+                  Kesehatan: {athlete.healthNotes}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <Link
           href={`/athletes/${athlete.id}/edit`}
@@ -117,18 +173,19 @@ export function AthleteDetailPanel({
         </Link>
       </div>
 
-      {/* Physical Metrics */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Physical Metrics + Dynamic BMI */}
+      <div className="grid grid-cols-4 gap-2">
         {[
-          { icon: Ruler, label: "Tinggi", value: athlete.heightCm ? `${athlete.heightCm} cm` : "—" },
-          { icon: Weight, label: "Berat", value: athlete.weightKg ? `${athlete.weightKg} kg` : "—" },
-          { icon: ArrowUpRight, label: "Wingspan", value: athlete.wingspanCm ? `${athlete.wingspanCm} cm` : "—" },
-        ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="rounded-lg bg-surface-2 px-3 py-3 text-center">
-            <div className="font-mono text-sm font-semibold text-foreground">{value}</div>
-            <div className="mt-0.5 flex items-center justify-center gap-1 text-[10px] text-muted">
-              <Icon className="h-2.5 w-2.5" />
-              {label}
+          { icon: Ruler, label: "Tinggi", value: athlete.heightCm ? `${athlete.heightCm} cm` : "—", color: "text-foreground" },
+          { icon: Weight, label: "Berat", value: athlete.weightKg ? `${athlete.weightKg} kg` : "—", color: "text-foreground" },
+          { icon: Weight, label: `BMI ${bmiCategory ? `(${bmiCategory})` : ""}`, value: bmiFormatted, color: bmiColor },
+          { icon: ArrowUpRight, label: "Wingspan", value: athlete.wingspanCm ? `${athlete.wingspanCm} cm` : "—", color: "text-foreground" },
+        ].map(({ icon: Icon, label, value, color }) => (
+          <div key={label} className="rounded-lg bg-surface-2 px-2 py-2.5 text-center">
+            <div className={`font-mono text-xs font-bold ${color}`}>{value}</div>
+            <div className="mt-0.5 flex items-center justify-center gap-1 text-[9px] text-muted truncate">
+              <Icon className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{label}</span>
             </div>
           </div>
         ))}
@@ -167,6 +224,7 @@ export function AthleteDetailPanel({
         <div className="flex gap-4">
           {[
             { id: "assessment", label: "Assessment", icon: ClipboardList, count: athlete.assessments.length },
+            { id: "sessionLogs", label: "Catatan Sesi", icon: ClipboardCheck, count: null },
             { id: "progress", label: "Progress", icon: TrendingUp, count: null },
             { id: "cedera", label: "Cedera", icon: ShieldAlert, count: athlete.injuryHistories.length },
           ].map(({ id, label, icon: Icon, count }) => (
@@ -354,8 +412,13 @@ export function AthleteDetailPanel({
                   </div>
                   <button
                     onClick={() => handleDeleteInjury(inj.id)}
-                    className="ml-3 shrink-0 text-muted hover:text-danger transition p-1 rounded"
-                    title="Hapus"
+                    className={`ml-3 shrink-0 p-1 rounded transition ${
+                      canDelete
+                        ? "text-muted hover:text-danger"
+                        : "cursor-not-allowed opacity-30 text-muted"
+                    }`}
+                    title={canDelete ? "Hapus" : "Hanya Admin/Head Coach"}
+                    disabled={!canDelete}
                   >
                     ✕
                   </button>

@@ -1,46 +1,23 @@
 import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
-import { seedDefaultTestItemsAndBenchmarks } from "../../../../prisma/seed-defaults";
+import { COMPONENT_LABELS, COMPONENT_ORDER } from "@/lib/constants";
 import { BenchmarkEditForm } from "@/features/benchmarks/components/benchmark-edit-form";
+import { TestItemCreateForm } from "@/features/benchmarks/components/test-item-create-form";
+import { TestItemDeactivateButton } from "@/features/benchmarks/components/test-item-deactivate-button";
 import { SlidersHorizontal, ArrowUp, ArrowDown } from "lucide-react";
 
-const COMPONENT_ORDER = [
-  "FLEXIBILITY",
-  "SPEED",
-  "POWER",
-  "AGILITY",
-  "MUSCULAR_ENDURANCE",
-  "ANAEROBIC_ENDURANCE",
-  "AEROBIC_ENDURANCE",
-];
 
-const COMPONENT_LABELS: Record<string, string> = {
-  FLEXIBILITY: "Fleksibilitas",
-  SPEED: "Kecepatan",
-  POWER: "Power",
-  AGILITY: "Kelincahan",
-  MUSCULAR_ENDURANCE: "Daya Tahan Otot",
-  ANAEROBIC_ENDURANCE: "Daya Tahan Anaerobik",
-  AEROBIC_ENDURANCE: "Daya Tahan Aerobik",
-};
 
 export default async function BenchmarksPage() {
   const ctx = await requireOrgContext();
+  // assistant_coach tidak memiliki izin benchmark:update
+  const canEdit = ctx.role !== "assistant_coach";
 
-  let testItems = await prisma.testItem.findMany({
+  const testItems = await prisma.testItem.findMany({
     where: { organizationId: ctx.organizationId, isActive: true },
     include: { benchmarks: true },
     orderBy: { order: "asc" },
   });
-
-  if (testItems.length === 0) {
-    await seedDefaultTestItemsAndBenchmarks(ctx.organizationId);
-    testItems = await prisma.testItem.findMany({
-      where: { organizationId: ctx.organizationId, isActive: true },
-      include: { benchmarks: true },
-      orderBy: { order: "asc" },
-    });
-  }
 
   // Group by component
   const grouped: Record<string, typeof testItems> = {};
@@ -83,66 +60,85 @@ export default async function BenchmarksPage() {
         </span>
       </div>
 
-      {/* Per-component sections */}
-      <div className="space-y-4">
-        {COMPONENT_ORDER.filter((c) => grouped[c]).map((comp) => (
-          <div key={comp} className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-            {/* Component Header */}
-            <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-surface-2/40">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
-                <SlidersHorizontal className="h-3.5 w-3.5 text-accent" />
-              </div>
-              <h2 className="text-sm font-semibold text-foreground">
-                {COMPONENT_LABELS[comp] ?? comp}
-              </h2>
-              <span className="ml-auto text-xs text-muted">
-                {grouped[comp].length} item tes
-              </span>
-            </div>
-
-            {/* Items Table */}
-            <div className="divide-y divide-border">
-              {grouped[comp].map((item) => {
-                const bm = item.benchmarks[0];
-                return (
-                  <div key={item.id} className="px-5 py-4 grid grid-cols-[1fr_auto] gap-4 items-center">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">{item.name}</span>
-                        <span className="text-[10px] font-mono text-muted bg-surface-2 rounded px-1.5 py-0.5 uppercase">
-                          {item.unit}
-                        </span>
-                        {item.scoreDirection === "HIGHER_IS_BETTER" ? (
-                          <span className="flex items-center gap-0.5 text-[10px] text-success">
-                            <ArrowUp className="h-2.5 w-2.5" /> tinggi lebih baik
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-0.5 text-[10px] text-danger">
-                            <ArrowDown className="h-2.5 w-2.5" /> rendah lebih baik
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {bm ? (
-                      <BenchmarkEditForm
-                        benchmarkId={bm.id}
-                        thresholdA={Number(bm.thresholdA)}
-                        thresholdB={Number(bm.thresholdB)}
-                        thresholdC={Number(bm.thresholdC)}
-                        thresholdD={Number(bm.thresholdD)}
-                        scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
-                      />
-                    ) : (
-                      <span className="text-xs text-muted">Belum ada benchmark</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+      {testItems.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface-1 p-12 text-center space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 mx-auto">
+            <SlidersHorizontal className="h-6 w-6 text-muted" />
           </div>
-        ))}
-      </div>
+          <p className="text-sm font-medium text-foreground">Belum ada item tes</p>
+          <p className="text-xs text-muted max-w-xs mx-auto">
+            Item tes dan benchmark default dibuat otomatis saat onboarding. Hubungi admin jika halaman ini kosong.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {COMPONENT_ORDER.filter((c) => grouped[c]).map((comp) => (
+            <div key={comp} className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+              {/* Component Header */}
+              <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-surface-2/40">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-accent" />
+                </div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  {COMPONENT_LABELS[comp] ?? comp}
+                </h2>
+                <span className="ml-auto text-xs text-muted">
+                  {grouped[comp].length} item tes
+                </span>
+              </div>
+
+              {/* Items Table */}
+              <div className="divide-y divide-border">
+                {grouped[comp].map((item) => {
+                  const bm = item.benchmarks[0];
+                  return (
+                    <div key={item.id} className="px-5 py-4 grid grid-cols-[1fr_auto] gap-4 items-center">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{item.name}</span>
+                          <span className="text-[10px] font-mono text-muted bg-surface-2 rounded px-1.5 py-0.5 uppercase">
+                            {item.unit}
+                          </span>
+                          {item.testType === "QUALITATIVE" && (
+                            <span className="text-[10px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5">
+                              Rubrik Teknik
+                            </span>
+                          )}
+                          {item.scoreDirection === "HIGHER_IS_BETTER" ? (
+                            <span className="flex items-center gap-0.5 text-[10px] text-success">
+                              <ArrowUp className="h-2.5 w-2.5" /> tinggi lebih baik
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-0.5 text-[10px] text-danger">
+                              <ArrowDown className="h-2.5 w-2.5" /> rendah lebih baik
+                            </span>
+                          )}
+                          {canEdit && <TestItemDeactivateButton testItemId={item.id} itemName={item.name} />}
+                        </div>
+                      </div>
+
+                      {bm ? (
+                        <BenchmarkEditForm
+                          benchmarkId={bm.id}
+                          thresholdA={Number(bm.thresholdA)}
+                          thresholdB={Number(bm.thresholdB)}
+                          thresholdC={Number(bm.thresholdC)}
+                          thresholdD={Number(bm.thresholdD)}
+                          scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
+                          canEdit={canEdit}
+                        />
+                      ) : (
+                        <span className="text-xs text-muted">Belum ada benchmark</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <TestItemCreateForm physicalComponent={comp} canCreate={canEdit} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="text-xs text-muted text-center pb-4">
         Sumber norma: topendsports.com &amp; matassessment.com

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireOrgContext } from "@/lib/auth-context";
-import { listAthletes, getAthleteById } from "@/features/athletes/queries";
+import { listAthletes, getAthleteById, ATHLETES_PER_PAGE } from "@/features/athletes/queries";
 import { AthleteSearchInput } from "@/features/athletes/components/athlete-search-input";
 import { AthleteFilters } from "@/features/athletes/components/athlete-filters";
 import { AthleteDetailPanel } from "@/features/athletes/components/athlete-detail-panel";
+import { Pagination } from "@/components/ui/pagination";
+import { ExportCSVButton } from "@/features/export/components/export-csv-button";
 import { UserPlus } from "lucide-react";
 
 function calculateAge(dateOfBirth: Date, now: Date): number {
@@ -16,16 +18,19 @@ function calculateAge(dateOfBirth: Date, now: Date): number {
 export default async function AthletesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ athleteId?: string; q?: string; position?: string; ageGroup?: string }>;
+  searchParams: Promise<{ athleteId?: string; q?: string; position?: string; ageGroup?: string; page?: string }>;
 }) {
-  const { athleteId, q, position, ageGroup } = await searchParams;
+  const { athleteId, q, position, ageGroup, page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const ctx = await requireOrgContext();
 
-  const athletes = await listAthletes(ctx.organizationId, {
+  const { athletes, total } = await listAthletes(ctx.organizationId, {
     search: q,
     position,
     ageGroup,
+    page,
   });
+  const totalPages = Math.ceil(total / ATHLETES_PER_PAGE);
 
   const selectedAthlete = athleteId
     ? await getAthleteById(ctx.organizationId, athleteId)
@@ -48,18 +53,21 @@ export default async function AthletesPage({
           </h1>
           <p className="mt-0.5 text-sm text-muted">
             {hasActiveFilters
-              ? `${athletes.length} hasil ditemukan`
-              : `${athletes.length} atlet terdaftar`}
+              ? `${total} hasil ditemukan`
+              : `${total} atlet terdaftar`}
           </p>
         </div>
-        <Link
-          href="/athletes/new"
-          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 active:scale-95"
-          style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
-        >
-          <UserPlus className="h-4 w-4" />
-          Tambah Atlet
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportCSVButton endpoint="/api/export/athletes" label="Export CSV Atlet" />
+          <Link
+            href="/athletes/new"
+            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 active:scale-95"
+            style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
+          >
+            <UserPlus className="h-4 w-4" />
+            Tambah Atlet
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-[280px_1fr] gap-4 items-start">
@@ -72,7 +80,7 @@ export default async function AthletesPage({
             </Suspense>
           </div>
 
-          <div className="divide-y divide-border max-h-[calc(100vh-240px)] overflow-y-auto">
+          <div className="divide-y divide-border max-h-[calc(100vh-300px)] overflow-y-auto">
             {athletes.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-muted">
@@ -133,11 +141,20 @@ export default async function AthletesPage({
               })
             )}
           </div>
+          {/* Pagination controls — hanya tampil bila lebih dari 1 halaman */}
+          <div className="border-t border-border px-3 py-2">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              path="/athletes"
+              baseParams={{ q, position, ageGroup }}
+            />
+          </div>
         </div>
 
         {/* Right Panel — Detail */}
         <div className="rounded-xl border border-border bg-surface-1 p-5 min-h-[500px]">
-          <AthleteDetailPanel athlete={selectedAthlete} age={selectedAthleteAge} />
+          <AthleteDetailPanel athlete={selectedAthlete} age={selectedAthleteAge} role={ctx.role} />
         </div>
       </div>
     </div>

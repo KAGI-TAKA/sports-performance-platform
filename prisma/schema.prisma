@@ -89,12 +89,15 @@ model Organization {
   metadata  String?
   createdAt DateTime @default(now())
 
-  members     Member[]
-  invitations Invitation[]
-  athletes    Athlete[]
-  testItems   TestItem[]
-  assessments Assessment[]
-  benchmarks  Benchmark[]
+  members          Member[]
+  invitations      Invitation[]
+  athletes         Athlete[]
+  testItems        TestItem[]
+  assessments      Assessment[]
+  benchmarks       Benchmark[]
+  scheduleSessions ScheduleSession[]
+  trainingPlans    TrainingPlan[]
+  sessionLogs      SessionLog[]
 
   @@map("organization")
 }
@@ -106,10 +109,12 @@ model Member {
   role           String   @default("assistant_coach")
   createdAt      DateTime @default(now())
 
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   assessmentsCreated   Assessment[]
   reportsGenerated     Report[]
+  scheduleSessionsCoached ScheduleSession[]
+  sessionLogsCreated   SessionLog[]
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -164,15 +169,23 @@ model Athlete {
   weightKg   Decimal? @db.Decimal(5, 1)
   wingspanCm Decimal? @db.Decimal(5, 1)
 
+  parentName   String?
+  parentPhone  String?
+  allergies    String?
+  healthNotes  String?
+
   competitionLevel String?
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  injuryHistories AthleteInjuryHistory[]
-  assessments     Assessment[]
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  injuryHistories  AthleteInjuryHistory[]
+  assessments      Assessment[]
+  scheduleSessions ScheduleSessionAthlete[]
+  trainingPlans    TrainingPlan[]
+  sessionLogs      SessionLog[]
 
   @@index([organizationId])
   @@map("athlete")
@@ -213,6 +226,11 @@ enum ScoreDirection {
   LOWER_IS_BETTER
 }
 
+enum TestType {
+  NUMERIC
+  QUALITATIVE
+}
+
 enum MeasurementUnit {
   CM
   M
@@ -231,6 +249,7 @@ model TestItem {
   name              String
   unit              MeasurementUnit
   scoreDirection    ScoreDirection
+  testType          TestType          @default(NUMERIC)
 
   order    Int     @default(0)
   isActive Boolean @default(true)
@@ -283,8 +302,9 @@ model AssessmentResultItem {
   assessmentId String
   testItemId   String
 
-  rawValue Decimal  @db.Decimal(8, 2)
-  score    Decimal? @db.Decimal(5, 2)
+  rawValue         Decimal? @db.Decimal(8, 2)
+  qualitativeValue String?
+  score            Decimal? @db.Decimal(5, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -366,4 +386,125 @@ model Report {
 
   @@index([assessmentId, isLatest])
   @@map("report")
+}
+
+// ============================================================
+// TRAINING SCHEDULE (SCHEDULED SESSIONS)
+// ============================================================
+
+enum ScheduleStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model ScheduleSession {
+  id             String         @id @default(cuid())
+  organizationId String
+  coachId        String
+
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  status    ScheduleStatus @default(SCHEDULED)
+
+  location String?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coach        Member                   @relation(fields: [coachId], references: [id])
+  athletes     ScheduleSessionAthlete[]
+  sessionLog   SessionLog?
+
+  @@index([organizationId, startTime])
+  @@map("schedule_session")
+}
+
+model ScheduleSessionAthlete {
+  sessionId String
+  athleteId String
+
+  session ScheduleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athlete Athlete         @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, athleteId])
+  @@map("schedule_session_athlete")
+}
+
+// ============================================================
+// TRAINING PROGRAM / PLAN & EXERCISES
+// ============================================================
+
+model TrainingPlan {
+  id             String   @id @default(cuid())
+  organizationId String
+  athleteId      String?  // Null jika berupa Template Program Organisasi
+
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete?           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  exercises    TrainingExercise[]
+
+  @@index([organizationId])
+  @@map("training_plan")
+}
+
+model TrainingExercise {
+  id             String  @id @default(cuid())
+  trainingPlanId String
+
+  name        String
+  category    String? // Misal: Plyometrics, Core, Strength, Agility
+  sets        Int?
+  reps        String? // Misal: "10 reps" atau "30 detik"
+  restSeconds Int?
+  notes       String?
+  order       Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trainingPlan TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+
+  @@map("training_exercise")
+}
+
+// ============================================================
+// SESSION LOG (DAILY TRAINING LOG & VIDEO)
+// ============================================================
+
+model SessionLog {
+  id                String   @id @default(cuid())
+  organizationId    String
+  athleteId         String
+  scheduleSessionId String?  @unique
+  createdByMemberId String
+
+  sessionDate    DateTime @default(now())
+  activitiesDone String
+  coachFeedback  String?
+  videoUrl       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  scheduleSession ScheduleSession? @relation(fields: [scheduleSessionId], references: [id])
+  createdBy       Member           @relation(fields: [createdByMemberId], references: [id])
+
+  @@index([organizationId, athleteId])
+  @@map("session_log")
 }

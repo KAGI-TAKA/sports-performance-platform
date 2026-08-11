@@ -204,7 +204,9 @@ export default async function AssessmentDetailPage({
                     {item.testItem.physicalComponent.replace("_", " ").toLowerCase()}
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-foreground font-semibold">
-                    {item.rawValue.toString()} {item.testItem.unit.toLowerCase()}
+                    {item.rawValue != null
+                      ? `${item.rawValue.toString()} ${item.testItem.unit.toLowerCase()}`
+                      : item.qualitativeValue ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-accent font-bold">
                     {item.score?.toString() ?? "—"}%

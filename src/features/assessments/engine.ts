@@ -1,4 +1,5 @@
 import { PhysicalComponent, ScoreDirection } from "@prisma/client";
+import { scoreToGrade } from "@/lib/constants";
 
 export interface TestItemValue {
   testItemId: string;
@@ -85,14 +86,9 @@ export function calculateAssessmentEngine(items: TestItemValue[]): EngineResult 
   // overallScore hanya dari komponen yang benar-benar diisi
   const overallScore = countComp > 0 ? Math.round(sumAll / countComp) : 0;
 
-  // Tentukan overallGrade
-  let overallGrade = "C";
-  if (overallScore >= 88) overallGrade = "A";
-  else if (overallScore >= 80) overallGrade = "B+";
-  else if (overallScore >= 72) overallGrade = "B";
-  else if (overallScore >= 65) overallGrade = "C+";
-  else if (overallScore >= 55) overallGrade = "C";
-  else overallGrade = "D";
+  // Tentukan overallGrade — delegasikan ke scoreToGrade() di constants.ts
+  // supaya satu-satunya sumber kebenaran untuk threshold grade.
+  const overallGrade = scoreToGrade(overallScore);
 
   // Cari best & weakest components
   const sortedComps = Object.entries(componentScores).sort((a, b) => b[1] - a[1]);

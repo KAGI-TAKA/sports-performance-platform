@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -21,9 +22,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kinetiq — Sports Performance Platform",
+  title: "Power Up Private Training — Sports Performance Platform",
   description:
-    "Platform penilaian fisik atlet bolabasket digital. Measure. Analyze. Improve.",
+    "Platform penilaian & pengujian kebugaran jasmani atlet digital. Powered by Kinetiq. Measure. Analyze. Improve.",
 };
 
 export default function RootLayout({
@@ -37,7 +38,10 @@ export default function RootLayout({
       data-mode="dark"
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        {children}
+        <Toaster position="bottom-right" richColors theme="dark" toastOptions={{ style: { fontFamily: 'var(--font-inter)' } }} />
+      </body>
     </html>
   );
 }

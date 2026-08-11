@@ -8,12 +8,38 @@ import { requireOrgContext } from "@/lib/auth-context";
 import { createAssessmentSchema } from "./schema";
 import { calculateAssessmentEngine, TestItemValue } from "./engine";
 
+
 async function assertPermission(action: "create" | "update" | "delete") {
   const { success } = await auth.api.hasPermission({
     headers: await headers(),
     body: { permissions: { athlete: [action] } },
   });
   if (!success) throw new Error("Kamu tidak punya izin untuk aksi ini");
+}
+
+// ─── Benchmark Picker ──────────────────────────────────────────────────────────
+// Pilih benchmark yang paling cocok untuk profil atlet.
+// Urutan prioritas (lebih spesifik = lebih tinggi):
+//   1. gender + rentang usia cocok
+//   2. gender cocok saja (tanpa filter usia)
+//   3. rentang usia cocok saja (tanpa filter gender)
+//   4. fallback: benchmark pertama (perilaku lama)
+function pickBestBenchmark(
+  benchmarks: { ageMin: number; ageMax: number; gender: string | null; thresholdA: any; thresholdB: any; thresholdC: any; thresholdD: any }[],
+  athleteGender: string,
+  athleteAge: number
+) {
+  if (benchmarks.length === 0) return undefined;
+
+  const ageMatch  = (b: (typeof benchmarks)[0]) => athleteAge >= b.ageMin && athleteAge <= b.ageMax;
+  const genMatch  = (b: (typeof benchmarks)[0]) => b.gender === null || b.gender === athleteGender;
+
+  return (
+    benchmarks.find((b) => genMatch(b) && ageMatch(b)) ?? // P1: keduanya cocok
+    benchmarks.find((b) => genMatch(b)) ??                 // P2: gender saja
+    benchmarks.find((b) => ageMatch(b)) ??                 // P3: usia saja
+    benchmarks[0]                                          // P4: fallback
+  );
 }
 
 export async function createAssessment(input: unknown) {
@@ -26,9 +52,17 @@ export async function createAssessment(input: unknown) {
   // Mencegah coach org A membuat assessment untuk atlet org B dengan menebak athleteId
   const athleteCheck = await prisma.athlete.findFirst({
     where: { id: parsed.athleteId, organizationId: ctx.organizationId, isActive: true },
-    select: { id: true },
+    select: { id: true, gender: true, dateOfBirth: true },
   });
   if (!athleteCheck) throw new Error("Atlet tidak ditemukan di organisasi ini");
+
+  // Hitung usia atlet pada tanggal assessment (bukan hari ini)
+  // agar assessment historis tetap akurat.
+  const assessmentDate = new Date(parsed.assessmentDate);
+  const athleteAge = Math.floor(
+    (assessmentDate.getTime() - athleteCheck.dateOfBirth.getTime()) /
+      (1000 * 60 * 60 * 24 * 365.25)
+  );
 
   // Ambil data test item & benchmarks untuk kalkulasi
   const testItemIds = parsed.results.map((r) => r.testItemId);
@@ -46,7 +80,7 @@ export async function createAssessment(input: unknown) {
 
   const engineItems: TestItemValue[] = parsed.results.map((res) => {
     const itemDef = testItemMap.get(res.testItemId);
-    const bm = itemDef?.benchmarks[0];
+    const bm = pickBestBenchmark(itemDef?.benchmarks || [], athleteCheck.gender, athleteAge);
 
     return {
       testItemId: res.testItemId,
@@ -100,6 +134,10 @@ export async function createAssessment(input: unknown) {
 
   revalidatePath("/athletes");
   revalidatePath("/dashboard");
+  revalidatePath("/reports");
+  revalidatePath("/progress");
+  revalidatePath("/compare");
+  revalidatePath("/assessments");
 
   return assessment;
 }
