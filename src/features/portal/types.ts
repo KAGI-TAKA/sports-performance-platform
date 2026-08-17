@@ -94,3 +94,22 @@ export interface PortalReportItem {
   overallGrade: string | null;
   pdfUrl: string;
 }
+
+export interface PortalBadge {
+  id: string;
+  name: string;
+  description: string;
+  category: "MILESTONE" | "PERFORMANCE" | "CONSISTENCY" | "PROGRESS" | "MASTERY";
+  earned: boolean;
+  earnedDate: string | null;
+  iconKey: "ShieldCheck" | "Award" | "Zap" | "TrendingUp" | "Dumbbell";
+}
+
+export interface PortalAchievementData {
+  starRating: number; // 0 to 5 stars
+  starLabel: string;
+  totalAssessments: number;
+  completedSessions: number;
+  badges: PortalBadge[];
+}
+

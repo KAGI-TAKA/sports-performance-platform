@@ -260,7 +260,6 @@ export function AssessmentReportPDF({
   dateOfBirth,
   age,
   club,
-  position,
   assessmentDate,
   overallScore,
   overallGrade,
@@ -277,15 +276,15 @@ export function AssessmentReportPDF({
     <Document
       title={`Laporan Fisik — ${athleteName}`}
       author="Kinetiq Performance Platform"
-      subject="Analisis Fisik Atlet Bolabasket"
+      subject="Analisis Fisik & Performance Atlet"
     >
       {/* ── PAGE 1 ── */}
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>POWER UP PRIVATE TRAINING</Text>
-            <Text style={styles.headerSub}>Sports Performance Assessment Report (Powered by Kinetiq)</Text>
+            <Text style={styles.headerTitle}>SPORTS PERFORMANCE REPORT</Text>
+            <Text style={styles.headerSub}>Athlete Physical Assessment Report (Powered by Kinetiq)</Text>
             <Text style={[styles.headerSub, { marginTop: 4, color: C.textSecondary }]}>
               {orgName}
             </Text>
@@ -318,12 +317,12 @@ export function AssessmentReportPDF({
             <Text style={styles.profileValue}>{age} tahun</Text>
           </View>
           <View style={styles.profileCell}>
-            <Text style={styles.profileLabel}>Klub / Akademi</Text>
-            <Text style={styles.profileValue}>{club || "—"}</Text>
+            <Text style={styles.profileLabel}>Organisasi / Center</Text>
+            <Text style={styles.profileValue}>{orgName || "—"}</Text>
           </View>
           <View style={styles.profileCell}>
-            <Text style={styles.profileLabel}>Posisi</Text>
-            <Text style={styles.profileValue}>{position}</Text>
+            <Text style={styles.profileLabel}>Training Level</Text>
+            <Text style={styles.profileValue}>{club || "Pemula"}</Text>
           </View>
         </View>
 

@@ -25,7 +25,7 @@ export function formatAssessmentWhatsAppText(
     data.overallScore != null ? `${data.overallScore.toFixed(1)}%` : "—";
   const gradeStr = data.overallGrade ?? "—";
 
-  let text = `🏀 *KINETIQ - LAPORAN HASIL TES FISIK*\n`;
+  let text = `⚡ *KINETIQ - LAPORAN HASIL TES FISIK ATLET*\n`;
   text += `------------------------------------\n`;
   text += `👤 *Atlet:* ${data.athleteName}\n`;
   text += `📅 *Tanggal:* ${formattedDate}\n`;

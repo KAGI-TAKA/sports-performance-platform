@@ -10,6 +10,7 @@ import type {
   PortalScheduleSession,
   PortalSessionLog,
   PortalReportItem,
+  PortalAchievementData,
 } from "../types";
 import {
   Activity,
@@ -28,6 +29,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Star,
+  Lock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,6 +48,7 @@ interface PortalViewProps {
   schedule: PortalScheduleSession[];
   sessionLogs: PortalSessionLog[];
   reports: PortalReportItem[];
+  achievements: PortalAchievementData;
 }
 
 export function PortalView({
@@ -56,9 +60,10 @@ export function PortalView({
   schedule,
   sessionLogs,
   reports,
+  achievements,
 }: PortalViewProps) {
   const [activeTab, setActiveTab] = useState<
-    "PROGRESS" | "PLAN" | "SCHEDULE" | "LOGS" | "REPORTS"
+    "PROGRESS" | "ACHIEVEMENTS" | "PLAN" | "SCHEDULE" | "LOGS" | "REPORTS"
   >("PROGRESS");
 
   const gradeBadgeVariant = (grade: string | null): "success" | "accent" | "warning" | "danger" => {
@@ -74,6 +79,24 @@ export function PortalView({
     month: "long",
     year: "numeric",
   });
+
+  const renderBadgeIcon = (iconKey: string, earned: boolean) => {
+    const iconClass = `h-5 w-5 ${earned ? "text-amber-500" : "text-slate-400"}`;
+    switch (iconKey) {
+      case "ShieldCheck":
+        return <ShieldCheck className={iconClass} />;
+      case "Award":
+        return <Award className={iconClass} />;
+      case "Zap":
+        return <Zap className={iconClass} />;
+      case "TrendingUp":
+        return <TrendingUp className={iconClass} />;
+      case "Dumbbell":
+        return <Dumbbell className={iconClass} />;
+      default:
+        return <Award className={iconClass} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-16">
@@ -104,30 +127,51 @@ export function PortalView({
                 )}
               </div>
               <p className="mt-1 text-xs text-indigo-200">
-                {profile.position !== "UNSPECIFIED" ? profile.position.replace(/_/g, " ") : "Atlet"}{" "}
-                · {profile.age} Tahun ({formattedDOB}) ·{" "}
-                {profile.competitionLevel ?? "Kinetiq Performance"}
+                Level: <span className="font-semibold text-white">{profile.competitionLevel ?? "Pemula"}</span> · {profile.age} Tahun ({formattedDOB})
               </p>
             </div>
 
-            {/* Performance Summary Pill */}
-            {snapshot && (
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15">
-                <div className="text-center px-2">
-                  <div className="text-[10px] text-indigo-200 uppercase font-semibold">Skor Performa</div>
-                  <div className="text-2xl font-bold text-white font-mono">
-                    {snapshot.overallScore != null ? snapshot.overallScore.toFixed(1) : "—"}%
-                  </div>
-                </div>
-                <div className="h-8 w-px bg-white/20" />
-                <div className="text-center px-2">
-                  <div className="text-[10px] text-indigo-200 uppercase font-semibold">Grade</div>
-                  <div className="text-lg font-extrabold text-amber-400">
-                    {snapshot.overallGrade ?? "—"}
-                  </div>
+            {/* Performance Summary & Star Rating Pill */}
+            <div className="flex flex-wrap items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15">
+              {/* Star Rating Display */}
+              <div className="text-center px-2">
+                <div className="text-[10px] text-indigo-200 uppercase font-semibold">Bintang Performance</div>
+                <div
+                  className="flex items-center justify-center gap-0.5 mt-0.5"
+                  aria-label={`${achievements.starRating} dari 5 bintang performa`}
+                >
+                  {[1, 2, 3, 4, 5].map((starIndex) => (
+                    <Star
+                      key={starIndex}
+                      className={`h-4 w-4 ${
+                        starIndex <= achievements.starRating
+                          ? "text-amber-400 fill-amber-400"
+                          : "text-white/20"
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
-            )}
+
+              {snapshot && (
+                <>
+                  <div className="h-8 w-px bg-white/20" />
+                  <div className="text-center px-2">
+                    <div className="text-[10px] text-indigo-200 uppercase font-semibold">Skor Performa</div>
+                    <div className="text-xl font-bold text-white font-mono">
+                      {snapshot.overallScore != null ? snapshot.overallScore.toFixed(1) : "—"}%
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-white/20" />
+                  <div className="text-center px-2">
+                    <div className="text-[10px] text-indigo-200 uppercase font-semibold">Grade</div>
+                    <div className="text-lg font-extrabold text-amber-400">
+                      {snapshot.overallGrade ?? "—"}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -146,6 +190,17 @@ export function PortalView({
           >
             <Activity className="h-4 w-4" />
             Performa ({progress.totalAssessments})
+          </button>
+          <button
+            onClick={() => setActiveTab("ACHIEVEMENTS")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 transition shrink-0 ${
+              activeTab === "ACHIEVEMENTS"
+                ? "bg-[#4F46E5] text-white shadow-xs"
+                : "text-muted hover:text-foreground hover:bg-surface-2"
+            }`}
+          >
+            <Award className="h-4 w-4" />
+            Prestasi &amp; Lencana ({achievements.badges.filter((b) => b.earned).length}/{achievements.badges.length})
           </button>
           <button
             onClick={() => setActiveTab("PLAN")}
@@ -193,7 +248,126 @@ export function PortalView({
           </button>
         </div>
 
-        {/* TAB 1: PROGRESS & SNAPSHOT */}
+        {/* TAB 2: ATHLETE ACHIEVEMENTS & BADGES */}
+        {activeTab === "ACHIEVEMENTS" && (
+          <div className="space-y-6">
+            {/* Stars Recognition Header Card */}
+            <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 p-6 text-white shadow-md space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    Athlete Performance Recognition
+                  </span>
+                  <h3 className="font-display text-xl font-bold tracking-tight text-white">
+                    {achievements.starLabel}
+                  </h3>
+                  <p className="text-xs text-indigo-200/80 max-w-lg">
+                    Pengakuan bintang atlet diukur dari konsistensi dan capaian grade evaluasi fisik resmi yang dilakukan oleh tim pelatih.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-white/10 p-3 rounded-xl border border-white/15 self-start sm:self-auto">
+                  {[1, 2, 3, 4, 5].map((starIndex) => (
+                    <Star
+                      key={starIndex}
+                      className={`h-6 w-6 ${
+                        starIndex <= achievements.starRating
+                          ? "text-amber-400 fill-amber-400 drop-shadow-sm"
+                          : "text-white/20"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/15 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-indigo-200">
+                <div>
+                  <span className="text-[10px] text-indigo-300/70 block uppercase font-medium">Evaluasi Fisik</span>
+                  <strong className="text-white text-sm font-mono">{achievements.totalAssessments} Selesai</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-indigo-300/70 block uppercase font-medium">Sesi Latihan</span>
+                  <strong className="text-white text-sm font-mono">{achievements.completedSessions} Sesi</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-indigo-300/70 block uppercase font-medium">Lencana Terbuka</span>
+                  <strong className="text-amber-400 text-sm font-mono">
+                    {achievements.badges.filter((b) => b.earned).length} / {achievements.badges.length} Badge
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Badges Grid */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Award className="h-4 w-4 text-amber-500" />
+                  Lencana Prestasi Atlet (Physical Badges)
+                </h3>
+                <span className="text-xs text-muted">
+                  {achievements.badges.filter((b) => b.earned).length} dari {achievements.badges.length} Terbuka
+                </span>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {achievements.badges.map((badge) => (
+                  <div
+                    key={badge.id}
+                    className={`rounded-xl p-4 border transition flex items-start gap-3.5 ${
+                      badge.earned
+                        ? "bg-white border-amber-400/40 shadow-sm ring-1 ring-amber-400/20"
+                        : "bg-surface-2/60 border-border/70 text-muted opacity-80"
+                    }`}
+                  >
+                    <div
+                      className={`p-2.5 rounded-xl shrink-0 flex items-center justify-center ${
+                        badge.earned
+                          ? "bg-amber-400/15 border border-amber-400/30"
+                          : "bg-surface-3 border border-border"
+                      }`}
+                    >
+                      {renderBadgeIcon(badge.iconKey, badge.earned)}
+                    </div>
+
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4
+                          className={`font-bold text-xs truncate ${
+                            badge.earned ? "text-foreground font-display" : "text-muted"
+                          }`}
+                        >
+                          {badge.name}
+                        </h4>
+                        {badge.earned ? (
+                          <Badge variant="success" className="text-[9.5px] py-0 px-1.5 shrink-0">
+                            Terbuka
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9.5px] py-0 px-1.5 shrink-0 text-muted border-border">
+                            <Lock className="h-2.5 w-2.5 mr-0.5" /> Terkunci
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="text-[11px] leading-relaxed text-muted line-clamp-2">
+                        {badge.description}
+                      </p>
+
+                      {badge.earned && badge.earnedDate && (
+                        <div className="text-[10px] text-emerald-600 font-medium font-mono pt-1">
+                          Capaian: {badge.earnedDate}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === "PROGRESS" && (
           <div className="space-y-6">
             {/* Snapshot Highlights */}

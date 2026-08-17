@@ -4,6 +4,17 @@
  */
 
 /**
+ * Converts a Date object or ISO string to local YYYY-MM-DD format (avoids UTC shift bug).
+ */
+export function toLocalDateStr(dateInput: Date | string): string {
+  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Returns a Date set to 00:00:00.000 for a given Date or ISO date string (YYYY-MM-DD).
  */
 export function getStartOfDay(dateInput?: string | Date): Date {
@@ -105,13 +116,13 @@ export function getCalendarDaysForMonth(year: number, month: number): CalendarDa
   let startDayOfWeek = firstDayOfMonth.getDay() - 1;
   if (startDayOfWeek === -1) startDayOfWeek = 6;
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = toLocalDateStr(new Date());
   const days: CalendarDay[] = [];
 
   // Previous month padding days
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const d = new Date(year, month, -i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = toLocalDateStr(d);
     days.push({
       date: d,
       dateStr,
@@ -125,7 +136,7 @@ export function getCalendarDaysForMonth(year: number, month: number): CalendarDa
   const totalDays = lastDayOfMonth.getDate();
   for (let day = 1; day <= totalDays; day++) {
     const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = toLocalDateStr(d);
     days.push({
       date: d,
       dateStr,
@@ -139,7 +150,7 @@ export function getCalendarDaysForMonth(year: number, month: number): CalendarDa
   const remaining = (7 - (days.length % 7)) % 7;
   for (let i = 1; i <= remaining; i++) {
     const d = new Date(year, month + 1, i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = toLocalDateStr(d);
     days.push({
       date: d,
       dateStr,
@@ -159,4 +170,3 @@ export function formatMonthHeader(year: number, month: number): string {
   const d = new Date(year, month, 1);
   return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 }
-

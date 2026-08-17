@@ -14,7 +14,9 @@ import {
   ClipboardCheck,
   ShieldAlert,
   Plus,
+  Star,
 } from "lucide-react";
+import { calculateStarRating } from "@/features/portal/achievements";
 
 type AthleteWithRelations = Athlete & {
   injuryHistories: AthleteInjuryHistory[];
@@ -123,10 +125,8 @@ export function AthleteDetailPanel({
           <h2 className="font-display text-base font-bold text-foreground truncate">
             {athlete.fullName}
           </h2>
-          <p className="mt-0.5 text-xs text-muted">
-            {athlete.position !== "UNSPECIFIED"
-              ? athlete.position.replace(/_/g, " ").toLowerCase()
-              : "Posisi belum diisi"}
+          <p className="mt-0.5 text-xs text-muted font-medium">
+            Level: <span className="text-foreground font-semibold">{athlete.competitionLevel ?? "Pemula"}</span>
             {age != null && ` · ${age} tahun`}
             {athlete.jerseyNumber != null && ` · #${athlete.jerseyNumber}`}
           </p>
@@ -185,13 +185,28 @@ export function AthleteDetailPanel({
         ))}
       </div>
 
-      {/* Last score quick badge */}
+      {/* Last score & Star Rating quick badge */}
       {lastAssessment?.overallScore != null && (
         <div className="flex items-center gap-2.5 rounded-lg bg-accent/8 border border-accent/20 px-4 py-2.5">
           <div>
-            <div className="text-[10px] text-muted font-medium uppercase tracking-wide">Skor Terakhir</div>
-            <div className="text-lg font-bold font-mono text-accent">
-              {Number(lastAssessment.overallScore).toFixed(1)}%
+            <div className="text-[10px] text-muted font-medium uppercase tracking-wide">Skor Terakhir &amp; Rating</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-lg font-bold font-mono text-accent">
+                {Number(lastAssessment.overallScore).toFixed(1)}%
+              </span>
+              <div className="flex items-center gap-0.5" title={calculateStarRating(Number(lastAssessment.overallScore), lastAssessment.overallGrade).label}>
+                {[1, 2, 3, 4, 5].map((starIndex) => {
+                  const rating = calculateStarRating(Number(lastAssessment.overallScore), lastAssessment.overallGrade).stars;
+                  return (
+                    <Star
+                      key={starIndex}
+                      className={`h-3.5 w-3.5 ${
+                        starIndex <= rating ? "text-amber-400 fill-amber-400" : "text-border"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
           {lastAssessment.overallGrade && (

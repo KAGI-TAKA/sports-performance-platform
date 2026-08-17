@@ -6,6 +6,7 @@ import {
   getPortalAthleteSchedule,
   getPortalAthleteSessionLogs,
   getPortalAthleteReports,
+  getPortalAthleteAchievements,
 } from "@/features/portal/queries";
 import { PortalView } from "@/features/portal/components/portal-view";
 import { ShieldAlert, Clock, Ban, UserX } from "lucide-react";
@@ -60,7 +61,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
     );
   }
 
-  const [profileData, progressData, planData, scheduleData, logsData, reportsData] =
+  const [profileData, progressData, planData, scheduleData, logsData, reportsData, achievementsData] =
     await Promise.all([
       getPortalAthleteProfile(token),
       getPortalAthleteProgress(token),
@@ -68,6 +69,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       getPortalAthleteSchedule(token),
       getPortalAthleteSessionLogs(token),
       getPortalAthleteReports(token),
+      getPortalAthleteAchievements(token),
     ]);
 
   if (!profileData || !progressData) {
@@ -101,6 +103,13 @@ export default async function PortalPage({ params }: PortalPageProps) {
       schedule={scheduleData?.sessions ?? []}
       sessionLogs={logsData?.logs ?? []}
       reports={reportsData?.reports ?? []}
+      achievements={achievementsData?.achievements ?? {
+        starRating: 0,
+        starLabel: "Belum Ada Evaluasi",
+        totalAssessments: 0,
+        completedSessions: 0,
+        badges: [],
+      }}
     />
   );
 }

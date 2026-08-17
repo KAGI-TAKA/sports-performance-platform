@@ -315,6 +315,9 @@ export async function getPortalAthleteSessionLogs(
   return { context, logs };
 }
 
+import { getAthleteAchievements } from "./achievements";
+import type { PortalAchievementData } from "./types";
+
 export async function getPortalAthleteReports(rawToken: string): Promise<{
   context: PortalAccessContext;
   reports: PortalReportItem[];
@@ -343,3 +346,63 @@ export async function getPortalAthleteReports(rawToken: string): Promise<{
 
   return { context, reports };
 }
+
+export async function getPortalAthleteAchievements(
+  rawToken: string
+): Promise<{
+  context: PortalAccessContext;
+  achievements: PortalAchievementData;
+} | null> {
+  const auth = await getPortalContextByToken(rawToken);
+  if (!auth.success) return null;
+
+  const { context } = auth;
+
+  const [assessmentsCount, latestAssessment, completedSessionsCount] = await Promise.all([
+    prisma.assessment.count({
+      where: {
+        organizationId: context.organizationId,
+        athleteId: context.athleteId,
+        status: "COMPLETED",
+      },
+    }),
+    prisma.assessment.findFirst({
+      where: {
+        organizationId: context.organizationId,
+        athleteId: context.athleteId,
+        status: "COMPLETED",
+      },
+      orderBy: [{ assessmentDate: "desc" }, { createdAt: "desc" }],
+      include: { analysis: true },
+    }),
+    prisma.scheduleSession.count({
+      where: {
+        organizationId: context.organizationId,
+        athletes: { some: { athleteId: context.athleteId } },
+        status: "COMPLETED",
+      },
+    }),
+  ]);
+
+  const progressData = await getPortalAthleteProgress(rawToken);
+  const reportsData = await getPortalAthleteReports(rawToken);
+
+  const overallScore = latestAssessment?.overallScore
+    ? Number(latestAssessment.overallScore)
+    : null;
+  const overallGrade = latestAssessment?.overallGrade ?? null;
+  const bestComponent = latestAssessment?.analysis?.bestComponent ?? null;
+
+  const achievements = getAthleteAchievements({
+    totalAssessments: assessmentsCount,
+    completedSessions: completedSessionsCount,
+    overallScore,
+    overallGrade,
+    bestComponent,
+    trends: progressData?.trends ?? [],
+    reports: reportsData?.reports ?? [],
+  });
+
+  return { context, achievements };
+}
+

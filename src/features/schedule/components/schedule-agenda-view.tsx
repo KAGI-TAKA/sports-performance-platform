@@ -30,6 +30,7 @@ import {
   Edit2,
   FileText,
 } from "lucide-react";
+import { formatDateHeader, formatTimeRange, toLocalDateStr } from "../utils";
 
 export interface ScheduleSessionItem {
   id: string;
@@ -67,8 +68,6 @@ interface ScheduleAgendaViewProps {
   currentStatusFilter?: string;
 }
 
-import { formatDateHeader, formatTimeRange } from "../utils";
-
 export function ScheduleAgendaView({
   sessions,
   coaches,
@@ -89,7 +88,7 @@ export function ScheduleAgendaView({
   const [coachFilter, setCoachFilter] = useState<string>(currentCoachFilter ?? "ALL");
 
   // Date Navigation State
-  const todayIso = new Date().toISOString().split("T")[0];
+  const todayIso = toLocalDateStr(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(
     currentDateFilter ?? null
   );
@@ -97,7 +96,7 @@ export function ScheduleAgendaView({
   function navigateDay(offset: number) {
     const base = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
     base.setDate(base.getDate() + offset);
-    const newDateStr = base.toISOString().split("T")[0];
+    const newDateStr = toLocalDateStr(base);
     setSelectedDate(newDateStr);
 
     const params = new URLSearchParams(window.location.search);
@@ -161,7 +160,7 @@ export function ScheduleAgendaView({
   const filteredSessions = sessions.filter((s) => {
     // 1. Date Filter
     if (selectedDate) {
-      const sDateStr = new Date(s.startTime).toISOString().split("T")[0];
+      const sDateStr = toLocalDateStr(s.startTime);
       if (sDateStr !== selectedDate) return false;
     }
     // 2. Coach Filter
@@ -189,7 +188,7 @@ export function ScheduleAgendaView({
   // Group filtered sessions by Date (YYYY-MM-DD)
   const grouped: Record<string, ScheduleSessionItem[]> = {};
   filteredSessions.forEach((s) => {
-    const key = new Date(s.startTime).toISOString().split("T")[0];
+    const key = toLocalDateStr(s.startTime);
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(s);
   });

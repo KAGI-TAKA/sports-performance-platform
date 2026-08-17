@@ -35,6 +35,7 @@ import {
   formatMonthHeader,
   formatDateHeader,
   formatTimeRange,
+  toLocalDateStr,
 } from "../utils";
 
 interface ScheduleCalendarViewProps {
@@ -72,7 +73,7 @@ export function ScheduleCalendarView({
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
 
   // Selected Date State (defaults to today or currentDateFilter)
-  const todayIso = new Date().toISOString().split("T")[0];
+  const todayIso = toLocalDateStr(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(currentDateFilter ?? todayIso);
 
   // Filter Sessions
@@ -98,7 +99,7 @@ export function ScheduleCalendarView({
   // Map sessions by date (YYYY-MM-DD)
   const sessionsByDate: Record<string, ScheduleSessionItem[]> = {};
   filteredSessions.forEach((s) => {
-    const key = new Date(s.startTime).toISOString().split("T")[0];
+    const key = toLocalDateStr(s.startTime);
     if (!sessionsByDate[key]) sessionsByDate[key] = [];
     sessionsByDate[key].push(s);
   });

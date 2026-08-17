@@ -102,7 +102,7 @@ export function PortalAccessManager({
 
   function getWhatsAppShareUrl(token: string) {
     const url = getPortalUrl(token);
-    const text = `🏀 *LINK PORTAL EVALUASI ATLET*\n------------------------------------\n👤 *Atlet:* ${athleteName}\n\nBerikut adalah link akses resmi untuk melihat hasil evaluasi fisik, program latihan, dan jadwal sesi:\n🔗 ${url}\n\n_Link ini bersifat rahasia dan aman (read-only)._`;
+    const text = `⚡ *LINK PORTAL EVALUASI ATLET*\n------------------------------------\n👤 *Atlet:* ${athleteName}\n\nBerikut adalah link akses resmi untuk melihat hasil evaluasi fisik, program latihan, dan jadwal sesi:\n🔗 ${url}\n\n_Link ini bersifat rahasia dan aman (read-only)._`;
     const encodedText = encodeURIComponent(text);
 
     if (parentPhone) {

@@ -102,12 +102,15 @@ export function TestItemCreateForm({ physicalComponent, canCreate }: TestItemCre
         </div>
 
         <div className="space-y-1 w-20">
-          <label className="text-[11px] font-medium text-muted uppercase tracking-wide">Urutan</label>
+          <label className="text-[11px] font-medium text-muted uppercase tracking-wide" title="Menentukan urutan item saat ditampilkan pada formulir assessment">
+            Urutan
+          </label>
           <input
             name="order"
             type="number"
             defaultValue={99}
             required
+            title="Menentukan urutan item saat ditampilkan pada formulir assessment"
             className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
           />
         </div>
