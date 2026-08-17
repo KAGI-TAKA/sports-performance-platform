@@ -6,7 +6,7 @@ import {
 } from "@/features/schedule/queries";
 import { getStartOfDay, getEndOfDay } from "@/features/schedule/utils";
 import { ScheduleDialogForm } from "@/features/schedule/components/schedule-dialog-form";
-import { ScheduleAgendaView } from "@/features/schedule/components/schedule-agenda-view";
+import { ScheduleContainer } from "@/features/schedule/components/schedule-container";
 import { ExportCSVButton } from "@/features/export/components/export-csv-button";
 import type { ScheduleStatus } from "@prisma/client";
 
@@ -17,6 +17,7 @@ interface SchedulePageProps {
     date?: string;
     coachId?: string;
     status?: string;
+    view?: string;
   }>;
 }
 
@@ -112,8 +113,8 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
         </div>
       </div>
 
-      {/* Agenda List & Date Navigation View */}
-      <ScheduleAgendaView
+      {/* Schedule Dual View (Calendar + Agenda) */}
+      <ScheduleContainer
         sessions={sessions}
         coaches={coaches}
         athletes={athletes}

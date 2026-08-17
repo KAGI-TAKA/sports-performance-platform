@@ -83,3 +83,80 @@ export function formatTimeRange(start: Date, end: Date): string {
   });
   return `${s} - ${e} WIB`;
 }
+
+export interface CalendarDay {
+  date: Date;
+  dateStr: string; // YYYY-MM-DD
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+}
+
+/**
+ * Generates array of days to render in a 7-column month grid (Monday to Sunday).
+ * Includes padding days from previous and next months.
+ */
+export function getCalendarDaysForMonth(year: number, month: number): CalendarDay[] {
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  // Day of week for 1st of month (0 = Sun, 1 = Mon, ..., 6 = Sat)
+  // Convert so Monday = 0, Sunday = 6
+  let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+  if (startDayOfWeek === -1) startDayOfWeek = 6;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const days: CalendarDay[] = [];
+
+  // Previous month padding days
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    const dateStr = d.toISOString().split("T")[0];
+    days.push({
+      date: d,
+      dateStr,
+      dayNumber: d.getDate(),
+      isCurrentMonth: false,
+      isToday: dateStr === todayStr,
+    });
+  }
+
+  // Current month days
+  const totalDays = lastDayOfMonth.getDate();
+  for (let day = 1; day <= totalDays; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split("T")[0];
+    days.push({
+      date: d,
+      dateStr,
+      dayNumber: day,
+      isCurrentMonth: true,
+      isToday: dateStr === todayStr,
+    });
+  }
+
+  // Next month padding days to complete 7-col grid (up to multiple of 7)
+  const remaining = (7 - (days.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const d = new Date(year, month + 1, i);
+    const dateStr = d.toISOString().split("T")[0];
+    days.push({
+      date: d,
+      dateStr,
+      dayNumber: d.getDate(),
+      isCurrentMonth: false,
+      isToday: dateStr === todayStr,
+    });
+  }
+
+  return days;
+}
+
+/**
+ * Formats year and month into Indonesian title (e.g., "Agustus 2026").
+ */
+export function formatMonthHeader(year: number, month: number): string {
+  const d = new Date(year, month, 1);
+  return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+}
+
