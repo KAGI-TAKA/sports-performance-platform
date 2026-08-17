@@ -9,7 +9,6 @@ import {
   Ruler,
   Weight,
   ArrowUpRight,
-  AlertTriangle,
   TrendingUp,
   ClipboardList,
   ClipboardCheck,
@@ -21,11 +20,6 @@ type AthleteWithRelations = Athlete & {
   injuryHistories: AthleteInjuryHistory[];
   assessments: Assessment[];
 };
-
-function calculateAge(dateOfBirth: Date): number {
-  const now = new Date();
-  return Math.floor((now.getTime() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-}
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString("id-ID", {

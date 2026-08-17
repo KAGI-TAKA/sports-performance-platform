@@ -37,7 +37,6 @@ export function SettingsMembersPanel({
   const [members, setMembers] = useState(initialMembers);
   const [removing, setRemoving] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleRemove(memberId: string, name: string) {
     if (!confirm(`Yakin ingin mengeluarkan ${name} dari organisasi?`)) return;

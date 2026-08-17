@@ -1,12 +1,28 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { seedDefaultTestItemsAndBenchmarks } from "../../../prisma/seed-defaults";
 
 export async function listTestItems(organizationId: string) {
-  return prisma.testItem.findMany({
+  let items = await prisma.testItem.findMany({
     where: { organizationId, isActive: true },
     include: { benchmarks: true },
     orderBy: { order: "asc" },
   });
+
+  if (items.length === 0) {
+    try {
+      await seedDefaultTestItemsAndBenchmarks(organizationId);
+      items = await prisma.testItem.findMany({
+        where: { organizationId, isActive: true },
+        include: { benchmarks: true },
+        orderBy: { order: "asc" },
+      });
+    } catch {
+      // Fallback cleanly
+    }
+  }
+
+  return items;
 }
 
 export async function getAssessmentById(organizationId: string, id: string) {
@@ -29,7 +45,11 @@ export async function getAssessmentById(organizationId: string, id: string) {
   });
 }
 
-export async function getPreviousAssessment(organizationId: string, athleteId: string, currentDate: Date) {
+export async function getPreviousAssessment(
+  organizationId: string,
+  athleteId: string,
+  currentDate: Date
+) {
   return prisma.assessment.findFirst({
     where: {
       organizationId,
@@ -42,26 +62,43 @@ export async function getPreviousAssessment(organizationId: string, athleteId: s
   });
 }
 
-export const REPORTS_PER_PAGE = 10;
+export const ASSESSMENTS_PER_PAGE = 10;
+export const REPORTS_PER_PAGE = ASSESSMENTS_PER_PAGE;
 
 export async function listAssessments(
   organizationId: string,
-  page = 1
+  opts?: { search?: string; page?: number } | number
 ) {
-  const skip = (Math.max(1, page) - 1) * REPORTS_PER_PAGE;
+  const pageParam = typeof opts === "number" ? opts : opts?.page ?? 1;
+  const searchParam = typeof opts === "object" ? opts?.search : undefined;
 
-  const where = { organizationId };
+  const page = Math.max(1, pageParam);
+  const skip = (page - 1) * ASSESSMENTS_PER_PAGE;
+
+  const where = {
+    organizationId,
+    ...(searchParam
+      ? {
+          athlete: {
+            fullName: { contains: searchParam, mode: "insensitive" as const },
+          },
+        }
+      : {}),
+  };
 
   const [assessments, total] = await prisma.$transaction([
     prisma.assessment.findMany({
       where,
       include: {
         athlete: {
-          select: { fullName: true, position: true, photoUrl: true },
+          select: { id: true, fullName: true, position: true, photoUrl: true, jerseyNumber: true },
+        },
+        analysis: {
+          select: { bestComponent: true, insightText: true, weakestComponents: true },
         },
       },
       orderBy: { assessmentDate: "desc" },
-      take: REPORTS_PER_PAGE,
+      take: ASSESSMENTS_PER_PAGE,
       skip,
     }),
     prisma.assessment.count({ where }),
@@ -69,4 +106,3 @@ export async function listAssessments(
 
   return { assessments, total };
 }
-

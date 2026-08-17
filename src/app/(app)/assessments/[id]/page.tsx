@@ -3,7 +3,40 @@ import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAssessmentById, getPreviousAssessment } from "@/features/assessments/queries";
 import { AssessmentRadarChart } from "@/features/assessments/components/radar-chart";
-import { PhysicalComponent } from "@prisma/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { scoreToGrade } from "@/lib/constants";
+import {
+  ArrowLeft,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  Download,
+  Bot,
+  Sparkles,
+  ChevronRight,
+  ShieldAlert,
+} from "lucide-react";
+
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+const GRADE_BADGE_VARIANTS: Record<string, "success" | "accent" | "warning" | "danger"> = {
+  A: "success",
+  "B+": "accent",
+  B: "accent",
+  "C+": "warning",
+  C: "warning",
+  D: "danger",
+};
 
 export default async function AssessmentDetailPage({
   params,
@@ -26,197 +59,251 @@ export default async function AssessmentDetailPage({
   const prevScore = prevAssessment ? Number(prevAssessment.overallScore ?? 0) : null;
   const scoreDelta = prevScore != null ? currentScore - prevScore : null;
 
-  // Parse componentScores JSON from analysis
+  // Parse componentScores JSON from analysis safely
   let componentScores: Record<string, number> = {};
   if (assessment.analysis?.componentScores) {
     try {
-      componentScores = typeof assessment.analysis.componentScores === "string"
-        ? JSON.parse(assessment.analysis.componentScores)
-        : (assessment.analysis.componentScores as Record<string, number>);
-    } catch (e) {
+      componentScores =
+        typeof assessment.analysis.componentScores === "string"
+          ? JSON.parse(assessment.analysis.componentScores)
+          : (assessment.analysis.componentScores as Record<string, number>);
+    } catch {
       componentScores = {};
     }
   }
 
   const bestComponent = assessment.analysis?.bestComponent;
   const weakestComponents = assessment.analysis?.weakestComponents ?? [];
+  const grade = assessment.overallGrade || scoreToGrade(currentScore);
 
   return (
-    <div className="mx-auto max-w-5xl p-7 space-y-6">
-      {/* Top Header & Breadcrumb */}
-      <div className="flex items-center justify-between border-b border-border pb-4">
-        <div>
-          <div className="text-xs text-muted mb-1">
-            <Link href="/athletes" className="hover:underline">
-              Atlet
-            </Link>{" "}
-            /{" "}
-            <Link href={`/athletes?athleteId=${assessment.athleteId}`} className="hover:underline">
-              {assessment.athlete.fullName}
-            </Link>{" "}
-            / Assessment
-          </div>
-          <h1 className="font-display text-lg font-semibold text-foreground">
-            Hasil Assessment Fisik — {assessment.athlete.fullName}
-          </h1>
-          <p className="text-xs text-muted mt-0.5">
-            Tanggal Tes:{" "}
-            {new Date(assessment.assessmentDate).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-
+    <div className="space-y-6 max-w-[1400px]">
+      {/* Top Header & Navigation Breadcrumb */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div className="flex items-center gap-3">
-          <Link
-            href={`/api/assessments/${assessment.id}/pdf`}
-            target="_blank"
-            className="rounded-md bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition shadow-sm"
-          >
-            📄 Generate PDF
+          <Link href="/assessments">
+            <Button variant="outline" size="xs" className="gap-1">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Kembali
+            </Button>
           </Link>
-          <Link
-            href={`/athletes?athleteId=${assessment.athleteId}`}
-            className="rounded-md border border-border px-4 py-2 text-xs font-medium text-secondary hover:bg-surface-2"
-          >
-            Simpan
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-xl font-bold text-foreground tracking-tight sm:text-2xl">
+                Hasil Assessment Fisik — {assessment.athlete.fullName}
+              </h1>
+              <Badge variant="accent" className="font-mono text-xs">
+                Grade {grade}
+              </Badge>
+            </div>
+            <p className="mt-0.5 text-xs text-muted">
+              {assessment.athlete.position !== "UNSPECIFIED"
+                ? assessment.athlete.position.replace(/_/g, " ")
+                : "Posisi —"}{" "}
+              · Tanggal Tes: {formatDate(assessment.assessmentDate)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link href={`/api/assessments/${assessment.id}/pdf`} target="_blank">
+            <Button size="xs" className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5 shadow-sm">
+              <Download className="h-3.5 w-3.5" />
+              Export PDF
+            </Button>
+          </Link>
+          <Link href={`/athletes/${assessment.athleteId}`}>
+            <Button variant="outline" size="xs" className="gap-1">
+              Profil Atlet <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
           </Link>
         </div>
       </div>
 
-      {/* Top Stat Cards (Wireframe 4) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-indigo-950/40 p-5 border-indigo-800/40">
-          <div className="text-xs text-indigo-300 font-medium">Skor Keseluruhan</div>
-          <div className="font-mono text-4xl font-extrabold text-white mt-2">
-            {assessment.overallScore != null ? `${Number(assessment.overallScore).toFixed(2)}%` : "—"}
-          </div>
-        </div>
+      {/* Top Summary Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Overall Score */}
+        <Card className="border-accent/30 bg-accent-bg/30">
+          <CardContent className="p-5">
+            <span className="text-xs font-semibold text-accent uppercase tracking-wider block">
+              Skor Assessment Keseluruhan
+            </span>
+            <div className="font-display text-3xl font-bold text-foreground font-mono mt-1">
+              {currentScore}%
+            </div>
+            <p className="text-[11px] text-muted mt-1">Agregat 7 komponen fisik standar</p>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-lg border border-border bg-emerald-950/40 p-5 border-emerald-800/40">
-          <div className="text-xs text-emerald-300 font-medium">Grade</div>
-          <div className="font-mono text-4xl font-extrabold text-emerald-400 mt-2 uppercase">
-            {assessment.overallGrade || "—"}
-          </div>
-        </div>
+        {/* Overall Grade */}
+        <Card className="border-success/30 bg-success-bg/30">
+          <CardContent className="p-5">
+            <span className="text-xs font-semibold text-success uppercase tracking-wider block">
+              Predikat Performance
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-display text-3xl font-bold text-foreground font-mono">
+                Grade {grade}
+              </span>
+              <Badge variant={GRADE_BADGE_VARIANTS[grade] ?? "accent"} className="text-sm px-2.5 py-0.5">
+                {grade}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted mt-1">Ambang batas acuan nasional U-12/U-18</p>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-lg border border-border bg-surface-1 p-5">
-          <div className="text-xs text-muted font-medium">Dibanding Assessment Lalu</div>
-          <div className="mt-2 flex items-baseline gap-2">
+        {/* Previous Assessment Comparison */}
+        <Card>
+          <CardContent className="p-5">
+            <span className="text-xs font-semibold text-muted uppercase tracking-wider block">
+              Progres vs Assessment Lalu
+            </span>
             {scoreDelta != null ? (
-              <>
-                <span
-                  className={`font-mono text-2xl font-bold ${
-                    scoreDelta >= 0 ? "text-emerald-400" : "text-red-400"
-                  }`}
-                >
-                  {scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta} poin
-                </span>
+              <div className="flex items-center gap-2 mt-1">
+                {scoreDelta >= 0 ? (
+                  <div className="flex items-center gap-1 text-success font-bold text-lg font-mono">
+                    <TrendingUp className="h-5 w-5" />
+                    +{scoreDelta} poin
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-danger font-bold text-lg font-mono">
+                    <TrendingDown className="h-5 w-5" />
+                    {scoreDelta} poin
+                  </div>
+                )}
                 <span className="text-xs text-muted">
-                  ({scoreDelta >= 0 ? "meningkat" : "penurunan"})
+                  ({scoreDelta >= 0 ? "Peningkatan" : "Penurunan"})
                 </span>
-              </>
+              </div>
             ) : (
-              <span className="text-sm text-muted">Assessment Pertama</span>
+              <div className="text-sm font-semibold text-foreground mt-2">
+                Assessment Pertama (Baseline)
+              </div>
             )}
-          </div>
-        </div>
+            <p className="text-[11px] text-muted mt-1">
+              {prevAssessment
+                ? `Dibandingkan tes tanggal ${formatDate(prevAssessment.assessmentDate)}`
+                : "Belum ada tes sebelumnya sebagai pembanding"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Middle Grid: Radar Chart + Highlights */}
+      {/* Middle Section: 7-Component Radar Chart & Best/Weakest Highlights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Radar Chart */}
-        <div className="lg:col-span-2 rounded-lg border border-border bg-surface-1 p-5">
-          <h3 className="font-display text-sm font-semibold text-foreground mb-2">
-            Radar Chart 7 Komponen Fisik
-          </h3>
-          <AssessmentRadarChart componentScores={componentScores} />
-        </div>
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4 text-accent" />
+              Radar Chart 7 Komponen Fisik
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            <AssessmentRadarChart componentScores={componentScores} />
+          </CardContent>
+        </Card>
 
-        {/* Highlights Right Column */}
+        {/* Highlights Side Panel */}
         <div className="space-y-4">
-          <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 p-5">
-            <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              Komponen Terbaik
-            </div>
-            <div className="mt-2 text-base font-bold text-foreground capitalize">
-              {bestComponent ? bestComponent.replace(/_/g, " ").toLowerCase() : "—"}
-            </div>
-            <div className="mt-1 text-xs text-emerald-300/80">
-              Performa fisik paling menonjol pada sesi tes ini.
-            </div>
-          </div>
+          <Card className="border-success/30 bg-success-bg/20">
+            <CardContent className="p-5 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-success uppercase tracking-wider">
+                <Sparkles className="h-4 w-4" />
+                Komponen Fisik Terbaik
+              </div>
+              <div className="font-display text-base font-bold text-foreground capitalize">
+                {bestComponent ? bestComponent.replace(/_/g, " ").toLowerCase() : "—"}
+              </div>
+              <p className="text-xs text-muted">
+                Performa fisik paling menonjol pada tes ini.
+              </p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-lg border border-amber-800/50 bg-amber-950/30 p-5">
-            <div className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-              Perlu Perhatian
-            </div>
-            <div className="mt-2 text-base font-bold text-foreground capitalize">
-              {weakestComponents.length > 0
-                ? weakestComponents.map((w) => w.replace(/_/g, " ").toLowerCase()).join(", ")
-                : "—"}
-            </div>
-            <div className="mt-1 text-xs text-amber-300/80">
-              Perlu porsi latihan khusus untuk ditingkatkan.
-            </div>
-          </div>
+          <Card className="border-warning/30 bg-warning-bg/20">
+            <CardContent className="p-5 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-warning uppercase tracking-wider">
+                <ShieldAlert className="h-4 w-4" />
+                Fokus Penguatan (Weakest)
+              </div>
+              <div className="font-display text-base font-bold text-foreground capitalize">
+                {weakestComponents.length > 0
+                  ? weakestComponents.map((w) => w.replace(/_/g, " ").toLowerCase()).join(", ")
+                  : "—"}
+              </div>
+              <p className="text-xs text-muted">
+                Dibutuhkan latihan terprogram untuk meningkatkan komponen ini.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Bottom Section: Automated Insight & Recommendation Box */}
-      <div className="rounded-lg border border-border bg-surface-1 p-6 space-y-3">
-        <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2">
-          <span>🤖</span> Insight Otomatis & Rekomendasi Program
-        </h3>
-
-        <div className="rounded-md bg-surface-2 p-4 text-xs text-secondary space-y-2 leading-relaxed">
-          <p>{assessment.analysis?.insightText || "Belum ada analisis otomatis untuk assessment ini."}</p>
-          <p className="font-semibold text-foreground">
-            {assessment.analysis?.recommendationText || "Lanjutkan program latihan rutin."}
-          </p>
-        </div>
-      </div>
+      {/* Rule-Engine Automated Insight & Recommendation Box */}
+      <Card>
+        <CardHeader className="pb-3 border-b border-border/60">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bot className="h-4 w-4 text-accent" />
+            Insight &amp; Rekomendasi Program Latihan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 space-y-3">
+          <div className="p-4 rounded-xl bg-surface-2/60 border border-border/40 text-xs leading-relaxed space-y-2">
+            <p className="text-foreground">
+              {assessment.analysis?.insightText || "Analisis otomatis belum tersedia untuk tes ini."}
+            </p>
+            <p className="font-bold text-accent">
+              {assessment.analysis?.recommendationText || "Lanjutkan program latihan rutin 6-8 minggu."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detailed Result Items Table */}
-      <div className="rounded-lg border border-border bg-surface-1 p-6">
-        <h3 className="font-display text-sm font-semibold text-foreground mb-4">
-          Detail Hasil Tes Per Item
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-border bg-surface-2 text-muted uppercase">
-              <tr>
-                <th className="px-4 py-2.5">Item Tes</th>
-                <th className="px-4 py-2.5">Komponen Fisik</th>
-                <th className="px-4 py-2.5 text-right">Nilai Mentah</th>
-                <th className="px-4 py-2.5 text-right">Skor (0-100)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+      <Card>
+        <CardHeader className="pb-3 border-b border-border/60">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-accent" />
+            Rincian Hasiltes Per Item
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item Tes</TableHead>
+                <TableHead>Komponen Fisik</TableHead>
+                <TableHead className="text-right">Hasil Mentah (Raw)</TableHead>
+                <TableHead className="text-right">Skor Terhitung</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {assessment.resultItems.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-2/50">
-                  <td className="px-4 py-3 font-medium text-foreground">
+                <TableRow key={item.id}>
+                  <TableCell className="font-semibold text-xs text-foreground">
                     {item.testItem.name}
-                  </td>
-                  <td className="px-4 py-3 text-muted capitalize">
-                    {item.testItem.physicalComponent.replace("_", " ").toLowerCase()}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-foreground font-semibold">
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px]">
+                      {item.testItem.physicalComponent.replace(/_/g, " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
                     {item.rawValue != null
                       ? `${item.rawValue.toString()} ${item.testItem.unit.toLowerCase()}`
                       : item.qualitativeValue ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-accent font-bold">
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-bold text-xs text-accent">
                     {item.score?.toString() ?? "—"}%
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

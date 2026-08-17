@@ -9,8 +9,6 @@ import {
   Dumbbell,
   ListOrdered,
   Clock,
-  Tag,
-  AlignLeft,
   Loader2,
 } from "lucide-react";
 
@@ -227,7 +225,7 @@ export function ExerciseItemForm({
               Belum Ada Gerakan Latihan Ditambahkan
             </p>
             <p className="mt-1">
-              Klik "Tambah Gerakan Latihan" untuk mengisi menu latihan program ini.
+              Klik &quot;Tambah Gerakan Latihan&quot; untuk mengisi menu latihan program ini.
             </p>
           </div>
         ) : (
@@ -265,7 +263,7 @@ export function ExerciseItemForm({
 
                     {ex.notes && (
                       <p className="text-[11px] text-muted italic">
-                        "{ex.notes}"
+                        &quot;{ex.notes}&quot;
                       </p>
                     )}
                   </div>

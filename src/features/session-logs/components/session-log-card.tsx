@@ -120,7 +120,7 @@ export function SessionLogCard({ log }: SessionLogCardProps) {
               Evaluasi Pelatih
             </div>
             <p className="text-xs text-secondary italic bg-emerald-500/5 border border-emerald-500/10 p-2.5 rounded-lg leading-relaxed">
-              "{log.coachFeedback}"
+              &quot;{log.coachFeedback}&quot;
             </p>
           </div>
         )}

@@ -1,34 +1,25 @@
-"use client";
-
+import { Badge } from "@/components/ui/badge";
 import type { ScheduleStatus } from "@prisma/client";
 
 const STATUS_CONFIG: Record<
   ScheduleStatus,
-  { label: string; bg: string; text: string; border: string }
+  { label: string; variant: "accent" | "success" | "danger" | "warning" | "outline" }
 > = {
   SCHEDULED: {
     label: "Terjadwal",
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
-    border: "border-blue-500/20",
+    variant: "accent",
   },
   COMPLETED: {
     label: "Selesai",
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    border: "border-emerald-500/20",
+    variant: "success",
   },
   CANCELLED: {
     label: "Dibatalkan",
-    bg: "bg-surface-3",
-    text: "text-muted",
-    border: "border-border",
+    variant: "outline",
   },
   NO_SHOW: {
     label: "Tidak Hadir",
-    bg: "bg-rose-500/10",
-    text: "text-rose-400",
-    border: "border-rose-500/20",
+    variant: "danger",
   },
 };
 
@@ -36,10 +27,8 @@ export function ScheduleStatusBadge({ status }: { status: ScheduleStatus }) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.SCHEDULED;
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${config.bg} ${config.text} ${config.border}`}
-    >
+    <Badge variant={config.variant} className="text-[10px]">
       {config.label}
-    </span>
+    </Badge>
   );
 }

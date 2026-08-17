@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PhysicalComponent, ScoreDirection, MeasurementUnit } from "@prisma/client";
+import { PhysicalComponent } from "@prisma/client";
 
 export const physicalComponentEnum = z.nativeEnum(PhysicalComponent);
 

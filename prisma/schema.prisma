@@ -98,6 +98,7 @@ model Organization {
   scheduleSessions ScheduleSession[]
   trainingPlans    TrainingPlan[]
   sessionLogs      SessionLog[]
+  portalAccesses   PortalAccess[]
 
   @@map("organization")
 }
@@ -109,12 +110,13 @@ model Member {
   role           String   @default("assistant_coach")
   createdAt      DateTime @default(now())
 
-  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assessmentsCreated   Assessment[]
-  reportsGenerated     Report[]
+  organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentsCreated      Assessment[]
+  reportsGenerated        Report[]
   scheduleSessionsCoached ScheduleSession[]
-  sessionLogsCreated   SessionLog[]
+  sessionLogsCreated      SessionLog[]
+  portalAccessesCreated   PortalAccess[]
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -186,9 +188,37 @@ model Athlete {
   scheduleSessions ScheduleSessionAthlete[]
   trainingPlans    TrainingPlan[]
   sessionLogs      SessionLog[]
+  portalAccesses   PortalAccess[]
 
   @@index([organizationId])
   @@map("athlete")
+}
+
+// ============================================================
+// ATHLETE & PARENT SECURE PORTAL ACCESS
+// ============================================================
+
+model PortalAccess {
+  id                String    @id @default(cuid())
+  organizationId    String
+  athleteId         String
+  createdByMemberId String
+
+  tokenHash  String    @unique
+  accessType String    @default("ATHLETE") // "ATHLETE" | "PARENT"
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy    Member       @relation(fields: [createdByMemberId], references: [id])
+
+  @@index([organizationId, athleteId])
+  @@index([tokenHash])
+  @@map("portal_access")
 }
 
 model AthleteInjuryHistory {
@@ -403,6 +433,7 @@ model ScheduleSession {
   id             String         @id @default(cuid())
   organizationId String
   coachId        String
+  trainingPlanId String?
 
   title     String
   startTime DateTime
@@ -417,10 +448,12 @@ model ScheduleSession {
 
   organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   coach        Member                   @relation(fields: [coachId], references: [id])
+  trainingPlan TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
   athletes     ScheduleSessionAthlete[]
   sessionLog   SessionLog?
 
   @@index([organizationId, startTime])
+  @@index([trainingPlanId])
   @@map("schedule_session")
 }
 
@@ -453,9 +486,10 @@ model TrainingPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete      Athlete?           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  exercises    TrainingExercise[]
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete          Athlete?           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  exercises        TrainingExercise[]
+  scheduleSessions ScheduleSession[]
 
   @@index([organizationId])
   @@map("training_plan")

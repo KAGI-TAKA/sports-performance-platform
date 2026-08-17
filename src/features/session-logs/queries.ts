@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export async function listSessionLogs(
   organizationId: string,
@@ -10,7 +11,7 @@ export async function listSessionLogs(
     search?: string;
   }
 ) {
-  const where: any = {
+  const where: Prisma.SessionLogWhereInput = {
     organizationId,
   };
 

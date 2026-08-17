@@ -5,7 +5,6 @@ import { getTrainingPlanById } from "@/features/training-plans/queries";
 import { ExerciseItemForm } from "@/features/training-plans/components/exercise-item-form";
 import {
   ArrowLeft,
-  Dumbbell,
   User,
   LayoutGrid,
   Calendar,

@@ -5,7 +5,6 @@ import { useTransition } from "react";
 import { deleteTrainingPlan } from "../actions";
 import { toast } from "sonner";
 import {
-  Dumbbell,
   User,
   LayoutGrid,
   Calendar,
@@ -13,6 +12,13 @@ import {
   Trash2,
   ListOrdered,
 } from "lucide-react";
+import { PrescribeTemplateDialog } from "./prescribe-template-dialog";
+
+interface AthleteOption {
+  id: string;
+  fullName: string;
+  jerseyNumber: number | null;
+}
 
 interface TrainingPlanCardProps {
   plan: {
@@ -27,9 +33,10 @@ interface TrainingPlanCardProps {
     } | null;
     exercises: { id: string }[];
   };
+  athletes?: AthleteOption[];
 }
 
-export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
+export function TrainingPlanCard({ plan, athletes = [] }: TrainingPlanCardProps) {
   const [isPending, startTransition] = useTransition();
 
   const isTemplate = !plan.athlete;
@@ -50,10 +57,7 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
   }
 
   return (
-    <Link
-      href={`/training-plans/${plan.id}`}
-      className="group flex flex-col justify-between rounded-xl border border-border bg-surface-1 p-5 shadow-sm hover:border-accent/50 hover:bg-surface-2/40 transition"
-    >
+    <div className="group flex flex-col justify-between rounded-xl border border-border bg-surface-1 p-5 shadow-sm hover:border-accent/50 hover:bg-surface-2/40 transition relative">
       <div className="space-y-3">
         {/* Header Badges */}
         <div className="flex items-center justify-between gap-2">
@@ -80,7 +84,7 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
         </div>
 
         {/* Title & Description */}
-        <div>
+        <Link href={`/training-plans/${plan.id}`} className="block">
           <h3 className="font-display text-base font-bold text-foreground group-hover:text-accent transition">
             {plan.title}
           </h3>
@@ -89,8 +93,19 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
               {plan.description}
             </p>
           )}
-        </div>
+        </Link>
       </div>
+
+      {/* Prescription Bar for Templates */}
+      {isTemplate && athletes.length > 0 && (
+        <div className="mt-3 pt-2">
+          <PrescribeTemplateDialog
+            templateId={plan.id}
+            templateTitle={plan.title}
+            athletes={athletes}
+          />
+        </div>
+      )}
 
       {/* Footer Info */}
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted">
@@ -110,11 +125,14 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
           )}
         </div>
 
-        <span className="flex items-center gap-0.5 text-accent font-semibold group-hover:translate-x-1 transition">
+        <Link
+          href={`/training-plans/${plan.id}`}
+          className="flex items-center gap-0.5 text-accent font-semibold group-hover:translate-x-1 transition"
+        >
           Buka Program
           <ChevronRight className="h-4 w-4" />
-        </span>
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }

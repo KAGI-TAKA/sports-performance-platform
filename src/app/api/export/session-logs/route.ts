@@ -46,7 +46,7 @@ export async function GET() {
         "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Export session logs failed:", err);
     return NextResponse.json(
       { error: "Gagal mengekspor catatan sesi latihan" },

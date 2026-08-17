@@ -4,19 +4,23 @@
    Light mode tokens
 ───────────────────────────────────────────────────────────── */
 :root {
-  --background: 220 18% 96%;
-  --foreground: 222 25% 10%;
+  /* Canvas: #F8FAFC → hsl(210, 40%, 98%) */
+  --background: 210 40% 98%;
+  /* Dark text: #0F172A → hsl(222, 47%, 11%) */
+  --foreground: 222 47% 11%;
   --surface-1: 0 0% 100%;
-  --surface-2: 220 16% 94%;
-  --surface-3: 220 14% 89%;
-  --border-color: 220 16% 87%;
-  --border-strong: 220 12% 76%;
-  --text-secondary: 222 10% 36%;
-  --text-muted: 220 7% 55%;
-  --accent: 230 85% 58%;
-  --accent-bg: 228 100% 96%;
-  --signature: 20 90% 52%;
-  --signature-bg: 20 100% 96%;
+  --surface-2: 214 32% 96%;
+  --surface-3: 213 27% 92%;
+  --border-color: 214 32% 91%;
+  --border-strong: 213 20% 80%;
+  --text-secondary: 215 16% 40%;
+  --text-muted: 214 14% 58%;
+  /* Electric Indigo-Blue (Secondary Accent): #4F46E5 → hsl(243, 75%, 59%) */
+  --accent: 243 75% 59%;
+  --accent-bg: 243 100% 97%;
+  /* Energetic Amber (Signature): #F97316 → hsl(25, 95%, 53%) */
+  --signature: 25 95% 53%;
+  --signature-bg: 25 100% 96%;
   --success: 152 58% 28%;
   --success-bg: 150 48% 93%;
   --warning: 40 80% 30%;
@@ -81,6 +85,7 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-pill: 9999px;
 }
 
 /* ─────────────────────────────────────────────────────────────

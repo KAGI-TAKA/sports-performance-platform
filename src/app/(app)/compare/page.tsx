@@ -1,12 +1,10 @@
 import { requireOrgContext } from "@/lib/auth-context";
-import {
-  listAthletesWithAssessments,
-  getFullAssessmentDetails,
-} from "@/features/compare/queries";
+import { listAthletesForAnalytics } from "@/features/analytics/queries";
 import { CompareHeadToHead } from "@/features/compare/components/compare-head-to-head";
 import { CompareHistorical } from "@/features/compare/components/compare-historical";
 import { GitCompare, Users, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { getFullAssessmentDetails } from "@/features/compare/queries";
 
 export default async function ComparePage({
   searchParams,
@@ -16,7 +14,10 @@ export default async function ComparePage({
   const { mode = "head-to-head" } = await searchParams;
   const ctx = await requireOrgContext();
 
-  const athletes = await listAthletesWithAssessments(ctx.organizationId);
+  const athletesRaw = await listAthletesForAnalytics(ctx.organizationId);
+
+  // Filter athletes who have at least one completed assessment for comparison
+  const athletes = athletesRaw.filter((a) => a.assessments.length > 0);
 
   // Collect all assessment IDs from eligible athletes
   const assessmentIds: string[] = [];
@@ -26,12 +27,11 @@ export default async function ComparePage({
     });
   });
 
-  // Fetch assessment details in parallel
   const details = await Promise.all(
     assessmentIds.map((id) => getFullAssessmentDetails(ctx.organizationId, id))
   );
 
-  const assessmentDetailsMap: Record<string, any> = {};
+  const assessmentDetailsMap: Record<string, Parameters<typeof CompareHeadToHead>[0]["assessmentDetailsMap"][string]> = {};
   details.forEach((d) => {
     if (d) {
       assessmentDetailsMap[d.id] = d;
@@ -41,14 +41,14 @@ export default async function ComparePage({
   return (
     <div className="p-6 space-y-6 max-w-[1300px]">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
-          <h1 className="font-display text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <GitCompare className="h-5 w-5 text-accent" />
-            Komparasi Assessment Fisik
+          <h1 className="font-display text-xl font-bold text-foreground tracking-tight flex items-center gap-2 sm:text-2xl">
+            <GitCompare className="h-6 w-6 text-accent" />
+            Komparasi Assessment Fisik Atlet
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Bandingkan hasil tes fisik antar atlet (Head-to-Head) atau lacak perkembangan historis sesi tes fisik.
+          <p className="mt-1 text-xs text-muted">
+            Bandingkan performa fisik antar 2 atlet (Head-to-Head) atau lacak perkembangan historis (Lama vs Baru).
           </p>
         </div>
 

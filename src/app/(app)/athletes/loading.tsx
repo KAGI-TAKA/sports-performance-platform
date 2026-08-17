@@ -1,5 +1,5 @@
 // Skeleton loading state — mostra-se enquanto o Server Component busca dados
-import { Sk, SkCard } from "@/components/ui/skeleton";
+import { Sk } from "@/components/ui/skeleton";
 
 export default function AthletesLoading() {
   return (

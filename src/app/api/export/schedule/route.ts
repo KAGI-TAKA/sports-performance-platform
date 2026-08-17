@@ -55,7 +55,7 @@ export async function GET() {
         "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Export schedule failed:", err);
     return NextResponse.json(
       { error: "Gagal mengekspor jadwal latihan" },

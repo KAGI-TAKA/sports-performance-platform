@@ -27,7 +27,6 @@ export function BenchmarkEditForm({
 }: BenchmarkEditFormProps) {
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const hint =
@@ -38,7 +37,6 @@ export function BenchmarkEditForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    setError(null);
     startTransition(async () => {
       const res = await updateBenchmark(benchmarkId, fd);
       if (res.success) {

@@ -14,8 +14,12 @@ interface AthleteOption {
 
 export function TrainingPlanDialogForm({
   athletes,
+  triggerText = "Buat Program Latihan",
+  isTemplateDefault = false,
 }: {
   athletes: AthleteOption[];
+  triggerText?: string;
+  isTemplateDefault?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -50,7 +54,7 @@ export function TrainingPlanDialogForm({
         }}
       >
         <Plus className="h-4 w-4" />
-        Buat Program Latihan
+        {triggerText}
       </button>
 
       {isOpen && (
@@ -94,7 +98,7 @@ export function TrainingPlanDialogForm({
                 </label>
                 <select
                   name="athleteId"
-                  defaultValue="NONE"
+                  defaultValue={isTemplateDefault ? "NONE" : "NONE"}
                   className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground focus:border-accent focus:outline-none"
                 >
                   <option value="NONE">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PhysicalComponent, ScoreDirection, MeasurementUnit } from "@prisma/client";
 import { createAssessment } from "../actions";
 import { calculateAssessmentEngine, TestItemValue } from "../engine";
+import { toast } from "sonner";
 
 interface TestItemProp {
   id: string;
@@ -140,16 +141,25 @@ export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) 
     }
 
     try {
-      const created = await createAssessment({
+      const res = await createAssessment({
         athleteId: athlete.id,
         assessmentDate: new Date(),
         results,
       });
 
-      router.push(`/assessments/${created.id}`);
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Gagal menyimpan hasil assessment.");
+      if (res.success && res.assessmentId) {
+        toast.success("Assessment fisik berhasil disimpan dan dihitung!");
+        router.push(`/assessments/${res.assessmentId}`);
+        router.refresh();
+      } else {
+        setError(res.error ?? "Gagal menyimpan hasil assessment.");
+        toast.error(res.error ?? "Gagal menyimpan hasil assessment.");
+        setLoading(false);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan hasil assessment.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   }

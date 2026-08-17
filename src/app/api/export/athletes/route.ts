@@ -64,7 +64,7 @@ export async function GET() {
         "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Export athletes failed:", err);
     return NextResponse.json(
       { error: "Gagal mengekspor data atlet" },

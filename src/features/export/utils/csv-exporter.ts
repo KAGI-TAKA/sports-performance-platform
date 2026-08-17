@@ -2,7 +2,7 @@ export function convertToCSV(
   headers: string[],
   rows: (string | number | boolean | null | undefined)[][]
 ): string {
-  const sanitize = (val: any): string => {
+  const sanitize = (val: string | number | boolean | null | undefined): string => {
     if (val == null) return '""';
     const str = String(val).replace(/"/g, '""');
     return `"${str}"`;

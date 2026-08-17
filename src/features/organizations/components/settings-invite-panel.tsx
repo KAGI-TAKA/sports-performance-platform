@@ -34,8 +34,6 @@ export function SettingsInvitePanel({
   );
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   async function handleInvite() {
     setLoading(true);

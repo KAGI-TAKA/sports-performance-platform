@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DualRadarChart } from "@/features/assessments/components/dual-radar-chart";
-import { TrendingUp, TrendingDown, Minus, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar } from "lucide-react";
 
 type AthleteOption = {
   id: string;
@@ -11,7 +11,7 @@ type AthleteOption = {
   assessments: Array<{
     id: string;
     assessmentDate: Date;
-    overallScore: any;
+    overallScore: unknown;
     overallGrade: string | null;
   }>;
 };
@@ -20,12 +20,12 @@ type AssessmentDetail = {
   id: string;
   athleteId: string;
   assessmentDate: Date;
-  overallScore: any;
+  overallScore: unknown;
   overallGrade: string | null;
   resultItems: Array<{
     id: string;
-    rawValue: any;
-    score: any;
+    rawValue: unknown;
+    score: unknown;
     testItem: {
       id: string;
       name: string;
@@ -35,7 +35,7 @@ type AssessmentDetail = {
     };
   }>;
   analysis: {
-    componentScores: any;
+    componentScores: Record<string, number> | string | null | unknown;
     bestComponent: string | null;
     weakestComponents: string[];
     insightText?: string | null;

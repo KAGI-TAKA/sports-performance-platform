@@ -35,12 +35,11 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      data-mode="dark"
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
         {children}
-        <Toaster position="bottom-right" richColors theme="dark" toastOptions={{ style: { fontFamily: 'var(--font-inter)' } }} />
+        <Toaster position="bottom-right" richColors theme="light" toastOptions={{ style: { fontFamily: 'var(--font-inter)' } }} />
       </body>
     </html>
   );

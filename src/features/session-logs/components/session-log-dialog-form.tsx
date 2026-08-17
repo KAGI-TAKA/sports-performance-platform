@@ -21,17 +21,48 @@ interface AthleteOption {
   jerseyNumber: number | null;
 }
 
+interface ScheduleSessionOption {
+  id: string;
+  title: string;
+  athleteIds: string[];
+  trainingPlanTitle?: string | null;
+  defaultActivities?: string | null;
+}
+
 export function SessionLogDialogForm({
   athletes,
   defaultAthleteId,
+  scheduleSessions = [],
+  defaultScheduleSessionId,
+  defaultActivitiesDone,
 }: {
   athletes: AthleteOption[];
   defaultAthleteId?: string;
+  scheduleSessions?: ScheduleSessionOption[];
+  defaultScheduleSessionId?: string;
+  defaultActivitiesDone?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string>(
+    defaultScheduleSessionId ?? "NONE"
+  );
+  const [activitiesText, setActivitiesText] = useState<string>(
+    defaultActivitiesDone ?? ""
+  );
+
   const todayStr = new Date().toISOString().split("T")[0];
+
+  function handleScheduleChange(id: string) {
+    setSelectedScheduleId(id);
+    if (id !== "NONE") {
+      const match = scheduleSessions.find((s) => s.id === id);
+      if (match?.defaultActivities) {
+        setActivitiesText(match.defaultActivities);
+      }
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,6 +135,29 @@ export function SessionLogDialogForm({
                 </select>
               </div>
 
+              {/* Sesi Jadwal Terhubung */}
+              {scheduleSessions.length > 0 && (
+                <div>
+                  <label className="block text-muted font-medium mb-1 flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Sesi Jadwal Operasional (Opsional)
+                  </label>
+                  <select
+                    name="scheduleSessionId"
+                    value={selectedScheduleId}
+                    onChange={(e) => handleScheduleChange(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground focus:border-accent focus:outline-none"
+                  >
+                    <option value="NONE">-- Tidak Terhubung ke Jadwal --</option>
+                    {scheduleSessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title} {s.trainingPlanTitle ? `(📋 ${s.trainingPlanTitle})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Tanggal Latihan */}
               <div>
                 <label className="block text-muted font-medium mb-1 flex items-center gap-1">
@@ -127,10 +181,12 @@ export function SessionLogDialogForm({
                 </label>
                 <textarea
                   name="activitiesDone"
+                  value={activitiesText}
+                  onChange={(e) => setActivitiesText(e.target.value)}
                   required
-                  rows={3}
+                  rows={4}
                   placeholder="Misal: Dribble Crossover 3x50m, Defensive Slide 4x30s, Form Shooting 100x"
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground focus:border-accent focus:outline-none resize-none"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground focus:border-accent focus:outline-none resize-none font-mono text-[11.5px]"
                 />
               </div>
 

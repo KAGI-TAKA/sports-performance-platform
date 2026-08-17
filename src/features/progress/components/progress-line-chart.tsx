@@ -5,7 +5,7 @@ import ReactECharts from "echarts-for-react";
 interface AssessmentPoint {
   id: string;
   assessmentDate: Date | string;
-  overallScore: any;
+  overallScore: number | string | null;
   overallGrade: string | null;
 }
 
@@ -29,8 +29,8 @@ export function ProgressLineChart({ assessments, athleteName }: ProgressLineChar
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
-      formatter: (params: any) => {
-        const p = params[0];
+      formatter: (params: { dataIndex: number; axisValue: string; value: number }[]) => {
+        const p = params[0] as { dataIndex: number; axisValue: string; value: number };
         const assessment = assessments[p.dataIndex];
         const grade = assessment.overallGrade ?? "—";
         return `

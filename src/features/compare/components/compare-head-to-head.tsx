@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DualRadarChart } from "@/features/assessments/components/dual-radar-chart";
-import { Trophy, ArrowRight, Minus } from "lucide-react";
+import { Trophy, Minus } from "lucide-react";
 
 type AthleteOption = {
   id: string;
@@ -13,7 +13,7 @@ type AthleteOption = {
   assessments: Array<{
     id: string;
     assessmentDate: Date;
-    overallScore: any;
+    overallScore: unknown;
     overallGrade: string | null;
   }>;
 };
@@ -22,18 +22,18 @@ type AssessmentDetail = {
   id: string;
   athleteId: string;
   assessmentDate: Date;
-  overallScore: any;
+  overallScore: unknown;
   overallGrade: string | null;
   athlete: {
     fullName: string;
     position: string;
-    heightCm: any;
-    weightKg: any;
+    heightCm: unknown;
+    weightKg: unknown;
   };
   resultItems: Array<{
     id: string;
-    rawValue: any;
-    score: any;
+    rawValue: unknown;
+    score: unknown;
     testItem: {
       id: string;
       name: string;
@@ -43,7 +43,7 @@ type AssessmentDetail = {
     };
   }>;
   analysis: {
-    componentScores: any;
+    componentScores: Record<string, number> | string | null | unknown;
     bestComponent: string | null;
     weakestComponents: string[];
   } | null;

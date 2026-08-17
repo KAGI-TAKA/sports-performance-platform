@@ -4,10 +4,11 @@ import {
   listSessionLogs,
   listActiveAthletesForSessionLogs,
 } from "@/features/session-logs/queries";
+import { listScheduleSessions } from "@/features/schedule/queries";
 import { SessionLogCard } from "@/features/session-logs/components/session-log-card";
 import { SessionLogDialogForm } from "@/features/session-logs/components/session-log-dialog-form";
 import { ExportCSVButton } from "@/features/export/components/export-csv-button";
-import { ClipboardCheck, User, Users } from "lucide-react";
+import { ClipboardCheck, Users } from "lucide-react";
 
 export default async function SessionLogsPage({
   searchParams,
@@ -17,16 +18,40 @@ export default async function SessionLogsPage({
   const { athleteId = "ALL" } = await searchParams;
   const ctx = await requireOrgContext();
 
-  const logs = await listSessionLogs(ctx.organizationId, { athleteId });
-  const athletesRaw = await listActiveAthletesForSessionLogs(
-    ctx.organizationId
-  );
+  const [logs, athletesRaw, scheduleSessionsRaw] = await Promise.all([
+    listSessionLogs(ctx.organizationId, { athleteId }),
+    listActiveAthletesForSessionLogs(ctx.organizationId),
+    listScheduleSessions(ctx.organizationId),
+  ]);
 
   const athletes = athletesRaw.map((a) => ({
     id: a.id,
     fullName: a.fullName,
     jerseyNumber: a.jerseyNumber,
   }));
+
+  const scheduleSessions = scheduleSessionsRaw.map((s) => {
+    let defaultActivities = "";
+    if (s.trainingPlan && s.trainingPlan.exercises.length > 0) {
+      defaultActivities =
+        `[Program Latihan: ${s.trainingPlan.title}]\n` +
+        s.trainingPlan.exercises
+          .map(
+            (ex, idx) =>
+              `${idx + 1}. ${ex.name}${
+                ex.sets && ex.reps ? ` (${ex.sets} sets x ${ex.reps})` : ""
+              }${ex.notes ? ` - ${ex.notes}` : ""}`
+          )
+          .join("\n");
+    }
+    return {
+      id: s.id,
+      title: s.title,
+      athleteIds: s.athletes.map((a) => a.athlete.id),
+      trainingPlanTitle: s.trainingPlan?.title ?? null,
+      defaultActivities: defaultActivities || null,
+    };
+  });
 
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
@@ -43,7 +68,7 @@ export default async function SessionLogsPage({
 
         <div className="flex items-center gap-3">
           <ExportCSVButton endpoint="/api/export/session-logs" label="Export CSV Sesi" />
-          <SessionLogDialogForm athletes={athletes} />
+          <SessionLogDialogForm athletes={athletes} scheduleSessions={scheduleSessions} />
         </div>
       </div>
 
@@ -88,13 +113,13 @@ export default async function SessionLogsPage({
             Belum Ada Catatan Sesi Latihan
           </h3>
           <p className="mt-1 text-xs text-muted max-w-sm">
-            Klik tombol "Catat Sesi Harian" di atas untuk menyimpan aktivitas &amp; umpan balik latihan hari ini.
+            Klik tombol &quot;Catat Sesi Harian&quot; di atas untuk menyimpan aktivitas &amp; umpan balik latihan hari ini.
           </p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {logs.map((log) => (
-            <SessionLogCard key={log.id} log={log as any} />
+            <SessionLogCard key={log.id} log={log} />
           ))}
         </div>
       )}

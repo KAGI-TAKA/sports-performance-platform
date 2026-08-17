@@ -59,10 +59,10 @@ export async function createTestItem(formData: FormData): Promise<{ success: boo
     }
 
     const name = formData.get("name") as string;
-    const physicalComponent = formData.get("physicalComponent") as any;
-    const unit = formData.get("unit") as any;
-    const scoreDirection = formData.get("scoreDirection") as any;
-    const testType = (formData.get("testType") as any) || "NUMERIC";
+    const physicalComponent = formData.get("physicalComponent") as string;
+    const unit = formData.get("unit") as string;
+    const scoreDirection = formData.get("scoreDirection") as string;
+    const testType = (formData.get("testType") as string) || "NUMERIC";
     const orderStr = formData.get("order") as string;
     
     if (!name || !physicalComponent || !unit || !scoreDirection || !orderStr) {
@@ -74,11 +74,11 @@ export async function createTestItem(formData: FormData): Promise<{ success: boo
     const created = await prisma.testItem.create({
       data: {
         organizationId: ctx.organizationId,
-        physicalComponent,
+        physicalComponent: physicalComponent as Parameters<typeof prisma.testItem.create>[0]["data"]["physicalComponent"],
         name,
-        unit,
-        scoreDirection,
-        testType,
+        unit: unit as Parameters<typeof prisma.testItem.create>[0]["data"]["unit"],
+        scoreDirection: scoreDirection as Parameters<typeof prisma.testItem.create>[0]["data"]["scoreDirection"],
+        testType: testType as Parameters<typeof prisma.testItem.create>[0]["data"]["testType"],
         order,
         isActive: true,
       },
@@ -99,8 +99,9 @@ export async function createTestItem(formData: FormData): Promise<{ success: boo
 
     revalidatePath("/benchmarks");
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message ?? "Gagal menambahkan item tes" };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal menambahkan item tes";
+    return { success: false, error: message };
   }
 }
 
@@ -126,7 +127,8 @@ export async function deactivateTestItem(testItemId: string): Promise<{ success:
 
     revalidatePath("/benchmarks");
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message ?? "Gagal menonaktifkan item tes" };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal menonaktifkan item tes";
+    return { success: false, error: message };
   }
 }

@@ -13,8 +13,6 @@ export function SettingsOrgNameForm({ currentName, canEdit }: SettingsOrgNameFor
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(currentName);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setLoading(true);

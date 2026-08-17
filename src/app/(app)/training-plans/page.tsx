@@ -86,7 +86,7 @@ export default async function TrainingPlansPage({
             Belum Ada Program Latihan
           </h3>
           <p className="mt-1 text-xs text-muted max-w-sm">
-            Klik tombol "Buat Program Latihan" untuk menyusun menu gerakan latihan baru.
+            Klik tombol &quot;Buat Program Latihan&quot; untuk menyusun menu gerakan latihan baru.
           </p>
         </div>
       ) : (

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export async function listTrainingPlans(
   organizationId: string,
@@ -9,7 +10,7 @@ export async function listTrainingPlans(
     search?: string;
   }
 ) {
-  const where: any = {
+  const where: Prisma.TrainingPlanWhereInput = {
     organizationId,
     isActive: true,
   };

@@ -24,11 +24,38 @@ export async function createTrainingPlan(formData: FormData) {
   if (!parseResult.success) {
     return {
       success: false,
-      error: parseResult.error.issues[0]?.message ?? "Validasi gagal",
+      error: parseResult.error.issues[0]?.message ?? "Validasi data program gagal",
     };
   }
 
   const { title, description, athleteId, startDate, endDate } = parseResult.data;
+
+  // Verifikasi rentang tanggal
+  if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+    return {
+      success: false,
+      error: "Tanggal selesai tidak boleh sebelum tanggal mulai",
+    };
+  }
+
+  // Verifikasi active status jika ditargetkan ke atlet spesifik
+  if (athleteId) {
+    const athleteCheck = await prisma.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: ctx.organizationId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    if (!athleteCheck) {
+      return {
+        success: false,
+        error: "Atlet tidak ditemukan atau tidak aktif di organisasi ini",
+      };
+    }
+  }
 
   try {
     const plan = await prisma.trainingPlan.create({
@@ -43,10 +70,12 @@ export async function createTrainingPlan(formData: FormData) {
     });
 
     revalidatePath("/training-plans");
+    revalidatePath("/training-plans/templates");
+    revalidatePath("/athletes");
     return { success: true, planId: plan.id };
-  } catch (err: any) {
-    console.error("Failed to create training plan:", err);
-    return { success: false, error: "Gagal membuat program latihan" };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal membuat program latihan";
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -80,6 +109,33 @@ export async function updateTrainingPlan(planId: string, formData: FormData) {
 
   const { title, description, athleteId, startDate, endDate } = parseResult.data;
 
+  // Verifikasi rentang tanggal
+  if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+    return {
+      success: false,
+      error: "Tanggal selesai tidak boleh sebelum tanggal mulai",
+    };
+  }
+
+  // Verifikasi active status jika atlet diubah
+  if (athleteId) {
+    const athleteCheck = await prisma.athlete.findFirst({
+      where: {
+        id: athleteId,
+        organizationId: ctx.organizationId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    if (!athleteCheck) {
+      return {
+        success: false,
+        error: "Atlet tidak ditemukan atau tidak aktif di organisasi ini",
+      };
+    }
+  }
+
   try {
     await prisma.trainingPlan.update({
       where: { id: planId },
@@ -93,11 +149,12 @@ export async function updateTrainingPlan(planId: string, formData: FormData) {
     });
 
     revalidatePath("/training-plans");
+    revalidatePath("/training-plans/templates");
     revalidatePath(`/training-plans/${planId}`);
     return { success: true };
-  } catch (err: any) {
-    console.error("Failed to update training plan:", err);
-    return { success: false, error: "Gagal memperbarui program latihan" };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui program latihan";
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -118,10 +175,11 @@ export async function deleteTrainingPlan(planId: string) {
     });
 
     revalidatePath("/training-plans");
+    revalidatePath("/training-plans/templates");
     return { success: true };
-  } catch (err: any) {
-    console.error("Failed to delete training plan:", err);
-    return { success: false, error: "Gagal menghapus program latihan" };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal menghapus program latihan";
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -174,9 +232,9 @@ export async function addExerciseToPlan(planId: string, formData: FormData) {
 
     revalidatePath(`/training-plans/${planId}`);
     return { success: true };
-  } catch (err: any) {
-    console.error("Failed to add exercise:", err);
-    return { success: false, error: "Gagal menambahkan gerakan latihan" };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal menambahkan gerakan latihan";
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -198,8 +256,86 @@ export async function deleteExercise(exerciseId: string, planId: string) {
 
     revalidatePath(`/training-plans/${planId}`);
     return { success: true };
-  } catch (err: any) {
-    console.error("Failed to delete exercise:", err);
-    return { success: false, error: "Gagal menghapus gerakan latihan" };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal menghapus gerakan latihan";
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function prescribeTemplateToAthlete(templateId: string, formData: FormData) {
+  const ctx = await requireOrgContext();
+
+  const athleteId = formData.get("athleteId") as string;
+  const customTitle = formData.get("title") as string;
+  const startDateStr = formData.get("startDate") as string;
+  const endDateStr = formData.get("endDate") as string;
+
+  if (!athleteId) {
+    return { success: false, error: "Atlet harus dipilih" };
+  }
+
+  // 1. Verify template exists & belongs to org & is athleteId == null
+  const template = await prisma.trainingPlan.findFirst({
+    where: { id: templateId, organizationId: ctx.organizationId, athleteId: null },
+    include: { exercises: { orderBy: { order: "asc" } } },
+  });
+
+  if (!template) {
+    return { success: false, error: "Template program tidak ditemukan atau akses ditolak" };
+  }
+
+  // 2. Verify target athlete belongs to org and is active
+  const athlete = await prisma.athlete.findFirst({
+    where: { id: athleteId, organizationId: ctx.organizationId, isActive: true },
+  });
+
+  if (!athlete) {
+    return { success: false, error: "Atlet tidak ditemukan atau tidak aktif di organisasi ini" };
+  }
+
+  // 3. Date boundary check
+  if (startDateStr && endDateStr && new Date(endDateStr) < new Date(startDateStr)) {
+    return { success: false, error: "Tanggal selesai tidak boleh sebelum tanggal mulai" };
+  }
+
+  try {
+    const newPlan = await prisma.$transaction(async (tx) => {
+      const plan = await tx.trainingPlan.create({
+        data: {
+          organizationId: ctx.organizationId,
+          athleteId: athlete.id,
+          title: customTitle || `${template.title} - ${athlete.fullName}`,
+          description: template.description,
+          startDate: startDateStr ? new Date(startDateStr) : null,
+          endDate: endDateStr ? new Date(endDateStr) : null,
+        },
+      });
+
+      if (template.exercises.length > 0) {
+        await tx.trainingExercise.createMany({
+          data: template.exercises.map((ex) => ({
+            trainingPlanId: plan.id,
+            name: ex.name,
+            category: ex.category,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: ex.restSeconds,
+            notes: ex.notes,
+            order: ex.order,
+          })),
+        });
+      }
+
+      return plan;
+    });
+
+    revalidatePath("/training-plans");
+    revalidatePath("/training-plans/templates");
+    revalidatePath("/athletes");
+    revalidatePath(`/athletes/${athleteId}`);
+    return { success: true, planId: newPlan.id };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal meresepkan template ke atlet";
+    return { success: false, error: errorMsg };
   }
 }

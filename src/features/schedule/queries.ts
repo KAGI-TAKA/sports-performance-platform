@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import type { ScheduleStatus } from "@prisma/client";
+import type { Prisma, ScheduleStatus } from "@prisma/client";
 
 export async function listScheduleSessions(
   organizationId: string,
@@ -12,7 +12,7 @@ export async function listScheduleSessions(
     status?: ScheduleStatus;
   }
 ) {
-  const where: any = {
+  const where: Prisma.ScheduleSessionWhereInput = {
     organizationId,
   };
 
@@ -48,6 +48,24 @@ export async function listScheduleSessions(
           },
         },
       },
+      trainingPlan: {
+        select: {
+          id: true,
+          title: true,
+          athleteId: true,
+          exercises: {
+            orderBy: { order: "asc" },
+            select: {
+              id: true,
+              name: true,
+              sets: true,
+              reps: true,
+              restSeconds: true,
+              notes: true,
+            },
+          },
+        },
+      },
       athletes: {
         include: {
           athlete: {
@@ -77,6 +95,13 @@ export async function getScheduleSessionById(
         include: {
           user: {
             select: { name: true, email: true, image: true },
+          },
+        },
+      },
+      trainingPlan: {
+        include: {
+          exercises: {
+            orderBy: { order: "asc" },
           },
         },
       },
