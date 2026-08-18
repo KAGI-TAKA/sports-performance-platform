@@ -162,10 +162,10 @@ export default async function AthletesPage({
                           )}
                         </div>
                         <div className="text-[11px] text-muted truncate">
-                          {athlete.position !== "UNSPECIFIED"
-                            ? athlete.position.replace(/_/g, " ")
-                            : "Posisi —"}{" "}
-                          · {age} th
+                          {athlete.position && athlete.position !== "UNSPECIFIED"
+                            ? `${athlete.position.replace(/_/g, " ")} · `
+                            : ""}
+                          {age} th
                           {athlete.jerseyNumber != null && ` · #${athlete.jerseyNumber}`}
                         </div>
                       </div>

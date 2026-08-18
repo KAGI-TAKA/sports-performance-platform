@@ -38,7 +38,15 @@ export default async function TrainingPlansPage({
           </p>
         </div>
 
-        <TrainingPlanDialogForm athletes={athletes} />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/training-plans/exercises"
+            className="inline-flex items-center gap-2 rounded-lg bg-surface-2 border border-border px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-surface-3 transition-colors"
+          >
+            <Dumbbell className="h-4 w-4 text-primary" /> Master Exercise Library
+          </Link>
+          <TrainingPlanDialogForm athletes={athletes} />
+        </div>
       </div>
 
       {/* Filter Tabs */}

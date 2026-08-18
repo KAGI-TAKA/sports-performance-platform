@@ -122,10 +122,10 @@ export default async function AthleteProfilePage({ params }: AthleteProfilePageP
               )}
             </div>
             <p className="mt-0.5 text-xs text-muted">
-              {athlete.position !== "UNSPECIFIED"
-                ? athlete.position.replace(/_/g, " ")
-                : "Posisi belum diisi"}{" "}
-              · {age} Tahun ({formatDate(athlete.dateOfBirth)}) ·{" "}
+              {athlete.position && athlete.position !== "UNSPECIFIED"
+                ? `${athlete.position.replace(/_/g, " ")} · `
+                : ""}
+              {age} Tahun ({formatDate(athlete.dateOfBirth)}) ·{" "}
               {athlete.gender === "MALE" ? "Laki-laki" : "Perempuan"}
             </p>
           </div>
@@ -180,11 +180,11 @@ export default async function AthleteProfilePage({ params }: AthleteProfilePageP
                 <h3 className="font-display text-lg font-bold text-foreground">
                   {athlete.fullName}
                 </h3>
-                <Badge variant="accent" className="text-[10px]">
-                  {athlete.position !== "UNSPECIFIED"
-                    ? athlete.position.replace(/_/g, " ")
-                    : "Posisi Belum Ditentukan"}
-                </Badge>
+                {athlete.position && athlete.position !== "UNSPECIFIED" && (
+                  <Badge variant="accent" className="text-[10px]">
+                    {athlete.position.replace(/_/g, " ")}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -205,12 +205,6 @@ export default async function AthleteProfilePage({ params }: AthleteProfilePageP
                 <span className="text-muted block">BMI Index</span>
                 <span className="font-semibold text-foreground font-mono">
                   {bmiValue ? `${bmiValue.toFixed(1)}` : "—"}
-                </span>
-              </div>
-              <div>
-                <span className="text-muted block">Wingspan</span>
-                <span className="font-semibold text-foreground font-mono">
-                  {athlete.wingspanCm ? `${athlete.wingspanCm} cm` : "—"}
                 </span>
               </div>
             </div>

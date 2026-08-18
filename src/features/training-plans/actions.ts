@@ -195,9 +195,23 @@ export async function addExerciseToPlan(planId: string, formData: FormData) {
     return { success: false, error: "Program latihan tidak ditemukan" };
   }
 
+  const exerciseIdVal = (formData.get("exerciseId") as string) || undefined;
+  let name = (formData.get("name") as string) || "";
+  let category = (formData.get("category") as string) || undefined;
+
+  if (exerciseIdVal) {
+    const masterEx = await prisma.exercise.findFirst({
+      where: { id: exerciseIdVal, organizationId: ctx.organizationId },
+    });
+    if (masterEx) {
+      if (!name) name = masterEx.name;
+      if (!category && masterEx.category) category = masterEx.category;
+    }
+  }
+
   const rawData = {
-    name: formData.get("name") as string,
-    category: (formData.get("category") as string) || undefined,
+    name,
+    category,
     sets: formData.get("sets") ? Number(formData.get("sets")) : undefined,
     reps: (formData.get("reps") as string) || undefined,
     restSeconds: formData.get("restSeconds")
@@ -214,18 +228,19 @@ export async function addExerciseToPlan(planId: string, formData: FormData) {
     };
   }
 
-  const { name, category, sets, reps, restSeconds, notes } = parseResult.data;
+  const parsed = parseResult.data;
 
   try {
     await prisma.trainingExercise.create({
       data: {
         trainingPlanId: planId,
-        name,
-        category,
-        sets,
-        reps,
-        restSeconds,
-        notes,
+        exerciseId: exerciseIdVal || null,
+        name: parsed.name,
+        category: parsed.category,
+        sets: parsed.sets,
+        reps: parsed.reps,
+        restSeconds: parsed.restSeconds,
+        notes: parsed.notes,
         order: plan.exercises.length + 1,
       },
     });

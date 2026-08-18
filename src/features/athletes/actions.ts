@@ -1,8 +1,11 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
+import { hashPortalToken } from "../portal/queries";
+import { generatePortalCredentials } from "../portal/actions";
 import { createAthleteSchema, updateAthleteSchema, createInjurySchema } from "./schema";
 
 export async function createAthlete(input: unknown) {
@@ -22,6 +25,40 @@ export async function createAthlete(input: unknown) {
         ...parseResult.data,
         organizationId: ctx.organizationId,
       },
+    });
+
+    // Otomatis generate link portal akses & kredensial login untuk Atlet & Orang Tua (Default 90 hari)
+    const rawTokenAthlete = crypto.randomBytes(32).toString("hex");
+    const rawTokenParent = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90);
+
+    const credsAthlete = await generatePortalCredentials(athlete.fullName, "ATHLETE");
+    const credsParent = await generatePortalCredentials(athlete.fullName, "PARENT");
+
+    await prisma.portalAccess.createMany({
+      data: [
+        {
+          organizationId: ctx.organizationId,
+          athleteId: athlete.id,
+          createdByMemberId: ctx.memberId,
+          tokenHash: hashPortalToken(rawTokenAthlete),
+          username: credsAthlete.username,
+          plainPassword: credsAthlete.plainPassword,
+          accessType: "ATHLETE",
+          expiresAt,
+        },
+        {
+          organizationId: ctx.organizationId,
+          athleteId: athlete.id,
+          createdByMemberId: ctx.memberId,
+          tokenHash: hashPortalToken(rawTokenParent),
+          username: credsParent.username,
+          plainPassword: credsParent.plainPassword,
+          accessType: "PARENT",
+          expiresAt,
+        },
+      ],
     });
 
     revalidatePath("/athletes");

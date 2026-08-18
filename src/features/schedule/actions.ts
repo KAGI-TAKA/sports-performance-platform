@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
 import { createScheduleSchema, updateScheduleSchema } from "./schema";
+import { parseLocalDateTimeToUTC } from "./utils";
 import type { ScheduleStatus } from "@prisma/client";
 
 /**
@@ -48,9 +49,19 @@ export async function createScheduleSession(formData: FormData) {
   const { title, startTime, endTime, coachId, athleteIds, location, notes } =
     parseResult.data;
 
-  // Validate start vs end time
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+  // Validate start vs end time using centralized timezone conversion (Asia/Jakarta -> UTC)
+  let start: Date;
+  let end: Date;
+  try {
+    start = parseLocalDateTimeToUTC(startTime);
+    end = parseLocalDateTimeToUTC(endTime);
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Format waktu tidak valid",
+    };
+  }
+
   if (end <= start) {
     return {
       success: false,
@@ -169,9 +180,19 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
   const { title, startTime, endTime, coachId, athleteIds, location, notes, status } =
     parseResult.data;
 
-  // Validate start vs end time
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+  // Validate start vs end time using centralized timezone conversion (Asia/Jakarta -> UTC)
+  let start: Date;
+  let end: Date;
+  try {
+    start = parseLocalDateTimeToUTC(startTime);
+    end = parseLocalDateTimeToUTC(endTime);
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Format waktu tidak valid",
+    };
+  }
+
   if (end <= start) {
     return {
       success: false,
@@ -273,7 +294,7 @@ export async function updateScheduleStatus(
 
   const session = await prisma.scheduleSession.findFirst({
     where: { id: sessionId, organizationId: ctx.organizationId },
-    include: { sessionLog: { select: { id: true } } },
+    include: { sessionLogs: { select: { id: true } } },
   });
 
   if (!session) {
@@ -297,7 +318,7 @@ export async function updateScheduleStatus(
   }
 
   // Extra check for COMPLETED -> SCHEDULED transition: Must not have linked SessionLog
-  if (currentStatus === "COMPLETED" && targetStatus === "SCHEDULED" && session.sessionLog) {
+  if (currentStatus === "COMPLETED" && targetStatus === "SCHEDULED" && session.sessionLogs.length > 0) {
     return {
       success: false,
       error: "Sesi ini sudah memiliki Catatan Latihan (Session Log) dan tidak dapat dikembalikan ke status Terjadwal.",
@@ -324,7 +345,7 @@ export async function deleteScheduleSession(sessionId: string) {
 
   const session = await prisma.scheduleSession.findFirst({
     where: { id: sessionId, organizationId: ctx.organizationId },
-    include: { sessionLog: { select: { id: true } } },
+    include: { sessionLogs: { select: { id: true } } },
   });
 
   if (!session) {
@@ -333,7 +354,7 @@ export async function deleteScheduleSession(sessionId: string) {
 
   // HISTORICAL DATA INTEGRITY DELETION POLICY:
   // 1. If session has a linked SessionLog, reject deletion!
-  if (session.sessionLog) {
+  if (session.sessionLogs.length > 0) {
     return {
       success: false,
       error: "Sesi ini telah memiliki Catatan Latihan (Session Log) dan tidak dapat dihapus. Gunakan status Dibatalkan untuk mengarsip.",

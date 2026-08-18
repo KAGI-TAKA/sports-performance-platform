@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createScheduleSession, updateScheduleSession } from "../actions";
+import { toDateTimeLocalString } from "../utils";
 import { toast } from "sonner";
 import { Plus, Calendar, Clock, User, Users, MapPin, AlignLeft, Dumbbell, Loader2 } from "lucide-react";
 import {
@@ -91,26 +92,16 @@ export function ScheduleDialogForm({
   );
   const [athleteSearch, setAthleteSearch] = useState("");
 
-  // Format default datetimes for HTML datetime-local input (YYYY-MM-DDTHH:mm)
-  function toDateTimeLocalString(d?: Date): string {
-    const target = d ? new Date(d) : new Date();
-    if (!d) {
-      target.setHours(15, 0, 0, 0);
-    }
-    const year = target.getFullYear();
-    const month = String(target.getMonth() + 1).padStart(2, "0");
-    const day = String(target.getDate()).padStart(2, "0");
-    const hours = String(target.getHours()).padStart(2, "0");
-    const minutes = String(target.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
+  const [defaultStartTimeStr] = useState(() =>
+    initialSession?.startTime
+      ? toDateTimeLocalString(initialSession.startTime)
+      : toDateTimeLocalString(new Date())
+  );
 
-  const defaultStartTimeStr = toDateTimeLocalString(initialSession?.startTime);
-  const defaultEndTimeStr = toDateTimeLocalString(
-    initialSession?.endTime ??
-      (initialSession?.startTime
-        ? new Date(new Date(initialSession.startTime).getTime() + 60 * 60 * 1000)
-        : undefined)
+  const [defaultEndTimeStr] = useState(() =>
+    initialSession?.endTime
+      ? toDateTimeLocalString(initialSession.endTime)
+      : toDateTimeLocalString(new Date(Date.now() + 60 * 60 * 1000))
   );
 
   function toggleAthlete(id: string) {

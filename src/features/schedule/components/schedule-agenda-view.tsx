@@ -30,7 +30,7 @@ import {
   Edit2,
   FileText,
 } from "lucide-react";
-import { formatDateHeader, formatTimeRange, toLocalDateStr } from "../utils";
+import { formatDateHeader, formatTimeRange, toLocalDateStr, getStartOfDay } from "../utils";
 
 export interface ScheduleSessionItem {
   id: string;
@@ -94,9 +94,9 @@ export function ScheduleAgendaView({
   );
 
   function navigateDay(offset: number) {
-    const base = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
-    base.setDate(base.getDate() + offset);
-    const newDateStr = toLocalDateStr(base);
+    const base = getStartOfDay(selectedDate ?? undefined);
+    const target = new Date(base.getTime() + offset * 24 * 60 * 60 * 1000);
+    const newDateStr = toLocalDateStr(target);
     setSelectedDate(newDateStr);
 
     const params = new URLSearchParams(window.location.search);

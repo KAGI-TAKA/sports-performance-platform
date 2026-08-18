@@ -18,7 +18,6 @@ export const createAthleteSchema = z.object({
   dateOfBirth: z.coerce.date(),
   heightCm: z.coerce.number().positive().optional(),
   weightKg: z.coerce.number().positive().optional(),
-  wingspanCm: z.coerce.number().positive().optional(),
   parentName: z.string().optional(),
   parentPhone: z.string().optional(),
   allergies: z.string().optional(),

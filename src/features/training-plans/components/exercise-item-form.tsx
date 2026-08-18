@@ -34,12 +34,20 @@ const CATEGORY_OPTIONS = [
   "Lainnya",
 ];
 
+interface MasterExercise {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
 export function ExerciseItemForm({
   planId,
   exercises,
+  masterExercises = [],
 }: {
   planId: string;
   exercises: ExerciseItem[];
+  masterExercises?: MasterExercise[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -112,6 +120,34 @@ export function ExerciseItemForm({
               ✕
             </button>
           </div>
+
+          {masterExercises.length > 0 && (
+            <div>
+              <label className="block text-muted font-medium mb-1">
+                Pilih dari Master Library (Opsional)
+              </label>
+              <select
+                name="exerciseId"
+                onChange={(e) => {
+                  const selected = masterExercises.find((m) => m.id === e.target.value);
+                  if (selected) {
+                    const nameInput = e.target.form?.querySelector('input[name="name"]') as HTMLInputElement;
+                    const catSelect = e.target.form?.querySelector('select[name="category"]') as HTMLSelectElement;
+                    if (nameInput) nameInput.value = selected.name;
+                    if (catSelect && selected.category) catSelect.value = selected.category;
+                  }
+                }}
+                className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-foreground focus:border-accent focus:outline-none"
+              >
+                <option value="">-- Pilih dari Master Exercise Library --</option>
+                {masterExercises.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} {m.category ? `(${m.category})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

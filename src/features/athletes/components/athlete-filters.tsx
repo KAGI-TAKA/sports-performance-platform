@@ -3,16 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-const POSITIONS = [
-  { value: "ALL", label: "Semua Posisi" },
-  { value: "POINT_GUARD", label: "Point Guard" },
-  { value: "SHOOTING_GUARD", label: "Shooting Guard" },
-  { value: "SMALL_FORWARD", label: "Small Forward" },
-  { value: "POWER_FORWARD", label: "Power Forward" },
-  { value: "CENTER", label: "Center" },
-  { value: "UNSPECIFIED", label: "Belum Diisi" },
-];
-
 const AGE_GROUPS = [
   { value: "ALL", label: "Semua Usia" },
   { value: "U12", label: "U-12" },
@@ -32,7 +22,6 @@ export function AthleteFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const currentPosition = searchParams.get("position") ?? "ALL";
   const currentAgeGroup = searchParams.get("ageGroup") ?? "ALL";
   const currentStatus = searchParams.get("status") ?? "active";
 
@@ -51,7 +40,7 @@ export function AthleteFilters() {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-2 mt-2">
+    <div className="grid grid-cols-2 gap-2 mt-2">
       <select
         id="filter-status"
         value={currentStatus}
@@ -61,19 +50,6 @@ export function AthleteFilters() {
         {STATUSES.map((s) => (
           <option key={s.value} value={s.value}>
             {s.label}
-          </option>
-        ))}
-      </select>
-
-      <select
-        id="filter-position"
-        value={currentPosition}
-        onChange={(e) => updateParam("position", e.target.value)}
-        className="rounded-md border border-border bg-surface-2 px-2 py-1.5 text-xs text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 transition cursor-pointer"
-      >
-        {POSITIONS.map((p) => (
-          <option key={p.value} value={p.value}>
-            {p.label}
           </option>
         ))}
       </select>

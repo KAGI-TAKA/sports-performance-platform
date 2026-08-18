@@ -38,7 +38,7 @@ type AssessmentDetail = {
       id: string;
       name: string;
       unit: string;
-      physicalComponent: string;
+      physicalComponent: string | null;
       scoreDirection: string;
     };
   }>;
@@ -92,7 +92,7 @@ export function CompareHeadToHead({
     string,
     {
       name: string;
-      component: string;
+      component: string | null;
       unit: string;
       valA: number | null;
       scoreA: number | null;
@@ -317,7 +317,7 @@ export function CompareHeadToHead({
                       {item.name}
                     </td>
                     <td className="px-4 py-3 text-muted capitalize">
-                      {item.component.replace(/_/g, " ").toLowerCase()}
+                      {item.component ? item.component.replace(/_/g, " ").toLowerCase() : "general"}
                     </td>
                     <td className="px-4 py-3 text-right font-mono font-bold text-blue-400">
                       {item.valA != null ? `${item.valA} ${item.unit}` : "—"}{" "}

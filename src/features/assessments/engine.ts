@@ -3,7 +3,7 @@ import { scoreToGrade } from "@/lib/constants";
 
 export interface TestItemValue {
   testItemId: string;
-  physicalComponent: PhysicalComponent;
+  physicalComponent: PhysicalComponent | string | null;
   rawValue: number;
   scoreDirection: ScoreDirection;
   thresholdA?: number; // Nilai acuan Grade A (mis. 90-100)
@@ -33,6 +33,28 @@ export const PHYSICAL_COMPONENTS = [
   "ANAEROBIC_ENDURANCE",
   "AEROBIC_ENDURANCE",
 ] as const;
+
+export interface ProgressItemResult {
+  testItemId: string;
+  testItemName: string;
+  unit: string;
+  scoreDirection: ScoreDirection;
+  currentRawValue: number;
+  previousRawValue: number | null;
+  delta: number | null;
+  percentChange: number | null;
+  trend: "IMPROVED" | "STABLE" | "DECLINING" | "BASELINE";
+}
+
+export interface ProgressEngineResult {
+  totalItemsTested: number;
+  improvedCount: number;
+  stableCount: number;
+  decliningCount: number;
+  itemProgress: ProgressItemResult[];
+  insightText: string;
+  recommendationText: string;
+}
 
 /**
  * Kalkulasi usia atlet pada tanggal assessment berdasarkan tanggal lahir.
@@ -152,11 +174,12 @@ export function calculateAssessmentEngine(items: TestItemValue[]): EngineResult 
     const score = calculateItemScore(item);
     itemScores[item.testItemId] = score;
 
-    if (!compSums[item.physicalComponent]) {
-      compSums[item.physicalComponent] = { total: 0, count: 0 };
+    const compKey = item.physicalComponent ?? "FLEXIBILITY";
+    if (!compSums[compKey]) {
+      compSums[compKey] = { total: 0, count: 0 };
     }
-    compSums[item.physicalComponent].total += score;
-    compSums[item.physicalComponent].count += 1;
+    compSums[compKey].total += score;
+    compSums[compKey].count += 1;
   });
 
   const componentScores: Partial<Record<PhysicalComponent, number>> = {};
@@ -209,5 +232,104 @@ export function calculateAssessmentEngine(items: TestItemValue[]): EngineResult 
     insightText,
     recommendationText,
     itemScores,
+  };
+}
+
+/**
+ * Kalkulasi assessment berbasis Progress / Baseline (untuk atlet pemula / beginner).
+ * Menghitung Delta, % Peningkatan, serta Tren (IMPROVED, STABLE, DECLINING) per item tes.
+ */
+export function calculateProgressAssessmentEngine(
+  currentItems: {
+    testItemId: string;
+    testItemName: string;
+    unit: string;
+    scoreDirection: ScoreDirection;
+    rawValue: number;
+  }[],
+  previousItems?: {
+    testItemId: string;
+    rawValue: number;
+  }[]
+): ProgressEngineResult {
+  const prevMap = new Map<string, number>();
+  if (previousItems) {
+    previousItems.forEach((item) => prevMap.set(item.testItemId, item.rawValue));
+  }
+
+  let improvedCount = 0;
+  let stableCount = 0;
+  let decliningCount = 0;
+
+  const itemProgress: ProgressItemResult[] = currentItems.map((item) => {
+    const prevVal = prevMap.get(item.testItemId) ?? null;
+
+    if (prevVal === null) {
+      return {
+        testItemId: item.testItemId,
+        testItemName: item.testItemName,
+        unit: item.unit,
+        scoreDirection: item.scoreDirection,
+        currentRawValue: item.rawValue,
+        previousRawValue: null,
+        delta: null,
+        percentChange: null,
+        trend: "BASELINE",
+      };
+    }
+
+    const delta = item.rawValue - prevVal;
+    const pct = prevVal !== 0 ? (delta / Math.abs(prevVal)) * 100 : 0;
+
+    let trend: "IMPROVED" | "STABLE" | "DECLINING" = "STABLE";
+
+    if (item.scoreDirection === "HIGHER_IS_BETTER") {
+      if (delta > 0.05) trend = "IMPROVED";
+      else if (delta < -0.05) trend = "DECLINING";
+    } else {
+      // LOWER_IS_BETTER (misal: waktu sprint berkurang = membaik)
+      if (delta < -0.05) trend = "IMPROVED";
+      else if (delta > 0.05) trend = "DECLINING";
+    }
+
+    if (trend === "IMPROVED") improvedCount++;
+    else if (trend === "STABLE") stableCount++;
+    else if (trend === "DECLINING") decliningCount++;
+
+    return {
+      testItemId: item.testItemId,
+      testItemName: item.testItemName,
+      unit: item.unit,
+      scoreDirection: item.scoreDirection,
+      currentRawValue: item.rawValue,
+      previousRawValue: prevVal,
+      delta: Math.round(delta * 100) / 100,
+      percentChange: Math.round(pct * 10) / 10,
+      trend,
+    };
+  });
+
+  const totalTested = currentItems.length;
+
+  let insightText = "";
+  if (prevMap.size === 0) {
+    insightText = `Assessment baseline awal berhasil dicatat (${totalTested} item tes). Data ini menjadi acuan evaluasi perkembangan atlet pada sesi berikutnya.`;
+  } else {
+    insightText = `Atlet menunjukkan peningkatan pada ${improvedCount} dari ${totalTested} item tes (${stableCount} stabil, ${decliningCount} memerlukan perhatian).`;
+  }
+
+  const recommendationText =
+    improvedCount >= totalTested / 2
+      ? "Pertahankan konsistensi latihan dasar dan tingkatkan progresivitas latihan secara bertahap."
+      : "Fokus pada penguatan teknik dasar dan pemulihan tubuh yang cukup sebelum sesi evaluasi berikutnya.";
+
+  return {
+    totalItemsTested: totalTested,
+    improvedCount,
+    stableCount,
+    decliningCount,
+    itemProgress,
+    insightText,
+    recommendationText,
   };
 }

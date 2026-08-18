@@ -36,6 +36,8 @@ import {
   formatDateHeader,
   formatTimeRange,
   toLocalDateStr,
+  getZonedParts,
+  parseLocalDateTimeToUTC,
 } from "../utils";
 
 interface ScheduleCalendarViewProps {
@@ -68,9 +70,11 @@ export function ScheduleCalendarView({
   const [coachFilter, setCoachFilter] = useState<string>(currentCoachFilter ?? "ALL");
 
   // Current Month State (default to current date or currentDateFilter's month)
-  const initialDate = currentDateFilter ? new Date(`${currentDateFilter}T00:00:00`) : new Date();
-  const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
+  const initialZoned = getZonedParts(
+    currentDateFilter ? parseLocalDateTimeToUTC(`${currentDateFilter}T00:00`) : new Date()
+  );
+  const [currentYear, setCurrentYear] = useState(initialZoned.year);
+  const [currentMonth, setCurrentMonth] = useState(initialZoned.month - 1);
 
   // Selected Date State (defaults to today or currentDateFilter)
   const todayIso = toLocalDateStr(new Date());

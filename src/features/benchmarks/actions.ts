@@ -60,12 +60,13 @@ export async function createTestItem(formData: FormData): Promise<{ success: boo
 
     const name = formData.get("name") as string;
     const physicalComponent = formData.get("physicalComponent") as string;
+    const componentId = formData.get("componentId") as string;
     const unit = formData.get("unit") as string;
     const scoreDirection = formData.get("scoreDirection") as string;
     const testType = (formData.get("testType") as string) || "NUMERIC";
     const orderStr = formData.get("order") as string;
     
-    if (!name || !physicalComponent || !unit || !scoreDirection || !orderStr) {
+    if (!name || !unit || !scoreDirection || !orderStr) {
       return { success: false, error: "Data tidak lengkap" };
     }
 
@@ -74,7 +75,8 @@ export async function createTestItem(formData: FormData): Promise<{ success: boo
     const created = await prisma.testItem.create({
       data: {
         organizationId: ctx.organizationId,
-        physicalComponent: physicalComponent as Parameters<typeof prisma.testItem.create>[0]["data"]["physicalComponent"],
+        componentId: componentId || null,
+        physicalComponent: (physicalComponent || null) as Parameters<typeof prisma.testItem.create>[0]["data"]["physicalComponent"],
         name,
         unit: unit as Parameters<typeof prisma.testItem.create>[0]["data"]["unit"],
         scoreDirection: scoreDirection as Parameters<typeof prisma.testItem.create>[0]["data"]["scoreDirection"],
@@ -129,6 +131,41 @@ export async function deactivateTestItem(testItemId: string): Promise<{ success:
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Gagal menonaktifkan item tes";
+    return { success: false, error: message };
+  }
+}
+
+export async function createAssessmentComponent(formData: FormData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const ctx = await requireOrgContext();
+    if (ctx.role === "assistant_coach") {
+      return { success: false, error: "Tidak ada akses" };
+    }
+
+    const name = formData.get("name") as string;
+    const description = (formData.get("description") as string) || null;
+    const orderStr = (formData.get("order") as string) || "0";
+
+    if (!name) {
+      return { success: false, error: "Nama komponen wajib diisi" };
+    }
+
+    const order = parseInt(orderStr, 10);
+
+    await prisma.assessmentComponent.create({
+      data: {
+        organizationId: ctx.organizationId,
+        name,
+        description,
+        order,
+        isActive: true,
+      },
+    });
+
+    revalidatePath("/benchmarks");
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal menambahkan komponen fisik";
     return { success: false, error: message };
   }
 }

@@ -120,6 +120,7 @@ export async function createAssessment(input: unknown) {
           athleteId: parsed.athleteId,
           createdByMemberId: ctx.memberId,
           assessmentDate,
+          assessmentType: parsed.assessmentType ?? "BENCHMARK_BASED",
           status: "COMPLETED",
           overallScore: engineResult.overallScore,
           overallGrade: engineResult.overallGrade,

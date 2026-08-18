@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getTrainingPlanById } from "@/features/training-plans/queries";
+import { getExercises } from "@/features/training-plans/exercise-actions";
 import { ExerciseItemForm } from "@/features/training-plans/components/exercise-item-form";
 import {
   ArrowLeft,
@@ -23,6 +24,7 @@ export default async function TrainingPlanDetailPage({
     notFound();
   }
 
+  const masterExercises = await getExercises();
   const isTemplate = !plan.athlete;
 
   return (
@@ -90,7 +92,7 @@ export default async function TrainingPlanDetailPage({
       </div>
 
       {/* Exercises Section */}
-      <ExerciseItemForm planId={plan.id} exercises={plan.exercises} />
+      <ExerciseItemForm planId={plan.id} exercises={plan.exercises} masterExercises={masterExercises} />
     </div>
   );
 }

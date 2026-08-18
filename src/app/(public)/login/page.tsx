@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { loginSchema } from "@/features/auth/schema";
+import { loginWithPortalCredentials } from "@/features/portal/actions";
 
 function LoginForm() {
   const router = useRouter();
@@ -23,32 +23,42 @@ function LoginForm() {
     e.preventDefault();
     setFormError(null);
 
-    const parsed = loginSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      const fieldErrors = parsed.error.flatten().fieldErrors;
-      setErrors({
-        email: fieldErrors.email?.[0],
-        password: fieldErrors.password?.[0],
-      });
+    if (!email.trim()) {
+      setErrors({ email: "Email atau username wajib diisi" });
       return;
     }
+    if (!password.trim()) {
+      setErrors({ password: "Password wajib diisi" });
+      return;
+    }
+
     setErrors({});
     setIsLoading(true);
 
+    // 1. Coba login Better Auth (Pelatih / Admin)
     const { error } = await authClient.signIn.email({
-      email: parsed.data.email,
-      password: parsed.data.password,
+      email: email.trim(),
+      password: password.trim(),
     });
 
-    setIsLoading(false);
-
-    if (error) {
-      setFormError(error.message ?? "Email atau password salah");
+    if (!error) {
+      setIsLoading(false);
+      router.push(redirectTo);
+      router.refresh();
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    // 2. Coba login Portal Akses (Atlet / Orang Tua)
+    const portalRes = await loginWithPortalCredentials(email, password);
+    setIsLoading(false);
+
+    if (portalRes.success && portalRes.redirectUrl) {
+      router.push(portalRes.redirectUrl);
+      router.refresh();
+      return;
+    }
+
+    setFormError("Email/Username atau password salah");
   }
 
   return (
@@ -78,7 +88,7 @@ function LoginForm() {
           Masuk ke akun kamu
         </h2>
         <p className="mt-1 text-sm text-secondary">
-          Kelola assessment fisik atlet dari satu tempat.
+          Pelatih, Atlet, atau Orang Tua — Masuk untuk mengakses platform.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -87,15 +97,15 @@ function LoginForm() {
               htmlFor="email"
               className="text-xs font-medium text-secondary"
             >
-              Email
+              Email / Username Portal
             </label>
             <input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-              placeholder="coach@akademi.com"
+              placeholder="coach@akademi.com atau atlet_budi_1234"
             />
             {errors.email && (
               <p className="mt-1 text-xs text-danger">{errors.email}</p>

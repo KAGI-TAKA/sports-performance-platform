@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateItemScore,
   calculateAssessmentEngine,
+  calculateProgressAssessmentEngine,
   calculateAgeAtDate,
   pickBestBenchmark,
 } from "./engine";
@@ -206,5 +207,59 @@ describe("calculateAssessmentEngine()", () => {
     ];
     const result = calculateAssessmentEngine(items);
     expect(result.overallGrade).toBe(scoreToGrade(result.overallScore));
+  });
+});
+
+// ─── calculateProgressAssessmentEngine ───────────────────────────────────────
+
+describe("calculateProgressAssessmentEngine()", () => {
+  it("should mark trend as BASELINE when no previous test items are provided", () => {
+    const currentItems = [
+      {
+        testItemId: "item-1",
+        testItemName: "Push Up",
+        unit: "REPETITION",
+        scoreDirection: "HIGHER_IS_BETTER" as const,
+        rawValue: 15,
+      },
+    ];
+    const result = calculateProgressAssessmentEngine(currentItems);
+    expect(result.totalItemsTested).toBe(1);
+    expect(result.itemProgress[0].trend).toBe("BASELINE");
+    expect(result.itemProgress[0].delta).toBeNull();
+  });
+
+  it("should correctly identify IMPROVED trend for HIGHER_IS_BETTER items", () => {
+    const currentItems = [
+      {
+        testItemId: "item-1",
+        testItemName: "Push Up",
+        unit: "REPETITION",
+        scoreDirection: "HIGHER_IS_BETTER" as const,
+        rawValue: 20,
+      },
+    ];
+    const previousItems = [{ testItemId: "item-1", rawValue: 15 }];
+    const result = calculateProgressAssessmentEngine(currentItems, previousItems);
+    expect(result.improvedCount).toBe(1);
+    expect(result.itemProgress[0].delta).toBe(5);
+    expect(result.itemProgress[0].trend).toBe("IMPROVED");
+  });
+
+  it("should correctly identify IMPROVED trend for LOWER_IS_BETTER timed items", () => {
+    const currentItems = [
+      {
+        testItemId: "item-2",
+        testItemName: "20m Sprint",
+        unit: "SECOND",
+        scoreDirection: "LOWER_IS_BETTER" as const,
+        rawValue: 3.2,
+      },
+    ];
+    const previousItems = [{ testItemId: "item-2", rawValue: 3.6 }];
+    const result = calculateProgressAssessmentEngine(currentItems, previousItems);
+    expect(result.improvedCount).toBe(1);
+    expect(result.itemProgress[0].trend).toBe("IMPROVED");
+    expect(result.itemProgress[0].delta).toBe(-0.4);
   });
 });

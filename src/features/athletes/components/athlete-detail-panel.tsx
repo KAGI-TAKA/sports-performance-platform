@@ -168,12 +168,11 @@ export function AthleteDetailPanel({
       </div>
 
       {/* Physical Metrics + Dynamic BMI */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
           { icon: Ruler, label: "Tinggi", value: athlete.heightCm ? `${athlete.heightCm} cm` : "—", color: "text-foreground" },
           { icon: Weight, label: "Berat", value: athlete.weightKg ? `${athlete.weightKg} kg` : "—", color: "text-foreground" },
           { icon: Weight, label: `BMI ${bmiCategory ? `(${bmiCategory})` : ""}`, value: bmiFormatted, color: bmiColor },
-          { icon: ArrowUpRight, label: "Wingspan", value: athlete.wingspanCm ? `${athlete.wingspanCm} cm` : "—", color: "text-foreground" },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="rounded-lg bg-surface-2 px-2 py-2.5 text-center">
             <div className={`font-mono text-xs font-bold ${color}`}>{value}</div>

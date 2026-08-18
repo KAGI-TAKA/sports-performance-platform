@@ -92,10 +92,12 @@ model Organization {
   members          Member[]
   invitations      Invitation[]
   athletes         Athlete[]
+  assessmentComponents AssessmentComponent[]
   testItems        TestItem[]
   assessments      Assessment[]
   benchmarks       Benchmark[]
   scheduleSessions ScheduleSession[]
+  exercises        Exercise[]
   trainingPlans    TrainingPlan[]
   sessionLogs      SessionLog[]
   portalAccesses   PortalAccess[]
@@ -151,6 +153,13 @@ enum AthletePosition {
   UNSPECIFIED
 }
 
+enum TrainingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ELITE
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -160,12 +169,13 @@ model Athlete {
   id             String @id @default(cuid())
   organizationId String
 
-  fullName     String
-  jerseyNumber Int?
-  position     AthletePosition @default(UNSPECIFIED)
-  gender       Gender
-  dateOfBirth  DateTime
-  photoUrl     String?
+  fullName      String
+  jerseyNumber  Int?
+  position      AthletePosition @default(UNSPECIFIED)
+  trainingLevel TrainingLevel   @default(BEGINNER)
+  gender        Gender
+  dateOfBirth   DateTime
+  photoUrl      String?
 
   heightCm   Decimal? @db.Decimal(5, 1)
   weightKg   Decimal? @db.Decimal(5, 1)
@@ -204,10 +214,12 @@ model PortalAccess {
   athleteId         String
   createdByMemberId String
 
-  tokenHash  String    @unique
-  accessType String    @default("ATHLETE") // "ATHLETE" | "PARENT"
-  expiresAt  DateTime
-  revokedAt  DateTime?
+  tokenHash     String    @unique
+  username      String?   @unique
+  plainPassword String?
+  accessType    String    @default("ATHLETE") // "ATHLETE" | "PARENT"
+  expiresAt     DateTime
+  revokedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -237,9 +249,24 @@ model AthleteInjuryHistory {
   @@map("athlete_injury_history")
 }
 
-// ============================================================
-// TEST ITEM & ASSESSMENT
-// ============================================================
+model AssessmentComponent {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  name        String
+  description String?
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  testItems    TestItem[]
+
+  @@index([organizationId])
+  @@map("assessment_component")
+}
 
 enum PhysicalComponent {
   FLEXIBILITY
@@ -272,10 +299,11 @@ enum MeasurementUnit {
 }
 
 model TestItem {
-  id             String @id @default(cuid())
+  id             String  @id @default(cuid())
   organizationId String
+  componentId    String?
 
-  physicalComponent PhysicalComponent
+  physicalComponent PhysicalComponent?
   name              String
   unit              MeasurementUnit
   scoreDirection    ScoreDirection
@@ -288,16 +316,23 @@ model TestItem {
   updatedAt DateTime @updatedAt
 
   organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  component    AssessmentComponent?   @relation(fields: [componentId], references: [id], onDelete: SetNull)
   resultItems  AssessmentResultItem[]
   benchmarks   Benchmark[]
 
-  @@index([organizationId, physicalComponent])
+  @@index([organizationId])
+  @@index([componentId])
   @@map("test_item")
 }
 
 enum AssessmentStatus {
   DRAFT
   COMPLETED
+}
+
+enum AssessmentType {
+  PROGRESS_BASED
+  BENCHMARK_BASED
 }
 
 model Assessment {
@@ -308,6 +343,7 @@ model Assessment {
 
   assessmentDate DateTime
   status         AssessmentStatus @default(DRAFT)
+  assessmentType AssessmentType   @default(BENCHMARK_BASED)
 
   overallScore Decimal? @db.Decimal(5, 2)
   overallGrade String?
@@ -450,7 +486,7 @@ model ScheduleSession {
   coach        Member                   @relation(fields: [coachId], references: [id])
   trainingPlan TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
   athletes     ScheduleSessionAthlete[]
-  sessionLog   SessionLog?
+  sessionLogs  SessionLog[]
 
   @@index([organizationId, startTime])
   @@index([trainingPlanId])
@@ -472,6 +508,33 @@ model ScheduleSessionAthlete {
 // TRAINING PROGRAM / PLAN & EXERCISES
 // ============================================================
 
+model Exercise {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  name        String
+  category    String? // Misal: Strength, Plyometrics, Core, Mobility
+  description String?
+  videoUrl    String?
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  trainingExercises TrainingExercise[]
+
+  @@index([organizationId])
+  @@map("exercise")
+}
+
+enum TrainingPlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
 model TrainingPlan {
   id             String   @id @default(cuid())
   organizationId String
@@ -481,7 +544,8 @@ model TrainingPlan {
   description String?
   startDate   DateTime?
   endDate     DateTime?
-  isActive    Boolean   @default(true)
+  status      TrainingPlanStatus @default(ACTIVE)
+  isActive    Boolean            @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -498,6 +562,7 @@ model TrainingPlan {
 model TrainingExercise {
   id             String  @id @default(cuid())
   trainingPlanId String
+  exerciseId     String?
 
   name        String
   category    String? // Misal: Plyometrics, Core, Strength, Agility
@@ -511,7 +576,10 @@ model TrainingExercise {
   updatedAt DateTime @updatedAt
 
   trainingPlan TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  exercise     Exercise?     @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
 
+  @@index([trainingPlanId])
+  @@index([exerciseId])
   @@map("training_exercise")
 }
 
@@ -523,7 +591,7 @@ model SessionLog {
   id                String   @id @default(cuid())
   organizationId    String
   athleteId         String
-  scheduleSessionId String?  @unique
+  scheduleSessionId String?
   createdByMemberId String
 
   sessionDate    DateTime @default(now())
@@ -536,9 +604,10 @@ model SessionLog {
 
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   athlete         Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  scheduleSession ScheduleSession? @relation(fields: [scheduleSessionId], references: [id])
+  scheduleSession ScheduleSession? @relation(fields: [scheduleSessionId], references: [id], onDelete: SetNull)
   createdBy       Member           @relation(fields: [createdByMemberId], references: [id])
 
   @@index([organizationId, athleteId])
+  @@index([scheduleSessionId])
   @@map("session_log")
 }

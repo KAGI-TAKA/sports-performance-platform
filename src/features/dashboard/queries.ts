@@ -57,7 +57,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
         organizationId,
         startTime: { lt: now },
         status: "COMPLETED",
-        sessionLog: null,
+        sessionLogs: { none: {} },
       },
     }),
 

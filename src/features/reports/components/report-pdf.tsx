@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
 
 export interface ReportItem {
   name: string;
-  component: string;
+  component: string | null;
   rawValue: string;
   unit: string;
   score: number;
@@ -248,7 +248,8 @@ const COMP_LABELS: Record<string, string> = {
   AEROBIC_ENDURANCE: "Daya Tahan Aerobik",
 };
 
-function compLabel(key: string): string {
+function compLabel(key: string | null): string {
+  if (!key) return "General";
   return COMP_LABELS[key] ?? key.replace(/_/g, " ").toLowerCase();
 }
 

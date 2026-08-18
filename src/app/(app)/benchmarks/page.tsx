@@ -22,7 +22,7 @@ export default async function BenchmarksPage() {
   // Group by component
   const grouped: Record<string, typeof testItems> = {};
   for (const item of testItems) {
-    const comp = item.physicalComponent;
+    const comp = item.physicalComponent ?? "FLEXIBILITY";
     if (!grouped[comp]) grouped[comp] = [];
     grouped[comp].push(item);
   }

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 interface TestItemProp {
   id: string;
-  physicalComponent: PhysicalComponent;
+  physicalComponent: PhysicalComponent | null;
   name: string;
   unit: MeasurementUnit;
   scoreDirection: ScoreDirection;
@@ -27,6 +27,7 @@ interface AssessmentWizardProps {
     id: string;
     fullName: string;
     position: string;
+    trainingLevel?: string;
   };
   testItems: TestItemProp[];
 }
@@ -73,6 +74,8 @@ const STEP_COMPONENTS: { key: PhysicalComponent; label: string }[] = [
 
 export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) {
   const router = useRouter();
+  const defaultMode = athlete.trainingLevel === "BEGINNER" || athlete.trainingLevel === "INTERMEDIATE" ? "PROGRESS_BASED" : "BENCHMARK_BASED";
+  const [assessmentType, setAssessmentType] = useState<"PROGRESS_BASED" | "BENCHMARK_BASED">(defaultMode);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [rawValues, setRawValues] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -144,11 +147,12 @@ export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) 
       const res = await createAssessment({
         athleteId: athlete.id,
         assessmentDate: new Date(),
+        assessmentType,
         results,
       });
 
       if (res.success && res.assessmentId) {
-        toast.success("Assessment fisik berhasil disimpan dan dihitung!");
+        toast.success("Assessment fisik berhasil disimpan!");
         router.push(`/assessments/${res.assessmentId}`);
         router.refresh();
       } else {
@@ -168,16 +172,42 @@ export function AssessmentWizard({ athlete, testItems }: AssessmentWizardProps) 
 
   return (
     <div className="space-y-6">
-      {/* Header Info */}
-      <div className="flex items-center justify-between border-b border-border pb-4">
+      {/* Header Info & Assessment Mode Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
           <h1 className="font-display text-lg font-semibold text-foreground">
             Assessment Physical — {athlete.fullName}
           </h1>
           <p className="mt-0.5 text-xs text-muted">
-            Posisi: {athlete.position.replace("_", " ")} · Tanggal:{" "}
+            Level: <span className="font-semibold text-primary">{athlete.trainingLevel || "BEGINNER"}</span> · Tanggal:{" "}
             {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
           </p>
+        </div>
+
+        {/* Mode Toggle Switch */}
+        <div className="flex items-center bg-surface-2 p-1 rounded-xl border border-border">
+          <button
+            type="button"
+            onClick={() => setAssessmentType("PROGRESS_BASED")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              assessmentType === "PROGRESS_BASED"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            🌱 Mode Progress / Baseline
+          </button>
+          <button
+            type="button"
+            onClick={() => setAssessmentType("BENCHMARK_BASED")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              assessmentType === "BENCHMARK_BASED"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            🏆 Mode Benchmark (Grade A-D)
+          </button>
         </div>
       </div>
 

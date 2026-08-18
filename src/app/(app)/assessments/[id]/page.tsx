@@ -95,6 +95,15 @@ export default async function AssessmentDetailPage({
               <Badge variant="accent" className="font-mono text-xs">
                 Grade {grade}
               </Badge>
+              {assessment.assessmentType === "PROGRESS_BASED" ? (
+                <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                  🌱 Mode Progress / Baseline
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30">
+                  🏆 Mode Benchmark
+                </Badge>
+              )}
             </div>
             <p className="mt-0.5 text-xs text-muted">
               {assessment.athlete.position !== "UNSPECIFIED"
@@ -287,7 +296,7 @@ export default async function AssessmentDetailPage({
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">
-                      {item.testItem.physicalComponent.replace(/_/g, " ")}
+                      {item.testItem.physicalComponent ? item.testItem.physicalComponent.replace(/_/g, " ") : "GENERAL"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
