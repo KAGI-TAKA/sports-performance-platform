@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -10,6 +10,11 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z
+    .string()
+    .min(1)
+    .default("Coach Zulfi Athletic Performance <onboarding@resend.dev>"),
 });
 
 const parsed = envSchema.safeParse(process.env);

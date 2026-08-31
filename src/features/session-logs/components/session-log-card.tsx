@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { deleteSessionLog } from "../actions";
 import { SessionLogVideoPlayer } from "./session-log-video-player";
 import { toast } from "sonner";
@@ -90,10 +91,14 @@ export function SessionLogCard({ log }: SessionLogCardProps) {
 
         {/* Schedule session reference badge if linked */}
         {log.scheduleSession && (
-          <div className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-400">
+          <Link
+            href={`/schedule/${log.scheduleSession.id}/execute`}
+            className="inline-flex items-center gap-1 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-400 transition"
+            title="Lihat Detail Eksekusi Sesi"
+          >
             <CheckCircle2 className="h-3 w-3" />
             Sesi: {log.scheduleSession.title}
-          </div>
+          </Link>
         )}
 
         {/* Activities Done */}

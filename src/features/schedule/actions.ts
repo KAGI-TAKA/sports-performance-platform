@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
 import { createScheduleSchema, updateScheduleSchema } from "./schema";
 import { parseLocalDateTimeToUTC } from "./utils";
+import { buildScheduleConflictReport } from "./conflict-engine";
+import { getPotentialConflictSessions } from "./conflict-queries";
 import type { ScheduleStatus } from "@prisma/client";
 
 /**
@@ -114,6 +116,24 @@ export async function createScheduleSession(formData: FormData) {
         error: "Program latihan spesifik atlet tidak cocok dengan daftar atlet terdaftar pada sesi ini",
       };
     }
+  }
+
+  // Conflict Detection: Coach collision is a HARD BLOCK
+  const candidateSessions = await getPotentialConflictSessions(ctx.organizationId, [
+    { startTime: start, endTime: end },
+  ]);
+  const conflictReport = buildScheduleConflictReport(
+    { coachId, athleteIds, startTime: start, endTime: end },
+    candidateSessions
+  );
+
+  if (conflictReport.hasCoachConflict && conflictReport.coachConflict) {
+    const cf = conflictReport.coachConflict;
+    const timeStr = `${cf.existingStart.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${cf.existingEnd.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+    return {
+      success: false,
+      error: `Bentrok Jadwal: Pelatih sudah memiliki sesi "${cf.existingTitle}" (${timeStr}) pada rentang waktu yang sama.`,
+    };
   }
 
   try {
@@ -248,6 +268,24 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
         error: "Program latihan spesifik atlet tidak cocok dengan daftar atlet terdaftar pada sesi ini",
       };
     }
+  }
+
+  // Conflict Detection: Coach collision is a HARD BLOCK (excluding self)
+  const candidateSessions = await getPotentialConflictSessions(ctx.organizationId, [
+    { startTime: start, endTime: end },
+  ]);
+  const conflictReport = buildScheduleConflictReport(
+    { coachId, athleteIds, startTime: start, endTime: end, excludeSessionId: sessionId },
+    candidateSessions
+  );
+
+  if (conflictReport.hasCoachConflict && conflictReport.coachConflict) {
+    const cf = conflictReport.coachConflict;
+    const timeStr = `${cf.existingStart.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${cf.existingEnd.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+    return {
+      success: false,
+      error: `Bentrok Jadwal: Pelatih sudah memiliki sesi "${cf.existingTitle}" (${timeStr}) pada rentang waktu yang sama.`,
+    };
   }
 
   try {

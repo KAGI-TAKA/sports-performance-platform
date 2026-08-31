@@ -30,9 +30,14 @@ import {
   Edit2,
   FileText,
   UserCheck,
+  PlayCircle,
+  Eye,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import { formatDateHeader, formatTimeRange, toLocalDateStr, getStartOfDay } from "../utils";
 import { AttendanceSessionDialog } from "@/features/attendance/components/attendance-session-dialog";
+import { CloneScheduleDialog } from "./clone-schedule-dialog";
 
 export interface ScheduleSessionItem {
   id: string;
@@ -83,6 +88,9 @@ export function ScheduleAgendaView({
 
   // Edit Modal State
   const [editingSession, setEditingSession] = useState<ScheduleSessionItem | null>(null);
+
+  // Clone Modal State
+  const [cloneSession, setCloneSession] = useState<{ id: string; status: ScheduleStatus } | null>(null);
 
   // Attendance Modal State
   const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
@@ -461,12 +469,32 @@ export function ScheduleAgendaView({
                             )}
                           </div>
 
-                          {/* Edit & Session Log Links */}
-                          <div className="flex items-center gap-1">
+                          {/* Primary Execution CTA & Action Links */}
+                          <div className="flex items-center gap-1.5">
+                            {session.status === "SCHEDULED" ? (
+                              <Link
+                                href={`/schedule/${session.id}/execute`}
+                                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs"
+                                title="Buka Workspace Eksekusi Sesi di Lapangan"
+                              >
+                                <PlayCircle className="h-3.5 w-3.5" />
+                                <span>Eksekusi</span>
+                              </Link>
+                            ) : session.status === "COMPLETED" ? (
+                              <Link
+                                href={`/schedule/${session.id}/execute`}
+                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10.5px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 transition-colors"
+                                title="Lihat Hasil Eksekusi & Presensi Sesi"
+                              >
+                                <Eye className="h-3 w-3" />
+                                <span>Hasil</span>
+                              </Link>
+                            ) : null}
+
                             <button
                               onClick={() => setAttendanceSessionId(session.id)}
                               className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
-                              title="Buka Presensi Sesi"
+                              title="Buka Presensi Sesi Cepat"
                             >
                               <UserCheck className="h-3.5 w-3.5" />
                               Presensi
@@ -480,6 +508,26 @@ export function ScheduleAgendaView({
                               >
                                 <FileText className="h-3.5 w-3.5" />
                               </Link>
+                            )}
+
+                            {/* Clone / Reschedule Action */}
+                            {session.status === "CANCELLED" || session.status === "NO_SHOW" ? (
+                              <button
+                                onClick={() => setCloneSession({ id: session.id, status: session.status })}
+                                className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                                title="Jadwalkan Ulang Sesi Ini"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                Jadwalkan Ulang
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setCloneSession({ id: session.id, status: session.status })}
+                                className="p-1 rounded text-secondary hover:text-indigo-600 hover:bg-surface-2 transition-colors"
+                                title="Duplikasi Sesi"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
                             )}
 
                             <button
@@ -518,6 +566,19 @@ export function ScheduleAgendaView({
           if (!open) setAttendanceSessionId(null);
         }}
         onSaved={() => {
+          router.refresh();
+        }}
+      />
+
+      {/* Clone Schedule Dialog */}
+      <CloneScheduleDialog
+        sessionId={cloneSession?.id ?? null}
+        sessionStatus={cloneSession?.status}
+        open={!!cloneSession}
+        onOpenChange={(open) => {
+          if (!open) setCloneSession(null);
+        }}
+        onSuccess={() => {
           router.refresh();
         }}
       />

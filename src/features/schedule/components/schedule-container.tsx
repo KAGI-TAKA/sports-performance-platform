@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ScheduleAgendaView, type ScheduleSessionItem } from "./schedule-agenda-view";
 import { ScheduleCalendarView } from "./schedule-calendar-view";
 import { ScheduleWeeklyMatrixView } from "./schedule-weekly-matrix-view";
+import { ScheduleQuickFilterBar } from "./schedule-quick-filter-bar";
 import type { CoachOption, AthleteOption } from "./schedule-dialog-form";
+import type { ActiveQuickFilter, ScheduleScope } from "../quick-filter-engine";
 import { Calendar as CalendarIcon, ListFilter, LayoutGrid } from "lucide-react";
 
 interface ScheduleContainerProps {
@@ -14,6 +16,9 @@ interface ScheduleContainerProps {
   currentDateFilter?: string;
   currentCoachFilter?: string;
   currentStatusFilter?: string;
+  activeQuickFilter?: ActiveQuickFilter;
+  userRole?: string;
+  defaultScope?: ScheduleScope;
 }
 
 export function ScheduleContainer({
@@ -23,6 +28,9 @@ export function ScheduleContainer({
   currentDateFilter,
   currentCoachFilter,
   currentStatusFilter,
+  activeQuickFilter = "all",
+  userRole = "head_coach",
+  defaultScope = "all",
 }: ScheduleContainerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,16 +46,17 @@ export function ScheduleContainer({
   }
 
   return (
-    <div className="space-y-6">
-      {/* 3-Way View Switcher Tab (Calendar / Timetable / Agenda) */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
-        <div className="flex items-center gap-1 rounded-lg bg-surface-2 p-1 border border-border">
+    <div className="space-y-4">
+      {/* View Switcher & Quick Filter Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-border/80">
+        {/* 3-Way View Switcher Tab (Calendar / Timetable / Agenda) */}
+        <div className="flex items-center gap-1 rounded-xl bg-surface-2 p-1 border border-border w-fit">
           <button
             type="button"
             onClick={() => handleViewChange("timetable")}
-            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
               activeView === "timetable"
-                ? "bg-accent text-white shadow-sm"
+                ? "bg-accent text-white shadow-xs"
                 : "text-muted hover:text-foreground hover:bg-surface-3"
             }`}
           >
@@ -58,9 +67,9 @@ export function ScheduleContainer({
           <button
             type="button"
             onClick={() => handleViewChange("calendar")}
-            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
               activeView === "calendar"
-                ? "bg-accent text-white shadow-sm"
+                ? "bg-accent text-white shadow-xs"
                 : "text-muted hover:text-foreground hover:bg-surface-3"
             }`}
           >
@@ -71,9 +80,9 @@ export function ScheduleContainer({
           <button
             type="button"
             onClick={() => handleViewChange("agenda")}
-            className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
               activeView === "agenda"
-                ? "bg-accent text-white shadow-sm"
+                ? "bg-accent text-white shadow-xs"
                 : "text-muted hover:text-foreground hover:bg-surface-3"
             }`}
           >
@@ -82,10 +91,21 @@ export function ScheduleContainer({
           </button>
         </div>
 
-        <span className="text-xs text-muted font-medium">
-          Total Sesi: <strong className="text-foreground font-semibold">{sessions.length}</strong>
-        </span>
+        {/* Counter Summary Badge */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+            {defaultScope === "mine" && activeQuickFilter === "mine" ? "Jadwal Saya: " : "Total Sesi: "}
+            <strong className="text-indigo-950 font-bold">{sessions.length}</strong> Sesi
+          </span>
+        </div>
       </div>
+
+      {/* P7-B4 Schedule Quick Filter Bar */}
+      <ScheduleQuickFilterBar
+        activeFilter={activeQuickFilter}
+        userRole={userRole}
+        defaultScope={defaultScope}
+      />
 
       {/* Render Selected View */}
       {activeView === "timetable" ? (

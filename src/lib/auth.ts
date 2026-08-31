@@ -1,8 +1,9 @@
-import { betterAuth } from "better-auth";
+﻿import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
 import { prisma } from "./prisma";
 import { env } from "./env.server";
+import { sendPasswordResetEmail } from "./email";
 import { ac, admin, headCoach, assistantCoach } from "./permissions";
 
 export const auth = betterAuth({
@@ -10,13 +11,36 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
 
+  rateLimit: {
+    enabled: true,
+    window: 60, // 60 detik default window
+    max: 100, // 100 requests default limit
+    customRules: {
+      "/sign-in/email": {
+        window: 300, // 5 menit
+        max: 5, // 5 failed attempts limit
+      },
+      "/forget-password": {
+        window: 900, // 15 menit
+        max: 3, // 3 requests limit
+      },
+      "/reset-password": {
+        window: 900, // 15 menit
+        max: 5, // 5 attempts limit
+      },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
-    // TODO: ganti console.log ini dengan pengiriman email asli begitu
-    // provider email (mis. Resend) sudah diputuskan & disetup.
     sendResetPassword: async ({ user, url }) => {
-      console.log(`[DEV] Link reset password untuk ${user.email}: ${url}`);
+      await sendPasswordResetEmail({
+        to: user.email,
+        userName: user.name,
+        resetUrl: url,
+        expiresInMinutes: 60,
+      });
     },
   },
 

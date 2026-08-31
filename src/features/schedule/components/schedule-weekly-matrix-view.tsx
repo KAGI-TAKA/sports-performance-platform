@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import type { ScheduleStatus } from "@prisma/client";
 import type { ScheduleSessionItem } from "./schedule-agenda-view";
 import type { CoachOption, AthleteOption } from "./schedule-dialog-form";
 import { ScheduleDialogForm } from "./schedule-dialog-form";
@@ -16,8 +18,13 @@ import {
   AlertCircle,
   HelpCircle,
   UserCheck,
+  PlayCircle,
+  Eye,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import { AttendanceSessionDialog } from "@/features/attendance/components/attendance-session-dialog";
+import { CloneScheduleDialog } from "./clone-schedule-dialog";
 
 interface ScheduleWeeklyMatrixViewProps {
   sessions: ScheduleSessionItem[];
@@ -56,6 +63,7 @@ export function ScheduleWeeklyMatrixView({
 }: ScheduleWeeklyMatrixViewProps) {
   const [selectedSession, setSelectedSession] = useState<ScheduleSessionItem | null>(null);
   const [editingSession, setEditingSession] = useState<ScheduleSessionItem | null>(null);
+  const [cloneSession, setCloneSession] = useState<{ id: string; status: ScheduleStatus } | null>(null);
   const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
   const [createSlotData, setCreateSlotData] = useState<{ startTime: Date; endTime: Date } | null>(null);
 
@@ -289,14 +297,37 @@ export function ScheduleWeeklyMatrixView({
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={() => setSelectedSession(null)}
-                className="px-4 py-2 text-xs font-semibold rounded-xl border border-border hover:bg-surface-2 text-secondary transition"
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-border hover:bg-surface-2 text-secondary transition min-h-[44px]"
               >
                 Tutup
               </button>
+
+              {selectedSession.status === "SCHEDULED" ? (
+                <Link
+                  href={`/schedule/${selectedSession.id}/execute`}
+                  onClick={() => setSelectedSession(null)}
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
+                  title="Buka Workspace Eksekusi Sesi di Lapangan"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  Eksekusi Sesi
+                </Link>
+              ) : selectedSession.status === "COMPLETED" ? (
+                <Link
+                  href={`/schedule/${selectedSession.id}/execute`}
+                  onClick={() => setSelectedSession(null)}
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-200 transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
+                  title="Lihat Hasil Eksekusi & Presensi Sesi"
+                >
+                  <Eye className="h-4 w-4" />
+                  Lihat Hasil
+                </Link>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
@@ -304,7 +335,7 @@ export function ScheduleWeeklyMatrixView({
                   setSelectedSession(null);
                   setAttendanceSessionId(s.id);
                 }}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition shadow-2xs flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
               >
                 <UserCheck className="h-3.5 w-3.5" />
                 Presensi Sesi
@@ -314,9 +345,32 @@ export function ScheduleWeeklyMatrixView({
                 onClick={() => {
                   const s = selectedSession;
                   setSelectedSession(null);
+                  setCloneSession({ id: s.id, status: s.status });
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition shadow-2xs flex items-center gap-1.5 min-h-[44px]"
+                title={selectedSession.status === "CANCELLED" || selectedSession.status === "NO_SHOW" ? "Jadwalkan Ulang Sesi" : "Duplikasi Sesi"}
+              >
+                {selectedSession.status === "CANCELLED" || selectedSession.status === "NO_SHOW" ? (
+                  <>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Jadwalkan Ulang
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Duplikasi Sesi
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const s = selectedSession;
+                  setSelectedSession(null);
                   setEditingSession(s);
                 }}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-accent text-white hover:bg-accent/90 transition shadow-2xs"
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-accent text-white hover:bg-accent/90 transition shadow-2xs min-h-[44px]"
               >
                 ✏️ Edit Jadwal
               </button>
@@ -333,6 +387,19 @@ export function ScheduleWeeklyMatrixView({
           if (!isOpen) setAttendanceSessionId(null);
         }}
         onSaved={() => {
+          window.location.reload();
+        }}
+      />
+
+      {/* ── CLONE SCHEDULE DIALOG ─────────────────────────────────────── */}
+      <CloneScheduleDialog
+        sessionId={cloneSession?.id ?? null}
+        sessionStatus={cloneSession?.status}
+        open={!!cloneSession}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setCloneSession(null);
+        }}
+        onSuccess={() => {
           window.location.reload();
         }}
       />

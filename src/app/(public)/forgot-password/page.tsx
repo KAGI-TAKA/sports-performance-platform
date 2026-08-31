@@ -15,7 +15,8 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    const parsed = forgotPasswordSchema.safeParse({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const parsed = forgotPasswordSchema.safeParse({ email: normalizedEmail });
     if (!parsed.success) {
       setError(
         parsed.error.flatten().fieldErrors.email?.[0] ?? "Email tidak valid",
@@ -31,12 +32,12 @@ export default function ForgotPasswordPage() {
     setIsLoading(false);
 
     if (requestError) {
-      setError(requestError.message ?? "Gagal mengirim link reset");
-      return;
+      // In case of client network offline or rate limit
+      console.warn("[AUTH_FORGOT_PASSWORD] Notice:", requestError.message);
     }
 
-    // Selalu tampilkan pesan sukses walau email tidak terdaftar,
-    // supaya orang tidak bisa mengecek email mana yang punya akun (enumeration).
+    // Selalu tampilkan pesan sukses generik walau email tidak terdaftar,
+    // supaya orang tidak bisa mengecek email mana yang punya akun (anti-enumeration).
     setSent(true);
   }
 

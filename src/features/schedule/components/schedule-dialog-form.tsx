@@ -2,9 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { createScheduleSession, updateScheduleSession } from "../actions";
+import { previewRecurringScheduleAction } from "../recurrence-actions";
+import type { RecurringSchedulePreview } from "../recurrence-engine";
+import { RecurringSchedulePreviewModal } from "./recurring-schedule-preview-modal";
 import { toDateTimeLocalString } from "../utils";
 import { toast } from "sonner";
-import { Plus, Calendar, Clock, User, Users, MapPin, AlignLeft, Dumbbell, Loader2 } from "lucide-react";
+import { Plus, Calendar, Clock, User, Users, MapPin, AlignLeft, Dumbbell, Loader2, Repeat, CalendarDays } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -91,6 +94,51 @@ export function ScheduleDialogForm({
   })();
 
   const [slotType, setSlotType] = useState<"PASTI" | "FLEKSIBEL" | "TERKUNCI">(initialSlotType);
+  const [scheduleMode, setScheduleMode] = useState<"SINGLE" | "RECURRING">("SINGLE");
+
+  const todayStr = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  })();
+
+  const fourWeeksLaterStr = (() => {
+    const d = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  })();
+
+  const [startDateStr, setStartDateStr] = useState(todayStr);
+  const [endDateStr, setEndDateStr] = useState(fourWeeksLaterStr);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([
+    new Date().getDay(),
+  ]);
+  const [recurringStartTime, setRecurringStartTime] = useState("16:00");
+  const [recurringEndTime, setRecurringEndTime] = useState("17:30");
+
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<RecurringSchedulePreview | null>(null);
+  const [recurringPayload, setRecurringPayload] = useState<{
+    title: string;
+    coachId: string;
+    coachName?: string;
+    athleteIds: string[];
+    athleteNames?: string[];
+    trainingPlanId?: string | null;
+    trainingPlanTitle?: string;
+    location?: string;
+    notes?: string;
+    startDateStr: string;
+    endDateStr: string;
+    weekdays: number[];
+    startTimeStr: string;
+    endTimeStr: string;
+  } | null>(null);
+
   const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>(
     () => initialSession?.athleteIds ?? []
   );
@@ -111,6 +159,14 @@ export function ScheduleDialogForm({
       : toDateTimeLocalString(new Date(Date.now() + 60 * 60 * 1000))
   );
 
+  function toggleWeekday(dayIndex: number) {
+    setSelectedWeekdays((prev) =>
+      prev.includes(dayIndex)
+        ? prev.filter((d) => d !== dayIndex)
+        : [...prev, dayIndex].sort((a, b) => a - b)
+    );
+  }
+
   function toggleAthlete(id: string) {
     setSelectedAthleteIds((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
@@ -120,6 +176,87 @@ export function ScheduleDialogForm({
   const filteredAthletes = athletes.filter((a) =>
     a.fullName.toLowerCase().includes(athleteSearch.toLowerCase())
   );
+
+  async function handlePreviewRecurring(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const title = (formData.get("title") as string) || "";
+    if (!title || title.trim().length < 2) {
+      toast.error("Judul sesi minimal 2 karakter");
+      return;
+    }
+
+    if (selectedAthleteIds.length === 0) {
+      toast.error("Pilih minimal 1 atlet");
+      return;
+    }
+
+    if (selectedWeekdays.length === 0) {
+      toast.error("Pilih minimal 1 hari dalam seminggu");
+      return;
+    }
+
+    const trainingPlanIdVal = formData.get("trainingPlanId") as string;
+    const effectivePlanId =
+      trainingPlanIdVal && trainingPlanIdVal !== "NONE" ? trainingPlanIdVal : null;
+
+    const rawNotes = (formData.get("notes") as string) || "";
+    const cleanNotes = rawNotes
+      .replace(/\[(90% Pasti|Fleksibel 60%|Off Jadwal \/ Terkunci|PASTI|FLEKSIBEL|TERKUNCI)\]\s*/gi, "")
+      .trim();
+
+    let finalNotes = cleanNotes;
+    if (slotType === "FLEKSIBEL") {
+      finalNotes = cleanNotes ? `[Fleksibel 60%] ${cleanNotes}` : "[Fleksibel 60%]";
+    } else if (slotType === "TERKUNCI") {
+      finalNotes = cleanNotes ? `[Off Jadwal / Terkunci] ${cleanNotes}` : "[Off Jadwal / Terkunci]";
+    }
+
+    const coachName = coaches.find((c) => c.id === selectedCoachId)?.name;
+    const athleteNames = athletes
+      .filter((a) => selectedAthleteIds.includes(a.id))
+      .map((a) => a.fullName);
+    const trainingPlanTitle = trainingPlans.find((p) => p.id === effectivePlanId)?.title;
+
+    startTransition(async () => {
+      const res = await previewRecurringScheduleAction({
+        startDateStr,
+        endDateStr,
+        weekdays: selectedWeekdays,
+        startTimeStr: recurringStartTime,
+        endTimeStr: recurringEndTime,
+        coachId: selectedCoachId,
+        athleteIds: selectedAthleteIds,
+        trainingPlanId: effectivePlanId,
+      });
+
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+
+      setRecurringPayload({
+        title: title.trim(),
+        coachId: selectedCoachId,
+        coachName,
+        athleteIds: selectedAthleteIds,
+        athleteNames,
+        trainingPlanId: effectivePlanId,
+        trainingPlanTitle,
+        location: (formData.get("location") as string) || undefined,
+        notes: finalNotes || undefined,
+        startDateStr,
+        endDateStr,
+        weekdays: selectedWeekdays,
+        startTimeStr: recurringStartTime,
+        endTimeStr: recurringEndTime,
+      });
+      setPreviewData(res.preview);
+      setPreviewModalOpen(true);
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -198,7 +335,37 @@ export function ScheduleDialogForm({
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <form onSubmit={scheduleMode === "RECURRING" ? handlePreviewRecurring : handleSubmit} className="space-y-4 text-xs">
+            {/* Mode Pembuatan Sesi (Hanya saat membuat sesi baru) */}
+            {!isEditing && (
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setScheduleMode("SINGLE")}
+                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[40px] ${
+                    scheduleMode === "SINGLE"
+                      ? "bg-white text-indigo-700 shadow-2xs border border-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Sesi Sekali
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleMode("RECURRING")}
+                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[40px] ${
+                    scheduleMode === "RECURRING"
+                      ? "bg-white text-indigo-700 shadow-2xs border border-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Repeat className="h-4 w-4" />
+                  Sesi Berulang (Mingguan)
+                </button>
+              </div>
+            )}
+
             {/* Judul Sesi */}
             <div>
               <label className="block font-medium text-foreground mb-1">
@@ -334,33 +501,130 @@ export function ScheduleDialogForm({
               </div>
             </div>
 
-            {/* Waktu Sesi (Start & End) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-muted" />
-                  Waktu Mulai <span className="text-danger">*</span>
-                </label>
-                <Input
-                  type="datetime-local"
-                  name="startTime"
-                  defaultValue={defaultStartTimeStr}
-                  required
-                />
+            {/* Waktu & Pengaturan Jadwal */}
+            {scheduleMode === "SINGLE" ? (
+              /* Single Session Date-Time */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-muted" />
+                    Waktu Mulai <span className="text-danger">*</span>
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    name="startTime"
+                    defaultValue={defaultStartTimeStr}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-muted" />
+                    Waktu Selesai <span className="text-danger">*</span>
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    name="endTime"
+                    defaultValue={defaultEndTimeStr}
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-muted" />
-                  Waktu Selesai <span className="text-danger">*</span>
-                </label>
-                <Input
-                  type="datetime-local"
-                  name="endTime"
-                  defaultValue={defaultEndTimeStr}
-                  required
-                />
+            ) : (
+              /* Recurring Weekly Schedule Configuration */
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3.5 space-y-3">
+                {/* Weekday Selector */}
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1.5">
+                    Pilih Hari Rutin Setiap Pekan <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                    {[
+                      { index: 1, label: "Sen", full: "Senin" },
+                      { index: 2, label: "Sel", full: "Selasa" },
+                      { index: 3, label: "Rab", full: "Rabu" },
+                      { index: 4, label: "Kam", full: "Kamis" },
+                      { index: 5, label: "Jum", full: "Jumat" },
+                      { index: 6, label: "Sab", full: "Sabtu" },
+                      { index: 0, label: "Min", full: "Minggu" },
+                    ].map((day) => {
+                      const isChecked = selectedWeekdays.includes(day.index);
+                      return (
+                        <button
+                          key={day.index}
+                          type="button"
+                          onClick={() => toggleWeekday(day.index)}
+                          className={`py-2 px-1 text-center rounded-lg border text-xs font-bold transition min-h-[44px] flex flex-col items-center justify-center ${
+                            isChecked
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span>{day.label}</span>
+                          <span className="text-[9px] opacity-80 font-normal hidden sm:inline">{day.full}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Range Dates (Start & End Date) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Mulai Tanggal <span className="text-rose-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={startDateStr}
+                      onChange={(e) => setStartDateStr(e.target.value)}
+                      required
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Sampai Tanggal (Maks 12 Pekan) <span className="text-rose-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={endDateStr}
+                      onChange={(e) => setEndDateStr(e.target.value)}
+                      required
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Time range (HH:mm) */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Jam Mulai <span className="text-rose-500">*</span>
+                    </label>
+                    <Input
+                      type="time"
+                      value={recurringStartTime}
+                      onChange={(e) => setRecurringStartTime(e.target.value)}
+                      required
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Jam Selesai <span className="text-rose-500">*</span>
+                    </label>
+                    <Input
+                      type="time"
+                      value={recurringEndTime}
+                      onChange={(e) => setRecurringEndTime(e.target.value)}
+                      required
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Lokasi */}
             <div>
@@ -469,12 +733,29 @@ export function ScheduleDialogForm({
                 className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5"
               >
                 {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {isEditing ? "Simpan Perubahan" : "Simpan Jadwal"}
+                {scheduleMode === "RECURRING"
+                  ? "Pratinjau & Buat Jadwal Berulang →"
+                  : isEditing
+                  ? "Simpan Perubahan"
+                  : "Simpan Jadwal"}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Recurring Schedule Preview Modal */}
+      <RecurringSchedulePreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        preview={previewData}
+        formPayload={recurringPayload}
+        onSuccess={() => {
+          setIsOpen(false);
+          setSelectedAthleteIds([]);
+        }}
+      />
     </>
   );
 }
+

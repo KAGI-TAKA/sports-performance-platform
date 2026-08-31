@@ -4,7 +4,11 @@ import {
   listCoachesForOrg,
   listActiveAthletesForOrg,
 } from "@/features/schedule/queries";
-import { getStartOfDay, getEndOfDay } from "@/features/schedule/utils";
+import {
+  resolveEffectiveScheduleFilters,
+  resolveDefaultScope,
+  getQuickFilterEmptyState,
+} from "@/features/schedule/quick-filter-engine";
 import { ScheduleDialogForm } from "@/features/schedule/components/schedule-dialog-form";
 import { ScheduleContainer } from "@/features/schedule/components/schedule-container";
 import { ExportCSVButton } from "@/features/export/components/export-csv-button";
@@ -18,6 +22,8 @@ interface SchedulePageProps {
     coachId?: string;
     status?: string;
     view?: string;
+    scope?: string;
+    period?: string;
   }>;
 }
 
@@ -25,24 +31,19 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
   const ctx = await requireOrgContext();
   const resolvedParams = searchParams ? await searchParams : {};
 
-  const dateFilter = resolvedParams.date;
-  const coachFilter = resolvedParams.coachId;
-  const statusFilter = resolvedParams.status as ScheduleStatus | undefined;
-
-  let startDate: Date | undefined = undefined;
-  let endDate: Date | undefined = undefined;
-
-  if (dateFilter) {
-    startDate = getStartOfDay(dateFilter);
-    endDate = getEndOfDay(dateFilter);
-  }
+  // Resolve Quick Filters & Role Defaults (Zero Client Filter Heavy Load)
+  const filters = resolveEffectiveScheduleFilters({
+    role: ctx.role,
+    memberId: ctx.memberId,
+    searchParams: resolvedParams,
+  });
 
   const [sessionsRaw, coachesRaw, athletesRaw, plansRaw] = await Promise.all([
     listScheduleSessions(ctx.organizationId, {
-      startDate,
-      endDate,
-      coachId: coachFilter,
-      status: statusFilter,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      coachId: filters.effectiveCoachId,
+      status: filters.status,
     }),
     listCoachesForOrg(ctx.organizationId),
     listActiveAthletesForOrg(ctx.organizationId),
@@ -113,14 +114,17 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
         </div>
       </div>
 
-      {/* Schedule Dual View (Calendar + Agenda) */}
+      {/* Schedule Dual View (Calendar + Agenda + Timetable) */}
       <ScheduleContainer
         sessions={sessions}
         coaches={coaches}
         athletes={athletes}
-        currentDateFilter={dateFilter}
-        currentCoachFilter={coachFilter}
-        currentStatusFilter={statusFilter}
+        currentDateFilter={resolvedParams.date}
+        currentCoachFilter={filters.effectiveCoachId}
+        currentStatusFilter={filters.status}
+        activeQuickFilter={filters.activeQuickFilter}
+        userRole={ctx.role}
+        defaultScope={resolveDefaultScope(ctx.role)}
       />
     </div>
   );

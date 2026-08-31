@@ -97,10 +97,14 @@ export function UpcomingSessionsCard({ sessions }: UpcomingSessionsCardProps) {
                   </div>
 
                   <Link
-                    href={`/schedule`}
-                    className="shrink-0 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+                    href={`/schedule/${s.id}/execute`}
+                    className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md transition-colors ${
+                      s.status === "SCHEDULED"
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 font-bold shadow-2xs"
+                        : "text-accent hover:text-accent/80"
+                    }`}
                   >
-                    Buka Sesi
+                    {s.status === "SCHEDULED" ? "Eksekusi Sesi" : "Lihat Sesi"}
                   </Link>
                 </div>
               );
