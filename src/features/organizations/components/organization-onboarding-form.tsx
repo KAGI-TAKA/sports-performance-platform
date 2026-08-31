@@ -108,7 +108,7 @@ export function OrganizationOnboardingForm({
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-              placeholder="Akademi Basket Andi"
+              placeholder="Coach Zulfi Athletic Hub"
             />
             {error && <p className="mt-1 text-xs text-danger">{error}</p>}
           </div>

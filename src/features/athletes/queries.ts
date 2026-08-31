@@ -139,6 +139,16 @@ export async function getAthleteFullProfile(
           scheduleSession: { select: { title: true } },
         },
       },
+      trainingPlans: {
+        where: { isActive: true },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        include: {
+          exercises: {
+            orderBy: { order: "asc" },
+          },
+        },
+      },
     },
   });
 

@@ -10,45 +10,94 @@ const updateBenchmarkSchema = z.object({
   thresholdB: z.coerce.number().positive("Threshold B harus positif"),
   thresholdC: z.coerce.number().positive("Threshold C harus positif"),
   thresholdD: z.coerce.number().positive("Threshold D harus positif"),
+  gender: z.enum(["MALE", "FEMALE", "ALL"]).default("ALL"),
+  ageMin: z.coerce.number().min(0).max(99).default(0),
+  ageMax: z.coerce.number().min(0).max(99).default(99),
 });
 
-export async function updateBenchmark(benchmarkId: string, formData: FormData) {
+export async function upsertBenchmarkForTestItem(
+  testItemId: string,
+  formData: FormData,
+  benchmarkId?: string
+) {
   const ctx = await requireOrgContext();
-
-  // Verify ownership — benchmark must belong to a testItem in this org
-  const existingBenchmark = await prisma.benchmark.findFirst({
-    where: { id: benchmarkId, testItem: { organizationId: ctx.organizationId } },
-    select: { id: true },
-  });
-
-  if (!existingBenchmark) {
-    return { success: false, error: "Benchmark tidak ditemukan atau akses ditolak." };
-  }
 
   const raw = {
     thresholdA: formData.get("thresholdA"),
     thresholdB: formData.get("thresholdB"),
     thresholdC: formData.get("thresholdC"),
     thresholdD: formData.get("thresholdD"),
+    gender: (formData.get("gender") as string) || "ALL",
+    ageMin: formData.get("ageMin") || 0,
+    ageMax: formData.get("ageMax") || 99,
   };
 
   const result = updateBenchmarkSchema.safeParse(raw);
   if (!result.success) {
-    return { success: false, error: result.error.issues[0]?.message ?? "Data tidak valid." };
+    return { success: false, error: result.error.issues[0]?.message ?? "Data threshold tidak valid." };
   }
 
-  await prisma.benchmark.update({
-    where: { id: benchmarkId },
-    data: {
-      thresholdA: result.data.thresholdA,
-      thresholdB: result.data.thresholdB,
-      thresholdC: result.data.thresholdC,
-      thresholdD: result.data.thresholdD,
-    },
-  });
+  const genderValue = result.data.gender === "ALL" ? null : (result.data.gender as "MALE" | "FEMALE");
 
-  revalidatePath("/benchmarks");
-  return { success: true };
+  try {
+    if (benchmarkId) {
+      await prisma.benchmark.update({
+        where: { id: benchmarkId },
+        data: {
+          thresholdA: result.data.thresholdA,
+          thresholdB: result.data.thresholdB,
+          thresholdC: result.data.thresholdC,
+          thresholdD: result.data.thresholdD,
+          gender: genderValue,
+          ageMin: result.data.ageMin,
+          ageMax: result.data.ageMax,
+        },
+      });
+    } else {
+      await prisma.benchmark.create({
+        data: {
+          testItemId,
+          organizationId: ctx.organizationId,
+          thresholdA: result.data.thresholdA,
+          thresholdB: result.data.thresholdB,
+          thresholdC: result.data.thresholdC,
+          thresholdD: result.data.thresholdD,
+          gender: genderValue,
+          ageMin: result.data.ageMin,
+          ageMax: result.data.ageMax,
+        },
+      });
+    }
+
+    revalidatePath("/benchmarks");
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Gagal menyimpan benchmark:", err);
+    return { success: false, error: "Gagal menyimpan threshold benchmark." };
+  }
+}
+
+export async function deleteBenchmark(benchmarkId: string) {
+  const ctx = await requireOrgContext();
+
+  try {
+    await prisma.benchmark.deleteMany({
+      where: {
+        id: benchmarkId,
+        organizationId: ctx.organizationId,
+      },
+    });
+
+    revalidatePath("/benchmarks");
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Gagal menghapus benchmark:", err);
+    return { success: false, error: "Gagal menghapus threshold benchmark." };
+  }
+}
+
+export async function updateBenchmark(benchmarkId: string, formData: FormData) {
+  return upsertBenchmarkForTestItem("", formData, benchmarkId);
 }
 
 export async function createTestItem(formData: FormData): Promise<{ success: boolean; error?: string }> {

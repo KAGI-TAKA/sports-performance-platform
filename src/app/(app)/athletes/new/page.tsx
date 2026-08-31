@@ -13,7 +13,7 @@ export default async function NewAthletePage() {
             Tambah Atlet Baru
           </h1>
           <p className="mt-0.5 text-xs text-muted">
-            Isi formulir data fisik dan identitas atlet untuk didaftarkan ke skuad.
+            Isi formulir data fisik dan identitas atlet untuk didaftarkan ke sistem pembinaan.
           </p>
         </div>
         <Link

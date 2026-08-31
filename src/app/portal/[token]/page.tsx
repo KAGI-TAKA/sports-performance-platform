@@ -7,7 +7,11 @@ import {
   getPortalAthleteSessionLogs,
   getPortalAthleteReports,
   getPortalAthleteAchievements,
+  getPortalAthleteGuidances,
+  getPortalAthletePerformanceOverview,
+  getPortalAthleteGoals,
 } from "@/features/portal/queries";
+import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/queries";
 import { PortalView } from "@/features/portal/components/portal-view";
 import { ShieldAlert, Clock, Ban, UserX } from "lucide-react";
 
@@ -29,12 +33,12 @@ export default async function PortalPage({ params }: PortalPageProps) {
     if (auth.error === "EXPIRED_TOKEN") {
       title = "Link Akses Portal Sudah Kedaluwarsa";
       message =
-        "Masa berlaku link akses portal ini telah berakhir. Silakan minta link akses baru kepada pelatih Anda.";
+        "Link akses portal ini telah melewati batas masa berlaku. Silakan hubungi pelatih untuk memperpanjang akses.";
       icon = <Clock className="h-10 w-10 text-amber-500 mb-3" />;
     } else if (auth.error === "REVOKED_TOKEN") {
-      title = "Akses Portal Ini Sudah Dicabut";
+      title = "Link Akses Portal Telah Dicabut";
       message =
-        "Akses portal untuk link ini telah dicabut oleh pelatih. Silakan hubungi organisasi atau pelatih Anda.";
+        "Akses ke portal ini telah dinonaktifkan oleh administrator atau pelatih.";
       icon = <Ban className="h-10 w-10 text-rose-500 mb-3" />;
     } else if (auth.error === "INACTIVE_ATHLETE") {
       title = "Profil Atlet Tidak Aktif";
@@ -54,23 +58,45 @@ export default async function PortalPage({ params }: PortalPageProps) {
             {message}
           </p>
           <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 font-mono">
-            Kinetiq Sports Performance Platform
+            Coach Zulfi Athletic Performance (@zulficoach)
           </div>
         </div>
       </div>
     );
   }
 
-  const [profileData, progressData, planData, scheduleData, logsData, reportsData, achievementsData] =
-    await Promise.all([
-      getPortalAthleteProfile(token),
-      getPortalAthleteProgress(token),
-      getPortalAthleteTrainingPlan(token),
-      getPortalAthleteSchedule(token),
-      getPortalAthleteSessionLogs(token),
-      getPortalAthleteReports(token),
-      getPortalAthleteAchievements(token),
-    ]);
+  const [
+    profileData,
+    progressData,
+    planData,
+    scheduleData,
+    logsData,
+    reportsData,
+    guidanceData,
+    performanceData,
+    portalGoals,
+  ] = await Promise.all([
+    getPortalAthleteProfile(auth.context),
+    getPortalAthleteProgress(auth.context),
+    getPortalAthleteTrainingPlan(auth.context),
+    getPortalAthleteSchedule(auth.context),
+    getPortalAthleteSessionLogs(auth.context),
+    getPortalAthleteReports(auth.context),
+    getPortalAthleteGuidances(auth.context),
+    getPortalAthletePerformanceOverview(auth.context),
+    getPortalAthleteGoals(auth.context),
+  ]);
+
+  const [achievementsData, feedbackData] = await Promise.all([
+    getPortalAthleteAchievements(
+      auth.context,
+      progressData?.trends,
+      reportsData?.reports
+    ),
+    auth.context.accessType === "PARENT"
+      ? getEligibleParentFeedbackSessions(token)
+      : Promise.resolve({ success: true, sessions: [] }),
+  ]);
 
   if (!profileData || !progressData) {
     return (
@@ -90,6 +116,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
   return (
     <PortalView
+      token={token}
       context={auth.context}
       profile={profileData.profile}
       snapshot={profileData.latestSnapshot}
@@ -103,6 +130,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
       schedule={scheduleData?.sessions ?? []}
       sessionLogs={logsData?.logs ?? []}
       reports={reportsData?.reports ?? []}
+      guidances={guidanceData?.guidances ?? []}
+      feedbackSessions={feedbackData.sessions ?? []}
       achievements={achievementsData?.achievements ?? {
         starRating: 0,
         starLabel: "Belum Ada Evaluasi",
@@ -110,6 +139,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
         completedSessions: 0,
         badges: [],
       }}
+      personalBests={performanceData.personalBests}
+      portalGoals={portalGoals}
     />
   );
 }

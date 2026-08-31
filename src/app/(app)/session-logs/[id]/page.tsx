@@ -104,11 +104,10 @@ export default async function SessionLogDetailPage({
                 >
                   {log.athlete.fullName}
                 </Link>
-                <div className="text-xs text-muted">
-                  {log.athlete.position !== "UNSPECIFIED"
-                    ? log.athlete.position.replace(/_/g, " ")
-                    : "Posisi —"}{" "}
-                  {log.athlete.jerseyNumber != null && `· #${log.athlete.jerseyNumber}`}
+                <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                  <span>{log.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
+                  <span>·</span>
+                  <span className="text-accent">{log.athlete.sportCategory ?? "Atletik"}</span>
                 </div>
               </div>
             </div>

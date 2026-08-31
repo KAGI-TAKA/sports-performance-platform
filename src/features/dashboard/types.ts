@@ -1,3 +1,15 @@
+export interface DashboardAthleteSummary {
+  id: string;
+  fullName: string;
+  sportCategory: string | null;
+  trainingLevel: string | null;
+  age: number;
+  hasActiveInjury: boolean;
+  latestScore: number | null;
+  latestGrade: string | null;
+  nextSessionTime: string | null;
+}
+
 export interface DashboardStats {
   totalAthletes: number;
   assessmentsThisMonth: number;
@@ -32,4 +44,5 @@ export interface DashboardStats {
     activeInjuriesCount: number;
     unloggedSessionsCount: number;
   };
+  athletesOverview?: DashboardAthleteSummary[];
 }

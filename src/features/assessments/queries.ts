@@ -62,6 +62,27 @@ export async function getPreviousAssessment(
   });
 }
 
+export async function getLatestAssessmentWithResults(
+  organizationId: string,
+  athleteId: string
+) {
+  return prisma.assessment.findFirst({
+    where: {
+      organizationId,
+      athleteId,
+      status: "COMPLETED",
+    },
+    orderBy: { assessmentDate: "desc" },
+    include: {
+      resultItems: {
+        include: {
+          testItem: true,
+        },
+      },
+    },
+  });
+}
+
 export const ASSESSMENTS_PER_PAGE = 10;
 export const REPORTS_PER_PAGE = ASSESSMENTS_PER_PAGE;
 
@@ -91,7 +112,7 @@ export async function listAssessments(
       where,
       include: {
         athlete: {
-          select: { id: true, fullName: true, position: true, photoUrl: true, jerseyNumber: true },
+          select: { id: true, fullName: true, dateOfBirth: true, gender: true, sportCategory: true, competitionLevel: true, photoUrl: true },
         },
         analysis: {
           select: { bestComponent: true, insightText: true, weakestComponents: true },

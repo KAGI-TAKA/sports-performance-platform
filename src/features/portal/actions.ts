@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,7 @@ export async function generatePortalCredentials(athleteName: string, accessType:
   const randomPin = Math.floor(1000 + Math.random() * 9000);
   const prefix = accessType === "PARENT" ? "ortu_" : "atlet_";
   const username = `${prefix}${cleanName}_${randomPin}`;
-  const plainPassword = accessType === "PARENT" ? `OrtuKinetiq${randomPin}!` : `Kinetiq${randomPin}!`;
+  const plainPassword = accessType === "PARENT" ? `ZulfiOrtu${randomPin}!` : `ZulfiCoach${randomPin}!`;
   return { username, plainPassword };
 }
 
@@ -53,6 +54,7 @@ export async function createPortalAccess(
   expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
   const { username, plainPassword } = await generatePortalCredentials(athlete.fullName, accessType);
+  const passwordHash = await bcrypt.hash(plainPassword, 10);
 
   try {
     await prisma.portalAccess.create({
@@ -62,6 +64,7 @@ export async function createPortalAccess(
         createdByMemberId: ctx.memberId,
         tokenHash,
         username,
+        passwordHash,
         plainPassword,
         accessType,
         expiresAt,
@@ -104,12 +107,14 @@ export async function resetPortalPassword(accessId: string, athleteId: string) {
     access.athlete.fullName,
     access.accessType as "ATHLETE" | "PARENT"
   );
+  const passwordHash = await bcrypt.hash(plainPassword, 10);
 
   try {
     await prisma.portalAccess.update({
       where: { id: accessId },
       data: {
         username,
+        passwordHash,
         plainPassword,
       },
     });
@@ -163,7 +168,6 @@ export async function loginWithPortalCredentials(usernameInput: string, password
   const access = await prisma.portalAccess.findFirst({
     where: {
       username: usernameClean,
-      plainPassword: passwordClean,
       revokedAt: null,
       expiresAt: { gte: new Date() },
     },
@@ -173,6 +177,20 @@ export async function loginWithPortalCredentials(usernameInput: string, password
     return {
       success: false,
       error: "Username atau password portal salah, kadaluwarsa, atau telah dicabut",
+    };
+  }
+
+  let isValid = false;
+  if (access.passwordHash) {
+    isValid = await bcrypt.compare(passwordClean, access.passwordHash);
+  } else if (access.plainPassword) {
+    isValid = access.plainPassword === passwordClean;
+  }
+
+  if (!isValid) {
+    return {
+      success: false,
+      error: "Username atau password portal salah",
     };
   }
 

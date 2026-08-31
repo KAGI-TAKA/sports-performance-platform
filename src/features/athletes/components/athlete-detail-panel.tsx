@@ -15,8 +15,10 @@ import {
   ShieldAlert,
   Plus,
   Star,
+  Sparkles,
 } from "lucide-react";
 import { calculateStarRating } from "@/features/portal/achievements";
+import { GuidanceDialogForm } from "@/features/guidance/components/guidance-dialog-form";
 
 type AthleteWithRelations = Athlete & {
   injuryHistories: AthleteInjuryHistory[];
@@ -44,11 +46,13 @@ export function AthleteDetailPanel({
   athlete,
   age,
   role,
+  athletes,
 }: {
   athlete: AthleteWithRelations | null;
   age: number | null;
   /** Role member saat ini — dipakai untuk menyembunyikan aksi destructive. */
   role: string;
+  athletes?: Array<{ id: string; fullName: string }>;
 }) {
   const [activeTab, setActiveTab] = useState<"assessment" | "progress" | "cedera" | "sessionLogs">("assessment");
   // assistant_coach tidak memiliki izin athlete:delete
@@ -126,9 +130,8 @@ export function AthleteDetailPanel({
             {athlete.fullName}
           </h2>
           <p className="mt-0.5 text-xs text-muted font-medium">
-            Level: <span className="text-foreground font-semibold">{athlete.competitionLevel ?? "Pemula"}</span>
+            Cabang: <span className="text-foreground font-semibold">{athlete.sportCategory ?? "Multi-Sport / Atletik"}</span> · Level: <span className="text-foreground font-semibold">{athlete.competitionLevel ?? "Pemula"}</span>
             {age != null && ` · ${age} tahun`}
-            {athlete.jerseyNumber != null && ` · #${athlete.jerseyNumber}`}
           </p>
           <p className="mt-0.5 text-[11px] text-muted">
             {athlete.gender === "FEMALE" ? "Perempuan" : "Laki-laki"} ·{" "}
@@ -159,12 +162,19 @@ export function AthleteDetailPanel({
             </div>
           )}
         </div>
-        <Link
-          href={`/athletes/${athlete.id}/edit`}
-          className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:text-foreground hover:bg-surface-2 transition"
-        >
-          Edit
-        </Link>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <GuidanceDialogForm
+            athletes={athletes && athletes.length > 0 ? athletes : [{ id: athlete.id, fullName: athlete.fullName }]}
+            defaultAthleteId={athlete.id}
+            triggerText="Beri Saran / Info"
+          />
+          <Link
+            href={`/athletes/${athlete.id}/edit`}
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-secondary hover:text-foreground hover:bg-surface-2 transition"
+          >
+            Edit
+          </Link>
+        </div>
       </div>
 
       {/* Physical Metrics + Dynamic BMI */}

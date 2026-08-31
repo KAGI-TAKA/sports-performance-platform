@@ -29,8 +29,10 @@ import {
   Filter,
   Edit2,
   FileText,
+  UserCheck,
 } from "lucide-react";
 import { formatDateHeader, formatTimeRange, toLocalDateStr, getStartOfDay } from "../utils";
+import { AttendanceSessionDialog } from "@/features/attendance/components/attendance-session-dialog";
 
 export interface ScheduleSessionItem {
   id: string;
@@ -81,6 +83,9 @@ export function ScheduleAgendaView({
 
   // Edit Modal State
   const [editingSession, setEditingSession] = useState<ScheduleSessionItem | null>(null);
+
+  // Attendance Modal State
+  const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
 
   // Client Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -402,11 +407,6 @@ export function ScheduleAgendaView({
                                   className="text-[10.5px] py-0.2 px-2 bg-surface-1 border-border font-medium"
                                 >
                                   {athlete.fullName}
-                                  {athlete.jerseyNumber != null && (
-                                    <span className="ml-1 text-muted font-mono text-[9.5px]">
-                                      #{athlete.jerseyNumber}
-                                    </span>
-                                  )}
                                 </Badge>
                               ))}
                             </div>
@@ -463,6 +463,15 @@ export function ScheduleAgendaView({
 
                           {/* Edit & Session Log Links */}
                           <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setAttendanceSessionId(session.id)}
+                              className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
+                              title="Buka Presensi Sesi"
+                            >
+                              <UserCheck className="h-3.5 w-3.5" />
+                              Presensi
+                            </button>
+
                             {session.status === "COMPLETED" && (
                               <Link
                                 href="/session-logs"
@@ -500,6 +509,18 @@ export function ScheduleAgendaView({
           })}
         </div>
       )}
+
+      {/* Attendance Session Dialog */}
+      <AttendanceSessionDialog
+        sessionId={attendanceSessionId}
+        open={!!attendanceSessionId}
+        onOpenChange={(open) => {
+          if (!open) setAttendanceSessionId(null);
+        }}
+        onSaved={() => {
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

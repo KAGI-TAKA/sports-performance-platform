@@ -101,7 +101,7 @@ export default async function ReportsPage({
           <CardContent className="p-4 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                Rata-rata Skor Skuad
+                Rata-rata Fisik Atlet
               </span>
               <Award className="h-4 w-4 text-emerald-400" />
             </div>

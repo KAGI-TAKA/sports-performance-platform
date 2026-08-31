@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { listAssessments, ASSESSMENTS_PER_PAGE } from "@/features/assessments/queries";
+import { calculateAgeAtDate } from "@/features/assessments/engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,11 +131,16 @@ export default async function AssessmentsPage({
                               >
                                 {item.athlete.fullName}
                               </Link>
-                              <div className="text-[11px] text-muted font-normal">
-                                {item.athlete.position !== "UNSPECIFIED"
-                                  ? item.athlete.position.replace(/_/g, " ")
-                                  : "Posisi —"}
-                                {item.athlete.jerseyNumber != null && ` · #${item.athlete.jerseyNumber}`}
+                              <div className="text-[11px] text-muted font-normal flex items-center gap-1 mt-0.5">
+                                <span>{item.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
+                                <span>·</span>
+                                <span>{calculateAgeAtDate(item.athlete.dateOfBirth)} Thn</span>
+                                {item.athlete.sportCategory && (
+                                  <>
+                                    <span>·</span>
+                                    <span className="text-accent">{item.athlete.sportCategory}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -113,3 +113,47 @@ export interface PortalAchievementData {
   badges: PortalBadge[];
 }
 
+export type { CoachGuidanceItem } from "../guidance/types";
+
+// ── P6-B4: Portal-Safe Personal Best & Goal Types ─────────────────────────────
+
+/**
+ * Portal-safe Personal Best item.
+ * Stripped: organizationId, createdByMemberId, internal flags.
+ */
+export interface PortalPersonalBestItem {
+  testItemId: string;
+  testItemName: string;
+  unit: string;
+  scoreDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER";
+  physicalComponent: string | null;
+  pbValue: number;
+  achievedDate: string; // ISO date string
+  currentValue: number | null;
+  currentDate: string | null;
+}
+
+/**
+ * Portal-safe Athlete Goal item.
+ * Stripped: organizationId, createdByMemberId, internal coaching notes.
+ * Notes (internal staff coaching notes) are NOT exposed to portal.
+ */
+export interface PortalAthleteGoalItem {
+  id: string;
+  testItemName: string;
+  unit: string;
+  title: string | null;
+  baselineValue: number;
+  targetValue: number;
+  currentValue: number | null;
+  targetDate: string | null;
+  status: "ACTIVE" | "ACHIEVED" | "PAUSED" | "EXPIRED" | "CANCELLED";
+  progressPercent: number;
+  deltaFromBaseline: number;
+  isImproving: boolean;
+  state: "NO_CURRENT_VALUE" | "IN_PROGRESS" | "ACHIEVED";
+  achievedAt: string | null;
+  /** assessmentId of the assessment that achieved this goal, if any.
+   *  Used to resolve PDF link if available in portal reports. */
+  achievedAssessmentId: string | null;
+}

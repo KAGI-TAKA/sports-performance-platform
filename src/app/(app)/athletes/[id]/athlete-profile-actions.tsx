@@ -5,18 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toggleAthleteStatus } from "@/features/athletes/actions";
 import { InjuryDialog } from "@/features/athletes/components/injury-dialog";
+import { GuidanceDialogForm } from "@/features/guidance/components/guidance-dialog-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Edit, Power, ShieldAlert, Loader2 } from "lucide-react";
 
 interface AthleteProfileActionsProps {
   athleteId: string;
+  athleteName?: string;
   isActive: boolean;
   role: string;
 }
 
 export function AthleteProfileActions({
   athleteId,
+  athleteName,
   isActive,
   role,
 }: AthleteProfileActionsProps) {
@@ -45,6 +48,12 @@ export function AthleteProfileActions({
 
   return (
     <div className="flex items-center gap-2">
+      <GuidanceDialogForm
+        athletes={athleteName ? [{ id: athleteId, fullName: athleteName }] : []}
+        defaultAthleteId={athleteId}
+        triggerText="Beri Saran / Info"
+      />
+
       <Button
         variant="outline"
         size="xs"

@@ -30,8 +30,8 @@ export function TestItemDeactivateButton({ testItemId, itemName }: TestItemDeact
     <button
       onClick={handleDeactivate}
       disabled={loading}
-      className="flex h-6 w-6 items-center justify-center rounded text-muted opacity-0 group-hover:opacity-100 transition hover:bg-danger/10 hover:text-danger disabled:opacity-50"
-      title="Nonaktifkan item tes"
+      className="flex h-6 w-6 items-center justify-center rounded text-muted hover:text-danger hover:bg-danger/10 transition border border-transparent hover:border-danger/20 disabled:opacity-50"
+      title="Hapus / Nonaktifkan item tes"
     >
       <Trash2 className="h-3 w-3" />
     </button>

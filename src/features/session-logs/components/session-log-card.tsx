@@ -71,11 +71,6 @@ export function SessionLogCard({ log }: SessionLogCardProps) {
               <span className="font-display text-sm font-bold text-foreground">
                 {log.athlete.fullName}
               </span>
-              {log.athlete.jerseyNumber != null && (
-                <span className="text-[10px] text-muted font-mono">
-                  #{log.athlete.jerseyNumber}
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5 font-mono">
               <Calendar className="h-3.5 w-3.5 text-accent shrink-0" />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { registerSchema } from "@/features/auth/schema";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,14 +97,29 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="text-xs font-medium text-secondary">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                placeholder="Minimal 8 karakter"
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-sm border border-border bg-background px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-accent"
+                  placeholder="Minimal 8 karakter"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition p-1"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {errors.password && <p className="mt-1 text-xs text-danger">{errors.password}</p>}
             </div>
 

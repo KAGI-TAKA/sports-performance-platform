@@ -8,7 +8,8 @@ import { listScheduleSessions } from "@/features/schedule/queries";
 import { SessionLogCard } from "@/features/session-logs/components/session-log-card";
 import { SessionLogDialogForm } from "@/features/session-logs/components/session-log-dialog-form";
 import { ExportCSVButton } from "@/features/export/components/export-csv-button";
-import { ClipboardCheck, Users } from "lucide-react";
+import { SessionLogAthleteFilter } from "@/features/session-logs/components/session-log-athlete-filter";
+import { ClipboardCheck } from "lucide-react";
 
 export default async function SessionLogsPage({
   searchParams,
@@ -72,38 +73,12 @@ export default async function SessionLogsPage({
         </div>
       </div>
 
-      {/* Athlete Filter Bar */}
-      <div className="flex items-center gap-3 border-b border-border pb-3 text-xs">
-        <span className="flex items-center gap-1 font-semibold text-muted">
-          <Users className="h-3.5 w-3.5" />
-          Filter Atlet:
-        </span>
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <Link
-            href="/session-logs"
-            className={`rounded-lg px-3 py-1.5 font-semibold transition ${
-              athleteId === "ALL"
-                ? "bg-accent text-white"
-                : "bg-surface-2 text-muted hover:text-foreground"
-            }`}
-          >
-            Semua Atlet
-          </Link>
-          {athletes.map((a) => (
-            <Link
-              key={a.id}
-              href={`/session-logs?athleteId=${a.id}`}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition shrink-0 ${
-                athleteId === a.id
-                  ? "bg-accent text-white"
-                  : "bg-surface-2 text-muted hover:text-foreground"
-              }`}
-            >
-              {a.fullName}
-            </Link>
-          ))}
-        </div>
-      </div>
+      {/* Searchable Athlete Filter Bar */}
+      <SessionLogAthleteFilter
+        athletes={athletes}
+        selectedAthleteId={athleteId}
+        totalLogs={logs.length}
+      />
 
       {/* Grid of Logs */}
       {logs.length === 0 ? (

@@ -90,12 +90,11 @@ export default async function BenchmarksPage() {
               {/* Items Table */}
               <div className="divide-y divide-border">
                 {grouped[comp].map((item) => {
-                  const bm = item.benchmarks[0];
                   return (
-                    <div key={item.id} className="px-5 py-4 grid grid-cols-[1fr_auto] gap-4 items-center">
-                      <div>
+                    <div key={item.id} className="px-5 py-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">{item.name}</span>
+                          <span className="text-sm font-bold text-foreground">{item.name}</span>
                           <span className="text-[10px] font-mono text-muted bg-surface-2 rounded px-1.5 py-0.5 uppercase">
                             {item.unit}
                           </span>
@@ -113,23 +112,70 @@ export default async function BenchmarksPage() {
                               <ArrowDown className="h-2.5 w-2.5" /> rendah lebih baik
                             </span>
                           )}
-                          {canEdit && <TestItemDeactivateButton testItemId={item.id} itemName={item.name} />}
                         </div>
+
+                        {canEdit && <TestItemDeactivateButton testItemId={item.id} itemName={item.name} />}
                       </div>
 
-                      {bm ? (
-                        <BenchmarkEditForm
-                          benchmarkId={bm.id}
-                          thresholdA={Number(bm.thresholdA)}
-                          thresholdB={Number(bm.thresholdB)}
-                          thresholdC={Number(bm.thresholdC)}
-                          thresholdD={Number(bm.thresholdD)}
-                          scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
-                          canEdit={canEdit}
-                        />
-                      ) : (
-                        <span className="text-xs text-muted">Belum ada benchmark</span>
-                      )}
+                      {/* Benchmarks List (Age & Gender brackets) */}
+                      <div className="space-y-2 pl-2 border-l-2 border-border/80">
+                        {item.benchmarks.length > 0 ? (
+                          item.benchmarks.map((bm) => {
+                            const genderLabel =
+                              bm.gender === "MALE"
+                                ? "👦 Putra"
+                                : bm.gender === "FEMALE"
+                                ? "👧 Putri"
+                                : "🌐 Universal (Putra & Putri)";
+
+                            const ageLabel =
+                              bm.ageMin === 0 && bm.ageMax >= 90
+                                ? "Semua Usia"
+                                : `Usia ${bm.ageMin}–${bm.ageMax} Thn`;
+
+                            return (
+                              <div
+                                key={bm.id}
+                                className="flex flex-wrap items-center justify-between gap-3 bg-surface-2/40 rounded-xl p-2.5 border border-border/60"
+                              >
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="font-semibold text-foreground bg-surface-1 px-2 py-0.5 rounded-md border border-border text-[11px]">
+                                    {genderLabel}
+                                  </span>
+                                  <span className="font-mono text-muted text-[11px]">
+                                    {ageLabel}
+                                  </span>
+                                </div>
+
+                                <BenchmarkEditForm
+                                  testItemId={item.id}
+                                  benchmarkId={bm.id}
+                                  gender={bm.gender}
+                                  ageMin={bm.ageMin}
+                                  ageMax={bm.ageMax}
+                                  thresholdA={Number(bm.thresholdA)}
+                                  thresholdB={Number(bm.thresholdB)}
+                                  thresholdC={Number(bm.thresholdC)}
+                                  thresholdD={Number(bm.thresholdD)}
+                                  scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
+                                  canEdit={canEdit}
+                                />
+                              </div>
+                            );
+                          })
+                        ) : null}
+
+                        {/* Button to add a new age/gender bracket */}
+                        {canEdit && (
+                          <div className="pt-1">
+                            <BenchmarkEditForm
+                              testItemId={item.id}
+                              scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
+                              canEdit={canEdit}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

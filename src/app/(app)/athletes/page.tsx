@@ -68,7 +68,7 @@ export default async function AthletesPage({
           <p className="mt-0.5 text-xs text-muted">
             {hasActiveFilters
               ? `${total} hasil ditemukan dengan filter aktif`
-              : `${total} atlet terdaftar di skuad`}
+              : `${total} atlet binaan terdaftar`}
           </p>
         </div>
 
@@ -161,12 +161,16 @@ export default async function AthletesPage({
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted truncate">
-                          {athlete.position && athlete.position !== "UNSPECIFIED"
-                            ? `${athlete.position.replace(/_/g, " ")} · `
-                            : ""}
-                          {age} th
-                          {athlete.jerseyNumber != null && ` · #${athlete.jerseyNumber}`}
+                        <div className="text-[11px] text-muted truncate flex items-center gap-1">
+                          <span>{age} thn</span>
+                          <span>·</span>
+                          <span>{athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
+                          {athlete.sportCategory && (
+                            <>
+                              <span>·</span>
+                              <span className="text-accent">{athlete.sportCategory}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -198,7 +202,12 @@ export default async function AthletesPage({
 
         {/* Right Panel — Selected Athlete Summary & Quick Profile Link */}
         <div className="rounded-xl border border-border bg-surface-1 p-5 min-h-[500px]">
-          <AthleteDetailPanel athlete={selectedAthlete} age={selectedAthleteAge} role={ctx.role} />
+          <AthleteDetailPanel
+            athlete={selectedAthlete}
+            age={selectedAthleteAge}
+            role={ctx.role}
+            athletes={athletes.map((a) => ({ id: a.id, fullName: a.fullName }))}
+          />
         </div>
       </div>
     </div>

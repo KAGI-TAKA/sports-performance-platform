@@ -25,23 +25,23 @@ export function formatAssessmentWhatsAppText(
     data.overallScore != null ? `${data.overallScore.toFixed(1)}%` : "—";
   const gradeStr = data.overallGrade ?? "—";
 
-  let text = `⚡ *KINETIQ - LAPORAN HASIL TES FISIK ATLET*\n`;
+  let text = `⚡ *COACH ZULFI - LAPORAN PERFORMA FISIK ATLET*\n`;
   text += `------------------------------------\n`;
   text += `👤 *Atlet:* ${data.athleteName}\n`;
-  text += `📅 *Tanggal:* ${formattedDate}\n`;
+  text += `📅 *Tanggal Tes:* ${formattedDate}\n`;
   text += `🏆 *Skor Akhir:* ${scoreStr} (Grade *${gradeStr}*)\n\n`;
 
   if (data.bestComponent) {
     text += `💪 *Keunggulan Utama:* ${data.bestComponent}\n`;
   }
   if (data.weakestComponent) {
-    text += `🎯 *Area Pengembangan:* ${data.weakestComponent}\n`;
+    text += `🎯 *Fokus Pengembangan:* ${data.weakestComponent}\n`;
   }
 
-  text += `\nLaporan hasil tes fisik telah diperbarui oleh pelatih. Tetap semangat berlatih! 🔥\n`;
+  text += `\nLaporan hasil evaluasi fisik atlet telah diperbarui oleh Coach Zulfi (@zulficoach). Tetap semangat berlatih! 🔥\n`;
 
   if (data.reportUrl) {
-    text += `\n📄 *Lihat Laporan PDF Lengkap:*\n${data.reportUrl}`;
+    text += `\n📄 *Lihat Laporan Lengkap & PDF:*\n${data.reportUrl}`;
   }
 
   return text;

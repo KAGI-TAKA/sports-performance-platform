@@ -12,6 +12,7 @@ export interface AthleteFormProps {
   initialData?: {
     id: string;
     fullName: string;
+    sportCategory?: string | null;
     gender: GenderType;
     dateOfBirth: Date;
     heightCm: number | null;
@@ -65,6 +66,7 @@ export function AthleteForm({ initialData }: AthleteFormProps) {
     const formData = new FormData(e.currentTarget);
     const data = {
       fullName: formData.get("fullName") as string,
+      sportCategory: (formData.get("sportCategory") as string) || "Multi-Sport / Atletik",
       position: "UNSPECIFIED" as const,
       gender: formData.get("gender") as GenderType,
       dateOfBirth: formData.get("dateOfBirth")
@@ -115,18 +117,41 @@ export function AthleteForm({ initialData }: AthleteFormProps) {
         </div>
       )}
 
-      <div>
-        <label className="block font-medium text-foreground mb-1.5 text-xs">
-          Nama Lengkap <span className="text-danger">*</span>
-        </label>
-        <input
-          name="fullName"
-          type="text"
-          required
-          defaultValue={initialData?.fullName}
-          placeholder="cth. Rangga Pratama"
-          className="w-full min-h-[44px] sm:min-h-[48px] rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-xs text-foreground focus:border-accent focus:outline-none transition"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block font-medium text-foreground mb-1.5 text-xs">
+            Nama Lengkap <span className="text-danger">*</span>
+          </label>
+          <input
+            name="fullName"
+            type="text"
+            required
+            defaultValue={initialData?.fullName}
+            placeholder="cth. Rangga Pratama"
+            className="w-full min-h-[44px] sm:min-h-[48px] rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-xs text-foreground focus:border-accent focus:outline-none transition"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium text-foreground mb-1.5 text-xs">
+            Cabang Olahraga
+          </label>
+          <select
+            name="sportCategory"
+            defaultValue={initialData?.sportCategory || "Multi-Sport / Atletik"}
+            className="w-full min-h-[44px] sm:min-h-[48px] rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-xs text-foreground focus:border-accent focus:outline-none transition"
+          >
+            <option value="Multi-Sport / Atletik">Multi-Sport / Atletik (Umum)</option>
+            <option value="Sepak Bola / Futsal">Sepak Bola / Futsal</option>
+            <option value="Bola Basket">Bola Basket</option>
+            <option value="Bulutangkis">Bulutangkis</option>
+            <option value="Lari & Sprint">Lari &amp; Sprint</option>
+            <option value="Renang">Renang</option>
+            <option value="Beladiri">Beladiri (Taekwondo, Silat, dll.)</option>
+            <option value="Tenis / Padel">Tenis / Padel</option>
+            <option value="Lainnya">Cabang Lainnya</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

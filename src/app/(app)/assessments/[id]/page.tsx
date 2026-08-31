@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAssessmentById, getPreviousAssessment } from "@/features/assessments/queries";
 import { AssessmentRadarChart } from "@/features/assessments/components/radar-chart";
+import { AssessmentQuickGoalButton } from "@/features/athlete-goals/components/assessment-quick-goal-button";
+import { canMemberManageGoals } from "@/features/athlete-goals/engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,7 @@ import {
   Sparkles,
   ChevronRight,
   ShieldAlert,
+  Target,
 } from "lucide-react";
 
 function formatDate(date: Date): string {
@@ -46,7 +50,17 @@ export default async function AssessmentDetailPage({
   const { id } = await params;
   const ctx = await requireOrgContext();
 
-  const assessment = await getAssessmentById(ctx.organizationId, id);
+  const [assessment, activeGoals] = await Promise.all([
+    getAssessmentById(ctx.organizationId, id),
+    prisma.athleteGoal.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+        status: "ACTIVE",
+      },
+      select: { athleteId: true, testItemId: true },
+    }),
+  ]);
+
   if (!assessment) notFound();
 
   const prevAssessment = await getPreviousAssessment(
@@ -54,6 +68,13 @@ export default async function AssessmentDetailPage({
     assessment.athleteId,
     assessment.assessmentDate
   );
+
+  const activeGoalsSet = new Set(
+    activeGoals
+      .filter((g) => g.athleteId === assessment.athleteId)
+      .map((g) => g.testItemId)
+  );
+  const canManage = canMemberManageGoals(ctx.role);
 
   const currentScore = Number(assessment.overallScore ?? 0);
   const prevScore = prevAssessment ? Number(prevAssessment.overallScore ?? 0) : null;
@@ -106,10 +127,7 @@ export default async function AssessmentDetailPage({
               )}
             </div>
             <p className="mt-0.5 text-xs text-muted">
-              {assessment.athlete.position !== "UNSPECIFIED"
-                ? assessment.athlete.position.replace(/_/g, " ")
-                : "Posisi —"}{" "}
-              · Tanggal Tes: {formatDate(assessment.assessmentDate)}
+              {assessment.athlete.sportCategory ?? "Atletik"} · {assessment.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"} · Tanggal Tes: {formatDate(assessment.assessmentDate)}
             </p>
           </div>
         </div>
@@ -286,6 +304,7 @@ export default async function AssessmentDetailPage({
                 <TableHead>Komponen Fisik</TableHead>
                 <TableHead className="text-right">Hasil Mentah (Raw)</TableHead>
                 <TableHead className="text-right">Skor Terhitung</TableHead>
+                <TableHead className="text-right">Aksi Sasaran</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -306,6 +325,22 @@ export default async function AssessmentDetailPage({
                   </TableCell>
                   <TableCell className="text-right font-mono font-bold text-xs text-accent">
                     {item.score?.toString() ?? "—"}%
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {canManage && item.testItem.testType === "NUMERIC" && item.testItem.isActive && item.rawValue != null ? (
+                      <AssessmentQuickGoalButton
+                        athleteId={assessment.athleteId}
+                        athleteName={assessment.athlete.fullName}
+                        testItemId={item.testItemId}
+                        testItemName={item.testItem.name}
+                        unit={item.testItem.unit}
+                        scoreDirection={item.testItem.scoreDirection}
+                        currentRawValue={Number(item.rawValue)}
+                        hasActiveGoal={activeGoalsSet.has(item.testItemId)}
+                      />
+                    ) : (
+                      <span className="text-muted text-[11px]">—</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

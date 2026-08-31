@@ -35,7 +35,7 @@ export function SquadProfileCard({ scores }: SquadProfileCardProps) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-accent" />
-          <CardTitle className="text-sm font-semibold">Profil Komponen Fisik Skuad</CardTitle>
+          <CardTitle className="text-sm font-semibold">Profil Komponen Fisik Atlet Binaan</CardTitle>
         </div>
       </CardHeader>
 
@@ -92,7 +92,7 @@ export function SquadProfileCard({ scores }: SquadProfileCardProps) {
           <EmptyState
             icon={BarChart2}
             title="Belum Ada Evaluasi Komponen"
-            description="Profil 7 komponen fisik skuad dan grafik radar akan terbentuk secara otomatis setelah assessment pertama disimpan."
+            description="Profil 7 komponen fisik atlet binaan dan grafik radar akan terbentuk secara otomatis setelah assessment pertama disimpan."
             className="border-0 bg-transparent py-10"
           />
         )}

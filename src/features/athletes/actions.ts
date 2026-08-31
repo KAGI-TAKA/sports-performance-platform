@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
@@ -36,6 +37,9 @@ export async function createAthlete(input: unknown) {
     const credsAthlete = await generatePortalCredentials(athlete.fullName, "ATHLETE");
     const credsParent = await generatePortalCredentials(athlete.fullName, "PARENT");
 
+    const hashAthlete = await bcrypt.hash(credsAthlete.plainPassword, 10);
+    const hashParent = await bcrypt.hash(credsParent.plainPassword, 10);
+
     await prisma.portalAccess.createMany({
       data: [
         {
@@ -44,6 +48,7 @@ export async function createAthlete(input: unknown) {
           createdByMemberId: ctx.memberId,
           tokenHash: hashPortalToken(rawTokenAthlete),
           username: credsAthlete.username,
+          passwordHash: hashAthlete,
           plainPassword: credsAthlete.plainPassword,
           accessType: "ATHLETE",
           expiresAt,
@@ -54,6 +59,7 @@ export async function createAthlete(input: unknown) {
           createdByMemberId: ctx.memberId,
           tokenHash: hashPortalToken(rawTokenParent),
           username: credsParent.username,
+          passwordHash: hashParent,
           plainPassword: credsParent.plainPassword,
           accessType: "PARENT",
           expiresAt,

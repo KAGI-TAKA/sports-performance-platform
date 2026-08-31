@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { loginWithPortalCredentials } from "@/features/portal/actions";
+import { Eye, EyeOff } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -13,6 +14,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
@@ -35,29 +37,31 @@ function LoginForm() {
     setErrors({});
     setIsLoading(true);
 
-    // 1. Coba login Better Auth (Pelatih / Admin)
-    const { error } = await authClient.signIn.email({
-      email: email.trim(),
-      password: password.trim(),
-    });
+    const inputClean = email.trim();
+    const isEmail = inputClean.includes("@");
 
-    if (!error) {
-      setIsLoading(false);
-      router.push(redirectTo);
-      router.refresh();
-      return;
+    // 1. Jika berformat email, coba login Better Auth (Pelatih / Admin)
+    if (isEmail) {
+      const { error } = await authClient.signIn.email({
+        email: inputClean,
+        password: password.trim(),
+      });
+
+      if (!error) {
+        window.location.href = redirectTo;
+        return;
+      }
     }
 
-    // 2. Coba login Portal Akses (Atlet / Orang Tua)
-    const portalRes = await loginWithPortalCredentials(email, password);
-    setIsLoading(false);
+    // 2. Coba login Portal Akses (Atlet / Orang Tua dengan Username)
+    const portalRes = await loginWithPortalCredentials(inputClean, password);
 
     if (portalRes.success && portalRes.redirectUrl) {
-      router.push(portalRes.redirectUrl);
-      router.refresh();
+      window.location.href = portalRes.redirectUrl;
       return;
     }
 
+    setIsLoading(false);
     setFormError("Email/Username atau password salah");
   }
 
@@ -77,18 +81,18 @@ function LoginForm() {
             opacity="0.85"
           />
         </svg>
-        <h1 className="font-display text-lg font-semibold text-foreground">
-          Kinetiq
+        <h1 className="font-display text-lg font-bold text-foreground tracking-tight">
+          Coach Zulfi
         </h1>
-        <p className="text-xs text-muted">Performance OS</p>
+        <p className="text-xs text-muted font-medium">Athletic Performance Hub</p>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface-1 p-6">
+      <div className="rounded-lg border border-border bg-surface-1 p-6 shadow-sm">
         <h2 className="font-display text-base font-semibold text-foreground">
-          Masuk ke akun kamu
+          Masuk ke Portal
         </h2>
         <p className="mt-1 text-sm text-secondary">
-          Pelatih, Atlet, atau Orang Tua — Masuk untuk mengakses platform.
+          Pelatih, Atlet, atau Orang Tua — Masuk untuk mengakses platform performa.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -127,14 +131,29 @@ function LoginForm() {
                 Lupa password?
               </Link>
             </div>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-              placeholder="••••••••"
-            />
+            <div className="relative mt-1">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-sm border border-border bg-background px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-accent"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition p-1"
+                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             {errors.password && (
               <p className="mt-1 text-xs text-danger">{errors.password}</p>
             )}

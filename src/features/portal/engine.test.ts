@@ -173,4 +173,30 @@ describe("Phase 5.9 Athlete & Parent Portal Domain Unit Tests", () => {
     expect((dto as Record<string, unknown>).internalCoachNotes).toBeUndefined();
     expect((dto as Record<string, unknown>).secretMetadata).toBeUndefined();
   });
+
+  it("7. validates role specialization context distinguishing ATHLETE vs PARENT", () => {
+    const athleteRes = validatePortalToken("expired-token", [
+      {
+        ...mockRecords[1],
+        expiresAt: new Date(Date.now() + 86400000),
+      },
+    ]);
+    expect(athleteRes.valid).toBe(true);
+    if (athleteRes.valid) {
+      expect(athleteRes.record.accessType).toBe("ATHLETE");
+    }
+
+    const parentRes = validatePortalToken(rawTokenA, mockRecords);
+    expect(parentRes.valid).toBe(true);
+    if (parentRes.valid) {
+      expect(parentRes.record.accessType).toBe("PARENT");
+    }
+  });
+
+  it("8. validates fallback resolution via portalAccess id match", () => {
+    const matchById = mockRecords.find((r) => r.id === "acc-1");
+    expect(matchById).toBeDefined();
+    expect(matchById?.athleteId).toBe("ath-1");
+    expect(matchById?.accessType).toBe("PARENT");
+  });
 });

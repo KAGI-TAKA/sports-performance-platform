@@ -10,7 +10,17 @@ import type {
   PortalScheduleSession,
   PortalSessionLog,
   PortalReportItem,
+  PortalAchievementData,
+  PortalPersonalBestItem,
+  PortalAthleteGoalItem,
 } from "./types";
+import { getAthleteProgressSummary } from "@/features/analytics/queries";
+import { getAthleteAchievements } from "./achievements";
+import {
+  calculatePersonalBest,
+  resolveCurrentValue,
+  calculateGoalProgress,
+} from "@/features/athlete-goals/engine";
 
 export function hashPortalToken(rawToken: string): string {
   return crypto.createHash("sha256").update(rawToken.trim()).digest("hex");
@@ -28,7 +38,7 @@ export async function getPortalContextByToken(
 
   const tokenHash = hashPortalToken(rawToken);
 
-  const access = await prisma.portalAccess.findUnique({
+  let access = await prisma.portalAccess.findUnique({
     where: { tokenHash },
     select: {
       id: true,
@@ -41,6 +51,40 @@ export async function getPortalContextByToken(
       athlete: { select: { fullName: true, isActive: true } },
     },
   });
+
+  // Fallback: jika parameter yang di-pass sudah berupa tokenHash langsung
+  if (!access) {
+    access = await prisma.portalAccess.findUnique({
+      where: { tokenHash: rawToken },
+      select: {
+        id: true,
+        organizationId: true,
+        athleteId: true,
+        accessType: true,
+        expiresAt: true,
+        revokedAt: true,
+        organization: { select: { name: true } },
+        athlete: { select: { fullName: true, isActive: true } },
+      },
+    });
+  }
+
+  // Fallback: jika parameter yang di-pass adalah ID portalAccess langsung (misal untuk endpoint PDF)
+  if (!access) {
+    access = await prisma.portalAccess.findUnique({
+      where: { id: rawToken },
+      select: {
+        id: true,
+        organizationId: true,
+        athleteId: true,
+        accessType: true,
+        expiresAt: true,
+        revokedAt: true,
+        organization: { select: { name: true } },
+        athlete: { select: { fullName: true, isActive: true } },
+      },
+    });
+  }
 
   if (!access) {
     return { success: false, error: "INVALID_TOKEN" };
@@ -72,15 +116,23 @@ export async function getPortalContextByToken(
   };
 }
 
-export async function getPortalAthleteProfile(rawToken: string): Promise<{
+async function resolveContext(
+  input: string | PortalAccessContext
+): Promise<PortalAccessContext | null> {
+  if (typeof input === "object" && input !== null && "portalAccessId" in input) {
+    return input;
+  }
+  const auth = await getPortalContextByToken(input);
+  return auth.success ? auth.context : null;
+}
+
+export async function getPortalAthleteProfile(input: string | PortalAccessContext): Promise<{
   context: PortalAccessContext;
   profile: PortalAthleteProfile;
   latestSnapshot: PortalAssessmentSnapshot | null;
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const athlete = await prisma.athlete.findFirst({
     where: {
@@ -145,19 +197,15 @@ export async function getPortalAthleteProfile(rawToken: string): Promise<{
   return { context, profile, latestSnapshot };
 }
 
-import { getAthleteProgressSummary } from "@/features/analytics/queries";
-
-export async function getPortalAthleteProgress(rawToken: string): Promise<{
+export async function getPortalAthleteProgress(input: string | PortalAccessContext): Promise<{
   context: PortalAccessContext;
   overallScore: number | null;
   overallGrade: string | null;
   trends: PortalComponentTrend[];
   totalAssessments: number;
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const progress = await getAthleteProgressSummary(
     context.organizationId,
@@ -194,15 +242,13 @@ export async function getPortalAthleteProgress(rawToken: string): Promise<{
 }
 
 export async function getPortalAthleteTrainingPlan(
-  rawToken: string
+  input: string | PortalAccessContext
 ): Promise<{
   context: PortalAccessContext;
   plan: PortalTrainingPlan | null;
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const plan = await prisma.trainingPlan.findFirst({
     where: {
@@ -246,15 +292,13 @@ export async function getPortalAthleteTrainingPlan(
 }
 
 export async function getPortalAthleteSchedule(
-  rawToken: string
+  input: string | PortalAccessContext
 ): Promise<{
   context: PortalAccessContext;
   sessions: PortalScheduleSession[];
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const rawSessions = await prisma.scheduleSession.findMany({
     where: {
@@ -285,15 +329,13 @@ export async function getPortalAthleteSchedule(
 }
 
 export async function getPortalAthleteSessionLogs(
-  rawToken: string
+  input: string | PortalAccessContext
 ): Promise<{
   context: PortalAccessContext;
   logs: PortalSessionLog[];
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const rawLogs = await prisma.sessionLog.findMany({
     where: {
@@ -315,17 +357,12 @@ export async function getPortalAthleteSessionLogs(
   return { context, logs };
 }
 
-import { getAthleteAchievements } from "./achievements";
-import type { PortalAchievementData } from "./types";
-
-export async function getPortalAthleteReports(rawToken: string): Promise<{
+export async function getPortalAthleteReports(input: string | PortalAccessContext): Promise<{
   context: PortalAccessContext;
   reports: PortalReportItem[];
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const assessments = await prisma.assessment.findMany({
     where: {
@@ -341,22 +378,22 @@ export async function getPortalAthleteReports(rawToken: string): Promise<{
     assessmentDate: new Date(a.assessmentDate).toISOString().split("T")[0],
     overallScore: a.overallScore ? Number(a.overallScore) : null,
     overallGrade: a.overallGrade,
-    pdfUrl: `/api/portal/pdf/${encodeURIComponent(rawToken)}/${a.id}`,
+    pdfUrl: `/api/portal/pdf/${encodeURIComponent(context.portalAccessId)}/${a.id}`,
   }));
 
   return { context, reports };
 }
 
 export async function getPortalAthleteAchievements(
-  rawToken: string
+  input: string | PortalAccessContext,
+  cachedTrends?: PortalComponentTrend[],
+  cachedReports?: PortalReportItem[]
 ): Promise<{
   context: PortalAccessContext;
   achievements: PortalAchievementData;
 } | null> {
-  const auth = await getPortalContextByToken(rawToken);
-  if (!auth.success) return null;
-
-  const { context } = auth;
+  const context = await resolveContext(input);
+  if (!context) return null;
 
   const [assessmentsCount, latestAssessment, completedSessionsCount] = await Promise.all([
     prisma.assessment.count({
@@ -384,8 +421,17 @@ export async function getPortalAthleteAchievements(
     }),
   ]);
 
-  const progressData = await getPortalAthleteProgress(rawToken);
-  const reportsData = await getPortalAthleteReports(rawToken);
+  let trends = cachedTrends;
+  if (!trends) {
+    const progressData = await getPortalAthleteProgress(context);
+    trends = progressData?.trends ?? [];
+  }
+
+  let reports = cachedReports;
+  if (!reports) {
+    const reportsData = await getPortalAthleteReports(context);
+    reports = reportsData?.reports ?? [];
+  }
 
   const overallScore = latestAssessment?.overallScore
     ? Number(latestAssessment.overallScore)
@@ -399,10 +445,267 @@ export async function getPortalAthleteAchievements(
     overallScore,
     overallGrade,
     bestComponent,
-    trends: progressData?.trends ?? [],
-    reports: reportsData?.reports ?? [],
+    trends,
+    reports,
   });
 
   return { context, achievements };
 }
 
+export async function getPortalAthleteGuidances(input: string | PortalAccessContext) {
+  const context = await resolveContext(input);
+  if (!context) return null;
+
+  const guidances = await prisma.coachGuidance.findMany({
+    where: {
+      organizationId: context.organizationId,
+      OR: [
+        { athleteId: null },
+        { athleteId: context.athleteId },
+      ],
+    },
+    orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+    include: {
+      author: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
+      athlete: { select: { fullName: true } },
+    },
+  });
+
+  return {
+    context,
+    guidances: guidances.map((g) => ({
+      id: g.id,
+      organizationId: g.organizationId,
+      authorId: g.authorId,
+      authorName: g.author?.user?.name || "Coach Zulfi",
+      athleteId: g.athleteId,
+      athleteName: g.athlete?.fullName,
+      title: g.title,
+      category: g.category,
+      content: g.content,
+      linkUrl: g.linkUrl,
+      isPinned: g.isPinned,
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt,
+    })),
+  };
+}
+
+// ── P6-B4: Portal-Safe Performance Overview & Goals ───────────────────────────
+
+/**
+ * Portal-safe Personal Best + Current Performance query.
+ * Accepts PortalAccessContext directly (no session auth required).
+ * Returns only portal-safe fields — no organizationId, no internal flags.
+ */
+export async function getPortalAthletePerformanceOverview(
+  ctx: PortalAccessContext
+): Promise<{ personalBests: PortalPersonalBestItem[] }> {
+  // 1. Fetch all completed numeric assessment results in one batch (no N+1)
+  const resultItems = await prisma.assessmentResultItem.findMany({
+    where: {
+      assessment: {
+        athleteId: ctx.athleteId,
+        organizationId: ctx.organizationId,
+        status: "COMPLETED",
+      },
+      testItem: { testType: "NUMERIC" },
+      rawValue: { not: null },
+    },
+    select: {
+      testItemId: true,
+      rawValue: true,
+      assessment: { select: { id: true, assessmentDate: true } },
+      testItem: {
+        select: {
+          id: true,
+          name: true,
+          unit: true,
+          scoreDirection: true,
+          physicalComponent: true,
+        },
+      },
+    },
+    orderBy: { assessment: { assessmentDate: "desc" } },
+  });
+
+  // 2. Group by testItemId
+  const grouped = new Map<
+    string,
+    {
+      testItem: {
+        id: string;
+        name: string;
+        unit: string;
+        scoreDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER";
+        physicalComponent: string | null;
+      };
+      history: { rawValue: number; assessmentDate: Date; assessmentId: string }[];
+    }
+  >();
+
+  for (const item of resultItems) {
+    if (item.rawValue === null) continue;
+    const tId = item.testItemId;
+    if (!grouped.has(tId)) {
+      grouped.set(tId, {
+        testItem: {
+          id: item.testItem.id,
+          name: item.testItem.name,
+          unit: item.testItem.unit as string,
+          scoreDirection: item.testItem.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER",
+          physicalComponent: item.testItem.physicalComponent,
+        },
+        history: [],
+      });
+    }
+    grouped.get(tId)!.history.push({
+      rawValue: Number(item.rawValue),
+      assessmentDate: new Date(item.assessment.assessmentDate),
+      assessmentId: item.assessment.id,
+    });
+  }
+
+  // 3. Compute PB + current for each testItem
+  const personalBests: PortalPersonalBestItem[] = [];
+
+  for (const [, entry] of grouped) {
+    const pb = calculatePersonalBest(entry.testItem.scoreDirection, entry.history);
+    if (!pb) continue;
+
+    const current = resolveCurrentValue(entry.history);
+
+    personalBests.push({
+      testItemId: entry.testItem.id,
+      testItemName: entry.testItem.name,
+      unit: entry.testItem.unit,
+      scoreDirection: entry.testItem.scoreDirection,
+      physicalComponent: entry.testItem.physicalComponent,
+      pbValue: pb.pbValue,
+      achievedDate: pb.achievedDate.toISOString().split("T")[0],
+      currentValue: current?.currentValue ?? null,
+      currentDate: current?.assessmentDate
+        ? current.assessmentDate.toISOString().split("T")[0]
+        : null,
+    });
+  }
+
+  return { personalBests };
+}
+
+/**
+ * Portal-safe Athlete Goals query.
+ * Accepts PortalAccessContext directly (no session auth required).
+ * Strips: organizationId, createdByMemberId, internal coaching notes.
+ * Returns only ACTIVE, ACHIEVED, PAUSED, EXPIRED goals (CANCELLED hidden).
+ */
+export async function getPortalAthleteGoals(
+  ctx: PortalAccessContext
+): Promise<PortalAthleteGoalItem[]> {
+  // 1. Fetch goals (exclude CANCELLED)
+  const goals = await prisma.athleteGoal.findMany({
+    where: {
+      athleteId: ctx.athleteId,
+      organizationId: ctx.organizationId,
+      status: { not: "CANCELLED" },
+    },
+    select: {
+      id: true,
+      testItemId: true,
+      unit: true,
+      title: true,
+      baselineValue: true,
+      targetValue: true,
+      targetDate: true,
+      status: true,
+      achievedAt: true,
+      achievedAssessmentId: true,
+      testItem: {
+        select: {
+          name: true,
+          scoreDirection: true,
+        },
+      },
+    },
+    orderBy: [
+      { status: "asc" }, // ACTIVE first
+      { createdAt: "desc" },
+    ],
+  });
+
+  if (goals.length === 0) return [];
+
+  // 2. Fetch current performance in one batch for progress calculation
+  const resultItems = await prisma.assessmentResultItem.findMany({
+    where: {
+      assessment: {
+        athleteId: ctx.athleteId,
+        organizationId: ctx.organizationId,
+        status: "COMPLETED",
+      },
+      testItemId: { in: goals.map((g) => g.testItemId) },
+      rawValue: { not: null },
+    },
+    select: {
+      testItemId: true,
+      rawValue: true,
+      assessment: { select: { id: true, assessmentDate: true } },
+    },
+    orderBy: { assessment: { assessmentDate: "desc" } },
+  });
+
+  // 3. Resolve current value per testItem
+  const historyByTestItem = new Map<
+    string,
+    { rawValue: number; assessmentDate: Date; assessmentId: string }[]
+  >();
+
+  for (const item of resultItems) {
+    if (item.rawValue === null) continue;
+    const key = item.testItemId;
+    if (!historyByTestItem.has(key)) historyByTestItem.set(key, []);
+    historyByTestItem.get(key)!.push({
+      rawValue: Number(item.rawValue),
+      assessmentDate: new Date(item.assessment.assessmentDate),
+      assessmentId: item.assessment.id,
+    });
+  }
+
+  // 4. Map goals to portal-safe format
+  return goals.map((g) => {
+    const history = historyByTestItem.get(g.testItemId) ?? [];
+    const current = resolveCurrentValue(history);
+    const progress = calculateGoalProgress(
+      Number(g.baselineValue),
+      Number(g.targetValue),
+      current?.currentValue ?? null,
+      g.testItem.scoreDirection
+    );
+
+    return {
+      id: g.id,
+      testItemName: g.testItem.name,
+      unit: g.unit as string,
+      title: g.title,
+      baselineValue: Number(g.baselineValue),
+      targetValue: Number(g.targetValue),
+      currentValue: current?.currentValue ?? null,
+      targetDate: g.targetDate
+        ? new Date(g.targetDate).toISOString().split("T")[0]
+        : null,
+      status: g.status as PortalAthleteGoalItem["status"],
+      progressPercent: progress.progressPercent,
+      deltaFromBaseline: progress.deltaFromBaseline,
+      isImproving: progress.isImproving,
+      state: progress.state as PortalAthleteGoalItem["state"],
+      achievedAt: g.achievedAt
+        ? new Date(g.achievedAt).toISOString().split("T")[0]
+        : null,
+      achievedAssessmentId: g.achievedAssessmentId,
+    };
+  });
+}

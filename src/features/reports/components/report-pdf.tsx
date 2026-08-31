@@ -276,7 +276,7 @@ export function AssessmentReportPDF({
   return (
     <Document
       title={`Laporan Fisik — ${athleteName}`}
-      author="Kinetiq Performance Platform"
+      author="Coach Zulfi Athletic Performance"
       subject="Analisis Fisik & Performance Atlet"
     >
       {/* ── PAGE 1 ── */}
@@ -284,17 +284,17 @@ export function AssessmentReportPDF({
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>SPORTS PERFORMANCE REPORT</Text>
-            <Text style={styles.headerSub}>Athlete Physical Assessment Report (Powered by Kinetiq)</Text>
+            <Text style={styles.headerTitle}>ATHLETIC PERFORMANCE REPORT</Text>
+            <Text style={styles.headerSub}>Coach Zulfi — Sports & Physical Conditioning (@zulficoach)</Text>
             <Text style={[styles.headerSub, { marginTop: 4, color: C.textSecondary }]}>
-              {orgName}
+              {orgName || "Coach Zulfi Performance Hub"}
             </Text>
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.headerLabel}>Tanggal Tes</Text>
             <Text style={styles.headerValue}>{assessmentDate}</Text>
-            <Text style={[styles.headerLabel, { marginTop: 6 }]}>Digenerate oleh</Text>
-            <Text style={styles.headerValue}>Kinetiq Platform</Text>
+            <Text style={[styles.headerLabel, { marginTop: 6 }]}>Head Coach</Text>
+            <Text style={styles.headerValue}>Coach Zulfi</Text>
           </View>
         </View>
 
@@ -506,7 +506,7 @@ export function AssessmentReportPDF({
         {/* Footer Page 2 */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Dokumen resmi hasil tes fisik — Digenerate secara otomatis oleh Kinetiq Performance Platform
+            Dokumen resmi hasil tes fisik — Coach Zulfi Athletic Performance Platform (@zulficoach)
           </Text>
           <Text style={styles.footerText}>Halaman 2 dari 2</Text>
         </View>

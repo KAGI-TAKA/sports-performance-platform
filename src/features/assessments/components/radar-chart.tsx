@@ -21,6 +21,7 @@ export function AssessmentRadarChart({ componentScores }: AssessmentRadarChartPr
       trigger: "item",
     },
     radar: {
+      radius: "60%",
       indicator: [
         { name: "Fleksibilitas", max: 100 },
         { name: "Kecepatan", max: 100 },
@@ -33,8 +34,8 @@ export function AssessmentRadarChart({ componentScores }: AssessmentRadarChartPr
       shape: "polygon",
       splitNumber: 4,
       axisName: {
-        color: "#94a3b8",
-        fontSize: 11,
+        color: "#64748b",
+        fontSize: 10,
         fontFamily: "var(--font-sans)",
       },
       splitLine: {

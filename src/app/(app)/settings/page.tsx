@@ -3,43 +3,46 @@ import { prisma } from "@/lib/prisma";
 import { SettingsOrgNameForm } from "@/features/organizations/components/settings-org-name-form";
 import { SettingsInvitePanel } from "@/features/organizations/components/settings-invite-panel";
 import { SettingsMembersPanel } from "@/features/organizations/components/settings-members-panel";
+import { getAssistantPerformanceList } from "@/features/assistant-performance/queries";
+import { AssistantPerformancePanel } from "@/features/assistant-performance/components/assistant-performance-panel";
 
 export default async function SettingsPage() {
   const ctx = await requireOrgContext();
   const isAdmin = ctx.role === "admin";
   const isAdminOrHeadCoach = ctx.role === "admin" || ctx.role === "head_coach";
 
-  const org = await prisma.organization.findUnique({
-    where: { id: ctx.organizationId },
-    include: {
-      members: {
-        include: { user: true },
-        orderBy: { createdAt: "asc" },
+  const [org, pendingInvitations, perfData] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: ctx.organizationId },
+      include: {
+        members: {
+          include: { user: true },
+          orderBy: { createdAt: "asc" },
+        },
       },
-    },
-  });
-
-  // Ambil undangan yang masih pending dan belum kedaluwarsa
-  const pendingInvitations = await prisma.invitation.findMany({
-    where: {
-      organizationId: ctx.organizationId,
-      status: "pending",
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    }),
+    prisma.invitation.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+        status: "pending",
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    getAssistantPerformanceList({ timeRange: "30d" }),
+  ]);
 
   if (!org) return null;
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="p-6 space-y-6 max-w-4xl">
       {/* Header */}
       <div>
         <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-          Pengaturan Organisasi
+          Pengaturan Organisasi &amp; Supervisi Tim
         </h1>
         <p className="mt-0.5 text-sm text-muted">
-          Kelola profil klub / akademi, tim pelatih, dan undangan anggota.
+          Kelola profil klub / akademi, tim pelatih, undangan anggota, dan evaluasi berkala mutu pendampingan sesi latihan.
         </p>
       </div>
 
@@ -102,6 +105,16 @@ export default async function SettingsPage() {
         }))}
         currentMemberId={ctx.memberId}
         isAdmin={isAdmin}
+      />
+
+      {/* ── Supervisi & Evaluasi Mutu Asisten Pelatih ────────────── */}
+      <AssistantPerformancePanel
+        initialData={{
+          role: perfData.role,
+          isSupervisory: perfData.isSupervisory,
+          assistants: perfData.assistants,
+          unreviewedFeedbackCount: perfData.unreviewedFeedbackCount,
+        }}
       />
     </div>
   );

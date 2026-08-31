@@ -16,6 +16,8 @@ import {
   X,
   TrendingUp,
   GitCompare,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,29 +28,58 @@ export interface NavItem {
   badge?: string;
 }
 
-export const PRIMARY_NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/schedule", label: "Jadwal Latihan", icon: Calendar },
-  { href: "/training-plans", label: "Program Latihan", icon: Dumbbell },
-  { href: "/session-logs", label: "Catatan Sesi", icon: ClipboardCheck },
-  { href: "/athletes", label: "Atlet", icon: Users },
-  { href: "/assessments", label: "Assessment", icon: ClipboardList },
-  { href: "/benchmarks", label: "Benchmark", icon: SlidersHorizontal },
-  { href: "/reports", label: "Laporan", icon: FileText },
-  { href: "/settings", label: "Pengaturan", icon: Settings },
-];
+export interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
 
-export const SECONDARY_NAV_ITEMS: NavItem[] = [
-  { href: "/progress", label: "Progress Analytics", icon: TrendingUp },
-  { href: "/compare", label: "Head-to-Head", icon: GitCompare },
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    title: "Workspace",
+    items: [
+      { href: "/dashboard", label: "Command Center", icon: LayoutDashboard },
+      { href: "/schedule", label: "Jadwal & Timetable", icon: Calendar },
+      { href: "/athletes", label: "Direktori Atlet", icon: Users },
+    ],
+  },
+  {
+    title: "Coaching",
+    items: [
+      { href: "/training-plans", label: "Program Latihan", icon: Dumbbell },
+      { href: "/session-logs", label: "Catatan Sesi", icon: ClipboardCheck },
+      { href: "/assessments", label: "Assessment Fisik", icon: ClipboardList },
+    ],
+  },
+  {
+    title: "Analytics",
+    items: [
+      { href: "/progress", label: "Analisis Progres", icon: TrendingUp },
+      { href: "/compare", label: "Komparasi Atlet", icon: GitCompare },
+      { href: "/reports", label: "Laporan & Ekspor", icon: FileText },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { href: "/benchmarks", label: "Master Benchmark", icon: SlidersHorizontal },
+      { href: "/settings", label: "Pengaturan & Staf", icon: Settings },
+    ],
+  },
 ];
 
 interface AppSidebarProps {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   onCloseMobile?: () => void;
   className?: string;
 }
 
-export function AppSidebar({ onCloseMobile, className }: AppSidebarProps) {
+export function AppSidebar({
+  collapsed = false,
+  onToggleCollapse,
+  onCloseMobile,
+  className,
+}: AppSidebarProps) {
   const pathname = usePathname();
 
   function isItemActive(href: string) {
@@ -61,34 +92,37 @@ export function AppSidebar({ onCloseMobile, className }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-full w-[230px] shrink-0 flex-col border-r border-border bg-surface-1 select-none",
+        "flex h-full flex-col border-r border-border bg-surface-1 select-none transition-all duration-200 ease-in-out",
+        collapsed ? "w-[64px]" : "w-[220px]",
         className
       )}
     >
       {/* Brand Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+      <div
+        className={cn(
+          "flex h-14 items-center border-b border-border px-3.5",
+          collapsed ? "justify-center" : "justify-between"
+        )}
+      >
         <Link
           href="/dashboard"
           onClick={onCloseMobile}
           className="flex items-center gap-2.5 group focus:outline-none focus:ring-2 focus:ring-accent rounded-md p-1"
+          title="Coach Zulfi Athletic Performance Hub"
         >
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-xs"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(var(--accent)), hsl(var(--signature)))",
-            }}
-          >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-white shadow-2xs font-bold text-xs">
             <Zap className="h-4 w-4 fill-white text-white" />
           </div>
-          <div className="overflow-hidden">
-            <span className="block font-display text-[12px] font-extrabold tracking-wider text-foreground uppercase leading-none truncate group-hover:text-accent transition-colors">
-              POWER UP
-            </span>
-            <span className="block text-[9.5px] text-accent font-semibold leading-tight mt-0.5 truncate">
-              Private Training
-            </span>
-          </div>
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <span className="block font-display text-[11.5px] font-extrabold tracking-wider text-foreground uppercase leading-none truncate group-hover:text-accent transition-colors">
+                COACH ZULFI
+              </span>
+              <span className="block text-[9px] text-accent font-semibold leading-tight mt-0.5 truncate tracking-wide">
+                Performance Hub
+              </span>
+            </div>
+          )}
         </Link>
 
         {/* Mobile Close Button */}
@@ -103,100 +137,98 @@ export function AppSidebar({ onCloseMobile, className }: AppSidebarProps) {
         )}
       </div>
 
-      {/* Primary Navigation */}
+      {/* Navigation Groups */}
       <nav
         aria-label="Navigasi Utama"
-        className="flex-1 overflow-y-auto px-3 py-4 space-y-6"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-4"
       >
-        <div>
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted mb-2">
-            Menu Utama
-          </div>
-          <ul className="space-y-0.5">
-            {PRIMARY_NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = isItemActive(item.href);
+        {NAV_GROUPS.map((group) => (
+          <div key={group.title}>
+            {!collapsed ? (
+              <div className="px-2.5 text-[9.5px] font-bold uppercase tracking-wider text-muted/80 mb-1.5">
+                {group.title}
+              </div>
+            ) : (
+              <div className="my-1.5 border-t border-border/50" />
+            )}
 
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onCloseMobile}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent",
-                      active
-                        ? "bg-accent-bg text-accent font-semibold"
-                        : "text-secondary hover:bg-surface-2 hover:text-foreground"
-                    )}
-                  >
-                    <Icon
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isItemActive(item.href);
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onCloseMobile}
+                      aria-label={item.label}
+                      title={collapsed ? `${item.label} (${group.title})` : undefined}
                       className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
+                        "group relative flex items-center rounded-lg transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent",
+                        collapsed
+                          ? "h-10 w-10 mx-auto justify-center"
+                          : "h-9 px-2.5 gap-2.5 text-xs font-medium",
                         active
-                          ? "text-accent"
-                          : "text-muted group-hover:text-foreground"
+                          ? "bg-accent text-white font-semibold shadow-2xs"
+                          : "text-secondary hover:bg-surface-2 hover:text-foreground"
                       )}
-                    />
-                    <span className="truncate">{item.label}</span>
-                    {active && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent" />
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {/* Secondary / Exploratory Tools */}
-        <div>
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted mb-2">
-            Analisis Tambahan
+                    >
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 shrink-0 transition-colors",
+                          active
+                            ? "text-white"
+                            : "text-muted group-hover:text-foreground"
+                        )}
+                      />
+                      {!collapsed && (
+                        <span className="truncate text-xs">{item.label}</span>
+                      )}
+                      {active && collapsed && (
+                        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-white shadow-xs" />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <ul className="space-y-0.5">
-            {SECONDARY_NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = isItemActive(item.href);
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onCloseMobile}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-md px-3 py-2 text-[12.5px] font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent",
-                      active
-                        ? "bg-surface-2 text-foreground font-semibold"
-                        : "text-muted hover:bg-surface-2 hover:text-foreground"
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-colors",
-                        active ? "text-accent" : "text-muted group-hover:text-secondary"
-                      )}
-                    />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        ))}
       </nav>
 
-      {/* Sidebar Footer */}
-      <div className="border-t border-border p-4 bg-surface-2/40">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-success" />
-          <span className="text-[11px] font-medium text-foreground">
-            Sistem Aktif
-          </span>
-        </div>
-        <p className="text-[10px] text-muted mt-1 leading-tight">
-          Measure. Analyze. Improve.
-        </p>
-        <p className="text-[9.5px] text-muted/60 mt-0.5">v1.0 · Powered by Kinetiq</p>
+      {/* Sidebar Footer & Collapse Trigger */}
+      <div className="border-t border-border p-2 bg-surface-2/30">
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className={cn(
+              "hidden lg:flex w-full items-center rounded-lg p-2 text-xs font-medium text-muted hover:text-foreground hover:bg-surface-2 transition-colors",
+              collapsed ? "justify-center" : "justify-between"
+            )}
+            title={collapsed ? "Perluas Sidebar" : "Perkecil Sidebar"}
+          >
+            {!collapsed && (
+              <span className="text-[11px] text-muted truncate">Perkecil Menu</span>
+            )}
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4 text-muted hover:text-foreground" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4 text-muted" />
+            )}
+          </button>
+        )}
+
+        {!collapsed && (
+          <div className="mt-2 px-2 pt-2 border-t border-border/40 text-[10px] text-muted flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+              Sistem Aktif
+            </span>
+            <span className="font-mono text-[9px] opacity-75">v1.2</span>
+          </div>
+        )}
       </div>
     </aside>
   );

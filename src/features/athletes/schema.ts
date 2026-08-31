@@ -13,6 +13,7 @@ export const genderEnum = z.enum(["MALE", "FEMALE"]);
 export const createAthleteSchema = z.object({
   fullName: z.string().min(2, "Nama minimal 2 karakter"),
   jerseyNumber: z.coerce.number().int().min(0).max(99).optional(),
+  sportCategory: z.string().optional(),
   position: athletePositionEnum.default("UNSPECIFIED"),
   gender: genderEnum,
   dateOfBirth: z.coerce.date(),

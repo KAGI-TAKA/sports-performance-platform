@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAthleteById, listAthletes } from "@/features/athletes/queries";
-import { listTestItems } from "@/features/assessments/queries";
+import { listTestItems, getLatestAssessmentWithResults } from "@/features/assessments/queries";
+import { calculateAgeAtDate } from "@/features/assessments/engine";
 import { AssessmentWizard } from "@/features/assessments/components/assessment-wizard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronRight, AlertTriangle, Sparkles } from "lucide-react";
 
 export default async function NewAssessmentPage({
   searchParams,
@@ -25,6 +26,10 @@ export default async function NewAssessmentPage({
     unit: t.unit,
     scoreDirection: t.scoreDirection,
     benchmarks: t.benchmarks.map((b) => ({
+      id: b.id,
+      ageMin: b.ageMin,
+      ageMax: b.ageMax,
+      gender: b.gender,
       thresholdA: Number(b.thresholdA),
       thresholdB: Number(b.thresholdB),
       thresholdC: Number(b.thresholdC),
@@ -49,7 +54,7 @@ export default async function NewAssessmentPage({
               Mulai Assessment Baru
             </h1>
             <p className="mt-0.5 text-xs text-muted">
-              Pilih atlet aktif yang akan diuji fisik untuk menginputkan nilai tes.
+              Pilih atlet yang akan diuji fisik untuk mencatat data tes di lapangan.
             </p>
           </div>
         </div>
@@ -69,35 +74,44 @@ export default async function NewAssessmentPage({
               </CardContent>
             </Card>
           ) : (
-            athletes.map((a) => (
-              <Link
-                key={a.id}
-                href={`/assessments/new?athleteId=${a.id}`}
-                className="flex items-center justify-between p-4 rounded-xl border border-border bg-surface-1 hover:border-accent hover:bg-surface-2/60 transition group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent font-bold text-xs">
-                    {a.fullName
-                      .split(" ")
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join("")}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-foreground group-hover:text-accent transition-colors">
-                      {a.fullName}
+            athletes.map((a) => {
+              const age = calculateAgeAtDate(a.dateOfBirth);
+              const genderText = a.gender === "MALE" ? "Putra" : "Putri";
+              const levelText = a.trainingLevel === "BEGINNER" ? "Pemula" : a.trainingLevel === "INTERMEDIATE" ? "Menengah" : "Kompetitif / Pro";
+
+              return (
+                <Link
+                  key={a.id}
+                  href={`/assessments/new?athleteId=${a.id}`}
+                  className="flex items-center justify-between p-4 rounded-xl border border-border bg-surface-1 hover:border-accent hover:bg-surface-2/60 transition group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent font-bold text-xs">
+                      {a.fullName
+                        .split(" ")
+                        .map((w) => w[0])
+                        .slice(0, 2)
+                        .join("")}
                     </div>
-                    <div className="text-xs text-muted">
-                      {a.position !== "UNSPECIFIED" ? a.position.replace(/_/g, " ") : "Posisi —"}
-                      {a.jerseyNumber != null && ` · #${a.jerseyNumber}`}
+                    <div>
+                      <div className="text-sm font-bold text-foreground group-hover:text-accent transition-colors">
+                        {a.fullName}
+                      </div>
+                      <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                        <span>{genderText}</span>
+                        <span>·</span>
+                        <span>Usia {age} Thn</span>
+                        <span>·</span>
+                        <span className="text-accent font-medium">Level {levelText}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Button variant="ghost" size="xs" className="gap-1 text-accent">
-                  Mulai Tes <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ))
+                  <Button variant="ghost" size="xs" className="gap-1 text-accent">
+                    Mulai Tes <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              );
+            })
           )}
         </div>
       </div>
@@ -129,6 +143,28 @@ export default async function NewAssessmentPage({
     );
   }
 
+  // Ambil asesmen terakhir atlet untuk perbandingan live progres di wizard
+  const [previousAssessmentRaw, { athletes: allAthletes }] = await Promise.all([
+    getLatestAssessmentWithResults(ctx.organizationId, athlete.id),
+    listAthletes(ctx.organizationId, { status: "active" }),
+  ]);
+
+  const previousAssessment = previousAssessmentRaw
+    ? {
+        id: previousAssessmentRaw.id,
+        assessmentDate: previousAssessmentRaw.assessmentDate,
+        overallScore: previousAssessmentRaw.overallScore != null ? Number(previousAssessmentRaw.overallScore) : null,
+        overallGrade: previousAssessmentRaw.overallGrade,
+        assessmentType: previousAssessmentRaw.assessmentType,
+        resultItems: previousAssessmentRaw.resultItems.map((r) => ({
+          testItemId: r.testItemId,
+          rawValue: Number(r.rawValue),
+          testItemName: r.testItem.name,
+          unit: r.testItem.unit,
+        })),
+      }
+    : null;
+
   return (
     <div className="p-6 max-w-[1400px]">
       <AssessmentWizard
@@ -136,8 +172,17 @@ export default async function NewAssessmentPage({
           id: athlete.id,
           fullName: athlete.fullName,
           position: athlete.position,
+          dateOfBirth: athlete.dateOfBirth,
+          gender: athlete.gender,
+          trainingLevel: athlete.trainingLevel,
         }}
+        allAthletes={allAthletes.map((a) => ({
+          id: a.id,
+          fullName: a.fullName,
+          trainingLevel: a.trainingLevel,
+        }))}
         testItems={testItems}
+        previousAssessment={previousAssessment}
       />
     </div>
   );

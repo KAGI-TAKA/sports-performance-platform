@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import type { DashboardStats } from "./types";
+import type { DashboardStats, DashboardAthleteSummary } from "./types";
 
 export async function getDashboardStats(organizationId: string): Promise<DashboardStats> {
   const now = new Date();
@@ -21,6 +21,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
     completedAnalyses,
     rawUpcomingSessions,
     rawLatestAssessments,
+    rawAthletesOverview,
   ] = await Promise.all([
     // 1. Active athletes count
     prisma.athlete.count({ where: { organizationId, isActive: true } }),
@@ -93,7 +94,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
         athletes: { select: { athleteId: true } },
       },
       orderBy: { startTime: "asc" },
-      take: 5,
+      take: 6,
     }),
 
     // 11. Recent assessments table
@@ -104,6 +105,36 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       },
       orderBy: { assessmentDate: "desc" },
       take: 5,
+    }),
+
+    // 12. Active athletes quick directory overview
+    prisma.athlete.findMany({
+      where: { organizationId, isActive: true },
+      orderBy: { fullName: "asc" },
+      take: 8,
+      select: {
+        id: true,
+        fullName: true,
+        sportCategory: true,
+        trainingLevel: true,
+        dateOfBirth: true,
+        injuryHistories: {
+          where: { recoveredAt: null },
+          select: { id: true },
+        },
+        assessments: {
+          where: { status: "COMPLETED" },
+          orderBy: [{ assessmentDate: "desc" }, { createdAt: "desc" }],
+          take: 1,
+          select: { overallScore: true, overallGrade: true },
+        },
+        scheduleSessions: {
+          where: { session: { startTime: { gte: startOfDay } } },
+          orderBy: { session: { startTime: "asc" } },
+          take: 1,
+          select: { session: { select: { startTime: true } } },
+        },
+      },
     }),
   ]);
 
@@ -188,6 +219,28 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
     },
   }));
 
+  // Transform athletes overview
+  const athletesOverview: DashboardAthleteSummary[] = rawAthletesOverview.map((ath) => {
+    const dob = new Date(ath.dateOfBirth);
+    const age = Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+    const nextSession = ath.scheduleSessions[0]?.session;
+    const nextSessionTime = nextSession
+      ? `${new Date(nextSession.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`
+      : null;
+
+    return {
+      id: ath.id,
+      fullName: ath.fullName,
+      sportCategory: ath.sportCategory,
+      trainingLevel: ath.trainingLevel,
+      age,
+      hasActiveInjury: ath.injuryHistories.length > 0,
+      latestScore: ath.assessments[0]?.overallScore ? Number(ath.assessments[0].overallScore) : null,
+      latestGrade: ath.assessments[0]?.overallGrade ?? null,
+      nextSessionTime,
+    };
+  });
+
   return {
     totalAthletes,
     assessmentsThisMonth,
@@ -202,5 +255,6 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       activeInjuriesCount,
       unloggedSessionsCount: unloggedPastSessionsCount,
     },
+    athletesOverview,
   };
 }

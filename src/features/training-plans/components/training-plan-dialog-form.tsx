@@ -107,8 +107,7 @@ export function TrainingPlanDialogForm({
                   <optgroup label="Khusus Atlet">
                     {athletes.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.fullName}{" "}
-                        {a.jerseyNumber != null ? `#${a.jerseyNumber}` : ""}
+                        {a.fullName}
                       </option>
                     ))}
                   </optgroup>

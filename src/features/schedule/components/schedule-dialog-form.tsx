@@ -83,7 +83,14 @@ export function ScheduleDialogForm({
 
   const isEditing = !!initialSession;
 
-  // Selected state initialized directly from props
+  const initialSlotType = (() => {
+    const n = (initialSession?.notes || "").toLowerCase();
+    if (n.includes("off") || n.includes("tutup") || n.includes("terkunci") || initialSession?.status === "CANCELLED") return "TERKUNCI";
+    if (n.includes("fleksibel") || n.includes("reschedule") || n.includes("tentative") || n.includes("60%")) return "FLEKSIBEL";
+    return "PASTI";
+  })();
+
+  const [slotType, setSlotType] = useState<"PASTI" | "FLEKSIBEL" | "TERKUNCI">(initialSlotType);
   const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>(
     () => initialSession?.athleteIds ?? []
   );
@@ -126,6 +133,19 @@ export function ScheduleDialogForm({
 
     selectedAthleteIds.forEach((id) => formData.append("athleteIds", id));
     formData.set("coachId", selectedCoachId);
+
+    const rawNotes = (formData.get("notes") as string) || "";
+    const cleanNotes = rawNotes
+      .replace(/\[(90% Pasti|Fleksibel 60%|Off Jadwal \/ Terkunci|PASTI|FLEKSIBEL|TERKUNCI)\]\s*/gi, "")
+      .trim();
+
+    let finalNotes = cleanNotes;
+    if (slotType === "FLEKSIBEL") {
+      finalNotes = cleanNotes ? `[Fleksibel 60%] ${cleanNotes}` : "[Fleksibel 60%]";
+    } else if (slotType === "TERKUNCI") {
+      finalNotes = cleanNotes ? `[Off Jadwal / Terkunci] ${cleanNotes}` : "[Off Jadwal / Terkunci]";
+    }
+    formData.set("notes", finalNotes);
 
     startTransition(async () => {
       let result;
@@ -306,17 +326,7 @@ export function ScheduleDialogForm({
                           <span className="font-medium text-foreground">
                             {a.fullName}
                           </span>
-                          {a.jerseyNumber != null && (
-                            <span className="text-[10px] text-muted font-mono">
-                              #{a.jerseyNumber}
-                            </span>
-                          )}
                         </div>
-                        {a.position && a.position !== "UNSPECIFIED" && (
-                          <span className="text-[10px] text-muted">
-                            {a.position.replace(/_/g, " ")}
-                          </span>
-                        )}
                       </label>
                     );
                   })
@@ -364,6 +374,67 @@ export function ScheduleDialogForm({
                 defaultValue={initialSession?.location ?? ""}
                 placeholder="cth. Power Up Gym / Lapangan B"
               />
+            </div>
+
+            {/* Sifat Ketersediaan Slot Timetable */}
+            <div>
+              <label className="block font-medium text-foreground mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-muted" />
+                  Sifat Ketersediaan Slot Timetable
+                </span>
+                <span className="text-[10px] text-muted">Ditampilkan di Weekly Timetable</span>
+              </label>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlotType("PASTI")}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
+                    slotType === "PASTI"
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-950 font-bold ring-1 ring-emerald-500"
+                      : "border-border bg-surface-2/40 text-muted hover:bg-surface-2"
+                  }`}
+                >
+                  <span className="flex items-center gap-1 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block shrink-0" />
+                    90% Pasti
+                  </span>
+                  <span className="text-[9.5px] opacity-75 mt-0.5 font-normal">Sesi Utama</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSlotType("FLEKSIBEL")}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
+                    slotType === "FLEKSIBEL"
+                      ? "border-sky-500 bg-sky-50 text-sky-950 font-bold ring-1 ring-sky-500"
+                      : "border-border bg-surface-2/40 text-muted hover:bg-surface-2"
+                  }`}
+                >
+                  <span className="flex items-center gap-1 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-sky-400 inline-block shrink-0" />
+                    60% Fleksibel
+                  </span>
+                  <span className="text-[9.5px] opacity-75 mt-0.5 font-normal">Dapat Digeser</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSlotType("TERKUNCI")}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
+                    slotType === "TERKUNCI"
+                      ? "border-rose-500 bg-rose-50 text-rose-950 font-bold ring-1 ring-rose-500"
+                      : "border-border bg-surface-2/40 text-muted hover:bg-surface-2"
+                  }`}
+                >
+                  <span className="flex items-center gap-1 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-rose-500 inline-block shrink-0" />
+                    Off / Terkunci
+                  </span>
+                  <span className="text-[9.5px] opacity-75 mt-0.5 font-normal">Slot Libur / Full</span>
+                </button>
+              </div>
             </div>
 
             {/* Catatan Sesi */}

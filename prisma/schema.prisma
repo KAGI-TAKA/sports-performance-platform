@@ -101,6 +101,10 @@ model Organization {
   trainingPlans    TrainingPlan[]
   sessionLogs      SessionLog[]
   portalAccesses   PortalAccess[]
+  coachGuidances   CoachGuidance[]
+  attendances      Attendance[]
+  parentFeedbacks  ParentFeedback[]
+  goals            AthleteGoal[]
 
   @@map("organization")
 }
@@ -119,6 +123,10 @@ model Member {
   scheduleSessionsCoached ScheduleSession[]
   sessionLogsCreated      SessionLog[]
   portalAccessesCreated   PortalAccess[]
+  coachGuidances          CoachGuidance[]
+  attendancesMarked       Attendance[]      @relation("AttendanceMarker")
+  feedbacksReceived       ParentFeedback[]  @relation("CoachEvaluated")
+  goalsCreated            AthleteGoal[]     @relation("GoalCreator")
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -171,6 +179,7 @@ model Athlete {
 
   fullName      String
   jerseyNumber  Int?
+  sportCategory String? // Misal: Basket, Sepak Bola, Bulutangkis, Futsal, Atletik, dll.
   position      AthletePosition @default(UNSPECIFIED)
   trainingLevel TrainingLevel   @default(BEGINNER)
   gender        Gender
@@ -199,6 +208,10 @@ model Athlete {
   trainingPlans    TrainingPlan[]
   sessionLogs      SessionLog[]
   portalAccesses   PortalAccess[]
+  coachGuidances   CoachGuidance[]
+  attendances      Attendance[]
+  parentFeedbacks  ParentFeedback[]
+  goals            AthleteGoal[]
 
   @@index([organizationId])
   @@map("athlete")
@@ -216,6 +229,7 @@ model PortalAccess {
 
   tokenHash     String    @unique
   username      String?   @unique
+  passwordHash  String?
   plainPassword String?
   accessType    String    @default("ATHLETE") // "ATHLETE" | "PARENT"
   expiresAt     DateTime
@@ -224,9 +238,10 @@ model PortalAccess {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete      Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  createdBy    Member       @relation(fields: [createdByMemberId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete        Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy      Member           @relation(fields: [createdByMemberId], references: [id])
+  parentFeedbacks ParentFeedback[]
 
   @@index([organizationId, athleteId])
   @@index([tokenHash])
@@ -319,6 +334,7 @@ model TestItem {
   component    AssessmentComponent?   @relation(fields: [componentId], references: [id], onDelete: SetNull)
   resultItems  AssessmentResultItem[]
   benchmarks   Benchmark[]
+  goals        AthleteGoal[]
 
   @@index([organizationId])
   @@index([componentId])
@@ -357,6 +373,7 @@ model Assessment {
   resultItems  AssessmentResultItem[]
   analysis     AssessmentAnalysis?
   reports      Report[]
+  goalsAchieved AthleteGoal[]        @relation("GoalAchievedAssessment")
 
   @@index([organizationId])
   @@index([athleteId, assessmentDate])
@@ -482,11 +499,13 @@ model ScheduleSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  coach        Member                   @relation(fields: [coachId], references: [id])
-  trainingPlan TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
-  athletes     ScheduleSessionAthlete[]
-  sessionLogs  SessionLog[]
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coach          Member                   @relation(fields: [coachId], references: [id])
+  trainingPlan   TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
+  athletes       ScheduleSessionAthlete[]
+  sessionLogs    SessionLog[]
+  attendances    Attendance[]
+  parentFeedbacks ParentFeedback[]
 
   @@index([organizationId, startTime])
   @@index([trainingPlanId])
@@ -610,4 +629,154 @@ model SessionLog {
   @@index([organizationId, athleteId])
   @@index([scheduleSessionId])
   @@map("session_log")
+}
+
+// ============================================================
+// COACH GUIDANCE & NEWS BULLETIN (PUSAT BERITA & EDUKASI)
+// ============================================================
+
+model CoachGuidance {
+  id             String    @id @default(cuid())
+  organizationId String
+  authorId       String
+  athleteId      String?   // Nullable: jika null, broadcast ke semua atlet/ortu; jika ada, privat untuk atlet tersebut
+
+  title          String
+  category       String    @default("NUTRISI") // "NUTRISI" | "LATIHAN_MANDIRI" | "PENGUMUMAN" | "KESEHATAN" | "MOTIVASI"
+  content        String    @db.Text
+  linkUrl        String?   // Optional URL artikel / video referensi
+  isPinned       Boolean   @default(false)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author         Member       @relation(fields: [authorId], references: [id])
+  athlete        Athlete?     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([athleteId])
+  @@map("coach_guidance")
+}
+
+// ============================================================
+// P5: ATTENDANCE & PRESENSI ATLET
+// ============================================================
+
+enum AttendanceStatus {
+  UNMARKED
+  PRESENT
+  LATE
+  EXCUSED
+  ABSENT
+  RESCHEDULED
+}
+
+model Attendance {
+  id             String           @id @default(cuid())
+  organizationId String
+  sessionId      String
+  athleteId      String
+  status         AttendanceStatus @default(UNMARKED)
+
+  checkInTime      DateTime?
+  notes            String?
+  markedByMemberId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session      ScheduleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athlete      Athlete         @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  markedBy     Member?         @relation("AttendanceMarker", fields: [markedByMemberId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, athleteId])
+  @@index([organizationId, sessionId, status])
+  @@index([organizationId, athleteId, status])
+  @@map("attendance")
+}
+
+// ============================================================
+// P5: PARENT FEEDBACK & EVALUASI PELATIH
+// ============================================================
+
+model ParentFeedback {
+  id                String   @id @default(cuid())
+  organizationId    String
+  scheduleSessionId String
+  athleteId         String
+  portalAccessId    String   // Required: Audit trail aktor token portal yang sah
+  coachMemberId     String   // Server-determined: Diambil dari ScheduleSession.coachId
+
+  // Rating 1 - 5 Bintang (Tervalidasi Integer 1..5)
+  sessionRating          Int
+  communicationRating    Int
+  athleteAttentionRating Int
+
+  comment String? @db.Text
+
+  // Supervisi Head Coach / Admin (Mutable oleh Head Coach)
+  isReviewed     Boolean   @default(false)
+  reviewedAt     DateTime?
+  headCoachNotes String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scheduleSession ScheduleSession @relation(fields: [scheduleSessionId], references: [id], onDelete: Cascade)
+  athlete         Athlete         @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  coachMember     Member          @relation("CoachEvaluated", fields: [coachMemberId], references: [id], onDelete: Restrict)
+  portalAccess    PortalAccess    @relation(fields: [portalAccessId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleSessionId, athleteId])
+  @@index([organizationId, coachMemberId, createdAt])
+  @@index([organizationId, isReviewed])
+  @@index([organizationId, athleteId])
+  @@map("parent_feedback")
+}
+
+// ============================================================
+// ATHLETE GOALS & TARGETS (P6-B)
+// ============================================================
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+model AthleteGoal {
+  id                String     @id @default(cuid())
+  organizationId    String
+  athleteId         String
+  testItemId        String
+  createdByMemberId String
+
+  title                String?
+  baselineValue        Decimal         @db.Decimal(8, 2)
+  targetValue          Decimal         @db.Decimal(8, 2)
+  unit                 MeasurementUnit
+  targetDate           DateTime?
+  status               GoalStatus      @default(ACTIVE)
+  notes                String?
+
+  achievedAt           DateTime?
+  achievedAssessmentId String?
+
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete            Athlete      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  testItem           TestItem     @relation(fields: [testItemId], references: [id], onDelete: Restrict)
+  createdBy          Member       @relation("GoalCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  achievedAssessment Assessment?  @relation("GoalAchievedAssessment", fields: [achievedAssessmentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, athleteId])
+  @@index([athleteId, testItemId, status])
+  @@map("athlete_goal")
 }

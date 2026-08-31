@@ -11,6 +11,7 @@ import {
   TestItemValue,
 } from "./engine";
 import { seedDefaultTestItemsAndBenchmarks } from "../../../prisma/seed-defaults";
+import { evaluateAssessmentGoals } from "../athlete-goals/actions";
 
 export async function createAssessment(input: unknown) {
   const ctx = await requireOrgContext();
@@ -145,6 +146,9 @@ export async function createAssessment(input: unknown) {
           ruleEngineVersion: "v1.0",
         },
       });
+
+      // Evaluasi pencapaian target atlet (P6-B Automatic Achievement)
+      await evaluateAssessmentGoals(newAssessment.id, tx);
 
       return newAssessment;
     });
