@@ -4,7 +4,10 @@ import { clientEnv } from "./env.client";
 import { ac, admin, headCoach, assistantCoach } from "./permissions";
 
 export const authClient = createAuthClient({
-  baseURL: clientEnv.NEXT_PUBLIC_APP_URL,
+  baseURL:
+    typeof window !== "undefined"
+      ? window.location.origin
+      : clientEnv.NEXT_PUBLIC_APP_URL,
   plugins: [
     organizationClient({
       ac,

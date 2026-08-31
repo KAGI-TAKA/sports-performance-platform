@@ -1,4 +1,4 @@
-﻿import { betterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
 import { prisma } from "./prisma";
@@ -21,6 +21,10 @@ export const auth = betterAuth({
         max: 5, // 5 failed attempts limit
       },
       "/forget-password": {
+        window: 900, // 15 menit
+        max: 3, // 3 requests limit
+      },
+      "/request-password-reset": {
         window: 900, // 15 menit
         max: 3, // 3 requests limit
       },
