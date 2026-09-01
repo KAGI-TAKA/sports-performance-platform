@@ -10,8 +10,13 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isRouteAllowedForRole } from "@/lib/access-policy";
 
-const MOBILE_NAV_ITEMS = [
+interface MobileBottomNavProps {
+  role?: string;
+}
+
+const ALL_MOBILE_NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Jadwal", icon: Calendar },
   { href: "/athletes", label: "Atlet", icon: Users },
@@ -19,15 +24,21 @@ const MOBILE_NAV_ITEMS = [
   { href: "/session-logs", label: "Sesi", icon: ClipboardCheck },
 ];
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ role }: MobileBottomNavProps) {
   const pathname = usePathname();
+
+  const visibleItems = ALL_MOBILE_NAV_ITEMS.filter((item) => {
+    return isRouteAllowedForRole(role || "admin", item.href);
+  });
+
+  if (visibleItems.length === 0) return null;
 
   return (
     <nav
       aria-label="Navigasi Seluler"
       className="fixed bottom-0 left-0 right-0 z-40 flex h-14 w-full items-center justify-around border-t border-border bg-surface-1 px-2 lg:hidden shadow-lg select-none"
     >
-      {MOBILE_NAV_ITEMS.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         const isActive =
           pathname === item.href ||

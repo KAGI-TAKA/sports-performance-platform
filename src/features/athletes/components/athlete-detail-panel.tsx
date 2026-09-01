@@ -138,6 +138,19 @@ export function AthleteDetailPanel({
             Lahir {formatDate(athlete.dateOfBirth)}
           </p>
 
+          {/* Dual Pathway Tag */}
+          <div className="mt-1 flex items-center gap-1.5">
+            {(age ?? 0) < 11 || (athlete.sportCategory && athlete.sportCategory.toLowerCase().includes("mfd")) ? (
+              <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                Jalur: Multilateral Athletic Development (MFD)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                Jalur: Youth Athlete Performance
+              </span>
+            )}
+          </div>
+
           {/* Parent contact info */}
           {(athlete.parentName || athlete.parentPhone) && (
             <p className="mt-1 text-[11px] text-accent font-medium">

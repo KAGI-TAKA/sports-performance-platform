@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { loginWithPortalCredentials } from "@/features/portal/actions";
+import { getPostAuthRedirectUrl } from "@/features/auth/role-actions";
 import { Eye, EyeOff, ShieldCheck, ArrowLeft, Activity, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,7 @@ function LoginForm() {
     try {
       const isEmail = inputClean.includes("@");
 
-      // 1. Jika berformat email, autentikasi via Better Auth (Admin / Coach)
+      // 1. Jika berformat email, autentikasi via Better Auth (Admin / Coach / Staff)
       if (isEmail) {
         const { error } = await authClient.signIn.email({
           email: inputClean.toLowerCase(),
@@ -56,7 +57,12 @@ function LoginForm() {
         });
 
         if (!error) {
-          window.location.href = redirectTo;
+          if (rawRedirect === "/dashboard" || !rawRedirect) {
+            const dest = await getPostAuthRedirectUrl();
+            window.location.href = dest.redirectUrl || "/dashboard";
+          } else {
+            window.location.href = redirectTo;
+          }
           return;
         }
       }

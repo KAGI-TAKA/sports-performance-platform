@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Activity, Plus, ArrowRight, CheckCircle2, ShieldAlert, User } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { AthleteReTestSummary, AthleteReTestInsight } from "@/features/coaching-intelligence/types";
@@ -18,13 +18,18 @@ export function DashboardReTestWidget({
         <div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-muted" />
-              <CardTitle className="text-sm font-semibold text-foreground">
-                Siklus Evaluasi Fisik Atlet
-              </CardTitle>
+              <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div>
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Step 06 — Siklus Re-Assessment Berkala
+                </CardTitle>
+                <span className="text-[10px] text-muted block">
+                  Evaluasi respons latihan &amp; perbarui target siklus
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-              Sementara Tidak Tersedia
+            <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+              Evaluasi Terjadwal
             </span>
           </CardHeader>
 
@@ -107,16 +112,19 @@ export function DashboardReTestWidget({
       <div>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-accent" />
+            <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <div>
               <CardTitle className="text-sm font-semibold text-foreground">
-                Siklus Evaluasi Fisik Atlet
+                Step 06 — Siklus Re-Assessment Atlet
               </CardTitle>
+              <span className="text-[10px] text-muted block">
+                Evaluasi berkala respons adaptasi latihan
+              </span>
             </div>
           </div>
           <Link
             href="/assessments"
-            className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-1"
+            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
           >
             Semua Asesmen <ArrowRight className="h-3 w-3" />
           </Link>
@@ -216,8 +224,8 @@ export function DashboardReTestWidget({
       </div>
 
       <div className="p-3 border-t border-border/50 bg-surface-2/30 rounded-b-xl flex items-center justify-between text-[11px] text-muted">
-        <span>Evaluasi fisik berkala dianjurkan setiap 60–90 hari</span>
-        <Link href="/athletes" className="font-semibold text-accent hover:underline">
+        <span>Evaluasi berkala dianjurkan setiap 60–90 hari</span>
+        <Link href="/athletes" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
           Direktori Atlet →
         </Link>
       </div>

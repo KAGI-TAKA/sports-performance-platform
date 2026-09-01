@@ -1,27 +1,43 @@
 import { SectionHeader } from "@/components/ui/section-header";
-import { UserCheck, Layers, Award, Activity, Compass, GitMerge } from "lucide-react";
+import { UserCheck, Layers, Award, Activity, Compass, GitMerge, CheckCircle2, ShieldCheck } from "lucide-react";
 
 export function WhyIndividualSection() {
-  const factors = [
+  const pillars = [
     {
+      num: "01",
+      title: "INDIVIDUALIZED",
+      desc: "Tidak semua atlet membutuhkan program yang sama. Rencana latihan disusun berdasarkan titik mulai dan kebutuhan spesifik masing-masing anak.",
       icon: UserCheck,
-      title: "Usia Kronologis vs Usia Latihan",
-      desc: "Dua anak usia 12 tahun bisa memiliki riwayat latihan yang berbeda 3 tahun. Volume dan intensitas beban harus disesuaikan dengan kesiapan biologisnya.",
     },
     {
+      num: "02",
+      title: "DEVELOPMENTALLY APPROPRIATE",
+      desc: "Program disesuaikan dengan tahap perkembangan biologis, usia latihan, dan kesiapan motorik sang anak.",
       icon: Compass,
-      title: "Kemampuan Gerak Dasar (Movement Literacy)",
-      desc: "Sebelum membebani fisik dengan latihan berat, atlet harus menguasai mekanika lari, lompat, mendarat, dan stabilisasi tubuh dengan benar.",
     },
     {
-      icon: Activity,
-      title: "Latar Belakang Olahraga",
-      desc: "Kebutuhan fisik atlet sepak bola berbeda dengan basket atau bulutangkis. Pembinaan fisik harus mendukung performa spesifik cabangnya.",
-    },
-    {
+      num: "03",
+      title: "PROGRESSIVE",
+      desc: "Latihan dikembangkan secara bertahap, dari penguasaan pola gerak fundamental menuju tuntutan fisik yang lebih kompleks.",
       icon: Layers,
-      title: "Kebutuhan & Titik Mulai Personal",
-      desc: "Ada atlet yang butuh penguatan akselerasi awal, ada yang butuh mobilitas sendi atau stabilitas lutut pasca cedera.",
+    },
+    {
+      num: "04",
+      title: "MOVEMENT FIRST",
+      desc: "Kualitas gerak dan mekanika tubuh yang benar menjadi prioritas mutlak sebelum mengejar intensitas, beban berat, atau performa instan.",
+      icon: Award,
+    },
+    {
+      num: "05",
+      title: "SPORT-RELEVANT",
+      desc: "Untuk atlet cabor, latihan dirancang selaras dengan tuntutan fisik spesifik olahraga (agility, acceleration, landing control).",
+      icon: Activity,
+    },
+    {
+      num: "06",
+      title: "MONITORED",
+      desc: "Perkembangan fisik dan respons adaptasi atlet dipantau secara berkala sehingga program selalu relevan dan terukur.",
+      icon: GitMerge,
     },
   ];
 
@@ -30,64 +46,58 @@ export function WhyIndividualSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
         <SectionHeader
           kicker="Filosofi Pembinaan"
-          title="Mengapa Pendekatan Pembinaan Harus Individual?"
-          description="Tidak ada satu program latihan seragam yang cocok untuk semua anak. Kami membangun atlet berdasarkan titik mulai dan kebutuhan perkembangannya masing-masing."
+          title="WHY THIS APPROACH?"
+          description="Every Athlete Has Different Needs. Every Development Has Its Own Process."
         />
 
-        {/* Quality over Quantity Philosophy Statement */}
-        <div className="rounded-xl border border-border bg-surface-2/40 p-5 sm:p-6 space-y-2">
+        {/* Core Philosophy Statement Card */}
+        <div className="rounded-2xl border border-border bg-surface-2/60 p-6 sm:p-7 space-y-3 shadow-2xs">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-accent" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-accent">
-              Prinsip Utama: Quality over Quantity
+            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              Prinsip Dasar: Quality over Quantity
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-            Pendekatan latihan Coach Zulfi menggunakan prinsip <strong>&ldquo;Quality over Quantity&rdquo;</strong>, dengan menekankan <em>fundamental movement</em>, <em>physical literacy</em>, <em>strength</em>, <em>speed</em>, <em>agility</em>, <em>coordination</em>, <em>balance</em>, <em>power</em>, serta kemampuan melakukan gerakan secara efektif dan aman.
-          </p>
+
+          <div className="space-y-2 text-xs sm:text-sm text-secondary leading-relaxed">
+            <p>
+              Tidak semua anak berkembang dengan cara yang sama. Usia kronologis yang sama tidak selalu berarti memiliki kemampuan gerak, pengalaman olahraga, kapasitas fisik, dan kebutuhan latihan yang sama.
+            </p>
+            <p>
+              Karena itu, program latihan tidak seharusnya dibuat dengan pendekatan <em>&ldquo;one program fits all&rdquo;</em>. Kami menggunakan observasi dan assessment sebagai dasar untuk memahami kondisi awal atlet, menentukan prioritas pengembangan, kemudian menyusun latihan yang sesuai dengan kebutuhan dan tahap perkembangannya.
+            </p>
+            <p className="font-bold text-foreground pt-1">
+              &ldquo;The goal is not simply to train harder. The goal is to develop better.&rdquo;
+            </p>
+          </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {factors.map((f, i) => {
-            const Icon = f.icon;
+        {/* 6 Pillars Grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {pillars.map((p) => {
+            const Icon = p.icon;
             return (
               <div
-                key={f.title}
-                className="rounded-xl border border-border bg-surface-2/40 p-5 space-y-3 transition-colors hover:border-border-strong hover:bg-surface-2"
+                key={p.title}
+                className="rounded-2xl border border-border bg-surface-2/40 p-5 space-y-3 transition-colors hover:border-blue-500/40 hover:bg-surface-2 shadow-2xs"
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-9 w-9 rounded-lg bg-accent-bg text-accent flex items-center justify-center border border-accent/20">
-                    <Icon className="h-4 w-4" />
+                  <div className="h-9 w-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20">
+                    <Icon className="h-4.5 w-4.5" />
                   </div>
-                  <span className="font-display font-bold text-xs text-muted">
-                    0{i + 1}
+                  <span className="font-display font-extrabold text-xs text-muted">
+                    {p.num}
                   </span>
                 </div>
                 <h3 className="font-display font-bold text-sm text-foreground leading-snug">
-                  {f.title}
+                  {p.title}
                 </h3>
                 <p className="text-xs text-secondary leading-relaxed">
-                  {f.desc}
+                  {p.desc}
                 </p>
               </div>
             );
           })}
-        </div>
-
-        {/* Highlight Banner */}
-        <div className="rounded-xl border border-accent/20 bg-accent-bg/40 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-2xl">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-              Kesimpulan Filosofi
-            </span>
-            <p className="font-display font-bold text-sm sm:text-base text-foreground leading-snug">
-              &ldquo;Dua atlet dengan usia yang sama tidak boleh diberikan program latihan yang sama persis jika profil fisik dan kemampuan geraknya berbeda.&rdquo;
-            </p>
-          </div>
-          <div className="shrink-0 flex items-center gap-2 text-xs font-bold text-accent">
-            <GitMerge className="h-4 w-4" />
-            <span>Pendekatan Berbasis Kebutuhan</span>
-          </div>
         </div>
       </div>
     </section>

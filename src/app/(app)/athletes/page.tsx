@@ -172,10 +172,19 @@ export default async function AthletesPage({
                           .join("")}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs font-semibold text-foreground truncate">
                             {athlete.fullName}
                           </span>
+                          {age < 11 || (athlete.sportCategory && athlete.sportCategory.toLowerCase().includes("mfd")) ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              MFD
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              Performance
+                            </span>
+                          )}
                           {!athlete.isActive && (
                             <span className="text-[9px] px-1 py-0.2 rounded bg-surface-3 text-muted">
                               Off
@@ -189,7 +198,7 @@ export default async function AthletesPage({
                           {athlete.sportCategory && (
                             <>
                               <span>·</span>
-                              <span className="text-accent">{athlete.sportCategory}</span>
+                              <span className="text-blue-600 dark:text-blue-400">{athlete.sportCategory}</span>
                             </>
                           )}
                         </div>

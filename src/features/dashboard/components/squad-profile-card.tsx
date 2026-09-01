@@ -92,7 +92,7 @@ export function SquadProfileCard({ scores }: SquadProfileCardProps) {
           <EmptyState
             icon={BarChart2}
             title="Belum Ada Evaluasi Komponen"
-            description="Profil 7 komponen fisik atlet binaan dan grafik radar akan terbentuk secara otomatis setelah assessment pertama disimpan."
+            description="Profil komponen gerak dan kualitas fisik atlet binaan akan terbentuk secara otomatis setelah asesmen pertama disimpan."
             className="border-0 bg-transparent py-10"
           />
         )}

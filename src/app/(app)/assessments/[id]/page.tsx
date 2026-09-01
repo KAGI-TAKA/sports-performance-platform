@@ -224,7 +224,7 @@ export default async function AssessmentDetailPage({
           <CardHeader className="pb-3 border-b border-border/60">
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4 text-accent" />
-              Radar Chart 7 Komponen Fisik
+              Radar Chart Profil Kualitas Fisik &amp; Gerak
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5">
@@ -244,7 +244,7 @@ export default async function AssessmentDetailPage({
                 {bestComponent ? bestComponent.replace(/_/g, " ").toLowerCase() : "—"}
               </div>
               <p className="text-xs text-muted">
-                Performa fisik paling menonjol pada tes ini.
+                Kapasitas fisik paling menonjol pada asesmen ini.
               </p>
             </CardContent>
           </Card>
@@ -253,7 +253,7 @@ export default async function AssessmentDetailPage({
             <CardContent className="p-5 space-y-1.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-warning uppercase tracking-wider">
                 <ShieldAlert className="h-4 w-4" />
-                Fokus Penguatan (Weakest)
+                Fokus Penguatan (Priority)
               </div>
               <div className="font-display text-base font-bold text-foreground capitalize">
                 {weakestComponents.length > 0
@@ -261,29 +261,72 @@ export default async function AssessmentDetailPage({
                   : "—"}
               </div>
               <p className="text-xs text-muted">
-                Dibutuhkan latihan terprogram untuk meningkatkan komponen ini.
+                Prioritas pembinaan untuk mendukung fase latihan berikutnya.
               </p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Rule-Engine Automated Insight & Recommendation Box */}
-      <Card>
-        <CardHeader className="pb-3 border-b border-border/60">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Bot className="h-4 w-4 text-accent" />
-            Insight &amp; Rekomendasi Program Latihan
-          </CardTitle>
+      {/* Decision-Making Box: 01. Assessment -> 02. Interpretation -> 03. Training Priority */}
+      <Card className="border border-border bg-surface-1 shadow-2xs">
+        <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Pengambilan Keputusan Program (Assessment $\to$ Development)
+              </CardTitle>
+              <span className="text-[10px] text-muted block">
+                Asesmen sebagai alat bantu coach menentukan prioritas latihan terukur
+              </span>
+            </div>
+          </div>
+          <Link
+            href={`/training-plans?athleteId=${assessment.athleteId}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-bold text-white transition shadow-2xs shrink-0"
+          >
+            <span>+ Buat Program Latihan</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </CardHeader>
         <CardContent className="p-5 space-y-3">
-          <div className="p-4 rounded-xl bg-surface-2/60 border border-border/40 text-xs leading-relaxed space-y-2">
-            <p className="text-foreground">
-              {assessment.analysis?.insightText || "Analisis otomatis belum tersedia untuk tes ini."}
-            </p>
-            <p className="font-bold text-accent">
-              {assessment.analysis?.recommendationText || "Lanjutkan program latihan rutin 6-8 minggu."}
-            </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-wider">
+                01. Hasil Asesmen
+              </span>
+              <p className="text-xs text-foreground font-semibold">
+                Skor Komposit: {currentScore}% ({grade})
+              </p>
+              <p className="text-[11px] text-muted">
+                {assessment.resultItems.length} parameter uji terukur
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                02. Interpretasi Kebutuhan
+              </span>
+              <p className="text-xs text-foreground font-semibold">
+                {bestComponent ? `Keunggulan: ${bestComponent.replace(/_/g, " ").toLowerCase()}` : "Evaluasi Umum"}
+              </p>
+              <p className="text-[11px] text-muted">
+                {weakestComponents.length > 0 ? `Area perlu diasah: ${weakestComponents.map(w => w.replace(/_/g, " ").toLowerCase()).join(", ")}` : "Pertahankan konsistensi"}
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                03. Training Direction
+              </span>
+              <p className="text-xs text-foreground font-bold">
+                {assessment.analysis?.recommendationText || "Fokus pada penguatan fundamental gerak & kapasitas fisik adaptif."}
+              </p>
+              <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80">
+                Lanjutkan siklus 6-8 minggu sebelum re-assessment.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

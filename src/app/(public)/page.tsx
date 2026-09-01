@@ -6,20 +6,20 @@ import { CoachingProcessSection } from "@/features/public-brand/components/coach
 import { ProgramPathwaysSection } from "@/features/public-brand/components/program-pathways-section";
 import { CoachProfileSection } from "@/features/public-brand/components/coach-profile-section";
 import { DevelopmentAreasSection } from "@/features/public-brand/components/development-areas-section";
+import { ClientPortalShowcaseSection } from "@/features/public-brand/components/client-portal-showcase-section";
 import { PricingSection } from "@/features/public-brand/components/pricing-section";
 import { WhoItsForSection } from "@/features/public-brand/components/who-its-for-section";
 import { FinalCtaSection } from "@/features/public-brand/components/final-cta-section";
 import { PublicFooter } from "@/features/public-brand/components/public-footer";
-import { APP_CONFIG } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Coach Zulfi | Strength & Conditioning & Youth Athletic Development",
   description:
-    "Pelatihan fisik terstruktur atlet muda bersama Coach Zulfi. Setiap atlet memiliki kebutuhan berbeda: program Youth Athlete Performance & Multilateral Athletic Development berbasis sport science.",
+    "BUILD THE ATHLETE BEFORE CHASING PERFORMANCE. Program pengembangan kemampuan fisik untuk anak dan atlet muda yang disusun berdasarkan kebutuhan individu, kualitas gerak, tahap perkembangan, dan tujuan jangka panjang bersama Coach Zulfi.",
   openGraph: {
-    title: "Coach Zulfi | Athletic Performance & Physical Conditioning",
+    title: "Coach Zulfi | Youth Athletic Development & Strength & Conditioning",
     description:
-      "Every Athlete Has Different Needs. Every Development Has Its Own Process. Pembinaan fisik atletik usia muda terukur bersama Coach Zulfi.",
+      "Every Athlete Has Different Needs. Every Development Has Its Own Process. Pembinaan fisik terstruktur anak dan atlet muda bersama Coach Zulfi.",
     type: "website",
   },
 };
@@ -33,31 +33,34 @@ export default function LandingPage() {
       {/* 02. Hero Section */}
       <HeroSection />
 
-      {/* 03. Why Development is Individual */}
+      {/* 03. Why This Approach? (Philosophy & 6 Pillars) */}
       <WhyIndividualSection />
 
-      {/* 04. 6-Step Coaching Process (Assess -> Reassess) */}
+      {/* 04. 6-Step Coaching Process: FROM ASSESSMENT TO DEVELOPMENT */}
       <CoachingProcessSection />
 
-      {/* 05. Dual Program Pathways (Youth Performance vs Multilateral) */}
+      {/* 05. WHO WE HELP: Dual Program Pathways (Youth Performance vs Multilateral) */}
       <ProgramPathwaysSection />
 
-      {/* 06. Coach Zulfi Profile & Verified Certifications */}
+      {/* 06. Coach Zulfi Profile & Official Certifications */}
       <CoachProfileSection />
 
-      {/* 07. Physical Development Map */}
+      {/* 07. WHAT WE ASSESS & Movement Capacity */}
       <DevelopmentAreasSection />
 
-      {/* 08. Contextual & Transparent Pricing */}
+      {/* 08. PROGRESS YOU CAN UNDERSTAND (Transparent Development Monitoring) */}
+      <ClientPortalShowcaseSection />
+
+      {/* 09. Contextual & Transparent Pricing */}
       <PricingSection />
 
-      {/* 09. Self-Identification Decision Aid (Who is this for?) */}
+      {/* 10. Self-Identification Decision Aid (Mana Jalur yang Tepat?) */}
       <WhoItsForSection />
 
-      {/* 10. Final CTA */}
+      {/* 11. Final CTA: START WITH UNDERSTANDING THE ATHLETE */}
       <FinalCtaSection />
 
-      {/* 11. Footer */}
+      {/* 12. Footer */}
       <PublicFooter />
     </div>
   );

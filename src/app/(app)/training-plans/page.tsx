@@ -33,10 +33,10 @@ export default async function TrainingPlansPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            Program &amp; Rencana Latihan
+            Step 03 — Program &amp; Rencana Latihan
           </h1>
-          <p className="mt-0.5 text-sm text-muted">
-            Susun rencana latihan terstruktur per atlet atau buat template program organisasi.
+          <p className="mt-0.5 text-xs text-muted">
+            Susun rencana latihan terstruktur terindividualisasi (MFD &amp; Youth Performance) atau buat template program organisasi.
           </p>
         </div>
 

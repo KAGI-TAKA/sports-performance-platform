@@ -10,6 +10,7 @@ import {
 import { getSquadAdaptationData } from "@/features/analytics/squad-adaptation-queries";
 import { safeDashboardQuery } from "@/features/dashboard/utils";
 import { DashboardHeader } from "@/features/dashboard/components/dashboard-header";
+import { DashboardWorkflowGuide } from "@/features/dashboard/components/dashboard-workflow-guide";
 import { DashboardOperationalAttention } from "@/features/dashboard/components/dashboard-operational-attention";
 import { DashboardTodaySessions } from "@/features/dashboard/components/dashboard-today-sessions";
 import { DashboardReTestWidget } from "@/features/dashboard/components/dashboard-retest-widget";
@@ -61,8 +62,17 @@ async function AsyncSquadAdaptationSection({ organizationId }: { organizationId:
   return <SquadAdaptationHub data={result.data} />;
 }
 
+import { getDefaultRouteForRole, isRouteAllowedForRole } from "@/lib/access-policy";
+import { redirect } from "next/navigation";
+
 export default async function DashboardPage() {
   const ctx = await requireOrgContext();
+
+  // Role Guard: If role cannot access /dashboard, redirect to their role-specific workspace
+  if (!isRouteAllowedForRole(ctx.role, "/dashboard")) {
+    redirect(getDefaultRouteForRole(ctx.role));
+  }
+
   const isAssistant = (ctx.role || "").toLowerCase() === "assistant_coach";
 
   // Primary critical path: fetch stats, org name, and session health in parallel
@@ -98,6 +108,9 @@ export default async function DashboardPage() {
     <div className="space-y-5 max-w-[1400px]">
       {/* 0. Command Center Operational Header */}
       <DashboardHeader orgName={org?.name} />
+
+      {/* 0.5. Interactive 6-Step Coaching Flow Guide (From Assessment to Development) */}
+      <DashboardWorkflowGuide />
 
       {/* 1. Level 1 (Operational Attention) & Level 2 (Today's / Upcoming Schedule) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

@@ -284,8 +284,8 @@ export function AssessmentReportPDF({
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>ATHLETIC PERFORMANCE REPORT</Text>
-            <Text style={styles.headerSub}>Coach Zulfi — Sports & Physical Conditioning (@zulficoach)</Text>
+            <Text style={styles.headerTitle}>PHYSICAL &amp; MOVEMENT ASSESSMENT REPORT</Text>
+            <Text style={styles.headerSub}>Youth Athletic Development &amp; Strength &amp; Conditioning — Coach Zulfi (@zulficoach)</Text>
             <Text style={[styles.headerSub, { marginTop: 4, color: C.textSecondary }]}>
               {orgName || "Coach Zulfi Performance Hub"}
             </Text>

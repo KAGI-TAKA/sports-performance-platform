@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Users, Search, ArrowUpRight, Plus } from "lucide-react";
+import { Users, Search, ArrowUpRight, Plus, Compass, Zap } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,65 +16,113 @@ import {
 } from "@/components/ui/table";
 import type { DashboardAthleteSummary } from "../types";
 
-const gradeColorMap: Record<string, string> = {
-  A: "text-emerald-700 bg-emerald-50 border-emerald-200",
-  "B+": "text-emerald-700 bg-emerald-50 border-emerald-200",
-  B: "text-indigo-700 bg-indigo-50 border-indigo-200",
-  "C+": "text-amber-700 bg-amber-50 border-amber-200",
-  C: "text-amber-700 bg-amber-50 border-amber-200",
-  D: "text-rose-700 bg-rose-50 border-rose-200",
-};
-
 interface DashboardAthleteDirectoryProps {
   athletes?: DashboardAthleteSummary[];
 }
 
 export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDirectoryProps) {
   const [search, setSearch] = useState("");
+  const [selectedPathway, setSelectedPathway] = useState<"ALL" | "MFD" | "PERFORMANCE">("ALL");
+
+  const enrichedAthletes = useMemo(() => {
+    return athletes.map((a) => {
+      const sportLower = (a.sportCategory || "").toLowerCase();
+      const isMfd =
+        sportLower.includes("mfd") ||
+        sportLower.includes("multilateral") ||
+        sportLower.includes("fondasi") ||
+        sportLower.includes("umum") ||
+        sportLower === "multi-sport" ||
+        sportLower === "" ||
+        a.age < 11;
+
+      return {
+        ...a,
+        pathway: isMfd ? ("MFD" as const) : ("PERFORMANCE" as const),
+        pathwayLabel: isMfd ? "Multilateral (MFD)" : "Youth Performance",
+      };
+    });
+  }, [athletes]);
 
   const filteredAthletes = useMemo(() => {
-    if (!search.trim()) return athletes;
-    const q = search.toLowerCase().trim();
-    return athletes.filter(
-      (a) =>
-        a.fullName.toLowerCase().includes(q) ||
-        (a.sportCategory && a.sportCategory.toLowerCase().includes(q))
-    );
-  }, [athletes, search]);
+    return enrichedAthletes.filter((a) => {
+      const matchesSearch =
+        !search.trim() ||
+        a.fullName.toLowerCase().includes(search.toLowerCase().trim()) ||
+        (a.sportCategory && a.sportCategory.toLowerCase().includes(search.toLowerCase().trim()));
+
+      const matchesPathway =
+        selectedPathway === "ALL" || a.pathway === selectedPathway;
+
+      return matchesSearch && matchesPathway;
+    });
+  }, [enrichedAthletes, search, selectedPathway]);
 
   return (
     <Card className="border border-border bg-surface-1 shadow-2xs">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-accent" />
-          <CardTitle className="text-sm font-semibold text-foreground">
-            Direktori Ringkas Atlet Binaan ({athletes.length})
-          </CardTitle>
+      <CardHeader className="flex flex-col gap-3 pb-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="text-sm font-semibold text-foreground">
+              Direktori Atlet Binaan ({athletes.length})
+            </CardTitle>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            {athletes.length > 0 && (
+              <div className="relative w-full sm:w-48">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Cari nama/cabor..."
+                  className="w-full rounded-lg border border-border bg-surface-2 py-1 pl-8 pr-2.5 text-xs text-foreground placeholder:text-muted focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+            )}
+
+            <Link
+              href="/athletes"
+              className="hidden sm:inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold transition-colors shrink-0"
+            >
+              Semua Atlet
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Quick inline search */}
-          {athletes.length > 0 && (
-            <div className="relative w-full sm:w-48">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari atlet..."
-                className="w-full rounded-md border border-border bg-surface-2 py-1 pl-8 pr-2.5 text-xs text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-          )}
-
-          <Link
-            href="/athletes"
-            className="hidden sm:inline-flex items-center gap-1 text-xs text-muted hover:text-accent font-medium transition-colors shrink-0"
-          >
-            Semua Atlet
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        {/* Dual Pathway Quick Filter Tabs */}
+        {athletes.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
+            {[
+              { id: "ALL", label: `Semua (${athletes.length})` },
+              {
+                id: "MFD",
+                label: `Multilateral / MFD (${enrichedAthletes.filter((a) => a.pathway === "MFD").length})`,
+              },
+              {
+                id: "PERFORMANCE",
+                label: `Youth Performance (${enrichedAthletes.filter((a) => a.pathway === "PERFORMANCE").length})`,
+              },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedPathway(tab.id as any)}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition whitespace-nowrap ${
+                  selectedPathway === tab.id
+                    ? "bg-surface-3 text-foreground border-border shadow-2xs"
+                    : "bg-surface-2/60 text-muted border-transparent hover:text-foreground hover:bg-surface-2"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="p-0">
@@ -82,11 +130,11 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
           <EmptyState
             icon={Users}
             title="Belum Ada Atlet Terdaftar"
-            description="Daftarkan atlet pertama Anda untuk mulai menyusun program dan pengujian fisik."
+            description="Daftarkan atlet pertama Anda untuk mulai menyusun program dan pemantauan kualitas gerak."
             action={
               <Link
                 href="/athletes/new"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent/90 transition shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-3.5 py-1.5 text-xs font-bold text-white transition shadow-sm"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Tambah Atlet Baru
@@ -96,7 +144,7 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
           />
         ) : filteredAthletes.length === 0 ? (
           <div className="p-6 text-center text-xs text-muted">
-            Tidak ada atlet yang cocok dengan kata kunci &ldquo;{search}&rdquo;.
+            Tidak ada atlet yang cocok dengan filter atau kata kunci &ldquo;{search}&rdquo;.
           </div>
         ) : (
           <div className="overflow-x-auto w-full">
@@ -104,9 +152,9 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-xs font-semibold text-muted">Nama Atlet</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted">Jalur Pembinaan</TableHead>
                   <TableHead className="text-xs font-semibold text-muted">Status</TableHead>
                   <TableHead className="text-center text-xs font-semibold text-muted">Skor Fisik</TableHead>
-                  <TableHead className="text-center text-xs font-semibold text-muted hidden sm:table-cell">Grade</TableHead>
                   <TableHead className="text-xs font-semibold text-muted hidden md:table-cell">Sesi Terdekat</TableHead>
                   <TableHead className="text-right text-xs font-semibold text-muted">Aksi</TableHead>
                 </TableRow>
@@ -131,7 +179,7 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
                           <div>
                             <Link
                               href={`/athletes/${athlete.id}`}
-                              className="block text-xs font-semibold text-foreground hover:text-accent transition-colors"
+                              className="block text-xs font-semibold text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             >
                               {athlete.fullName}
                             </Link>
@@ -142,37 +190,42 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
                         </div>
                       </TableCell>
 
+                      {/* Dual Pathway Badge */}
                       <TableCell className="py-2.5">
-                        {isInjured ? (
-                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                            🔴 Cedera
-                          </span>
-                        ) : hasScore ? (
-                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            🟢 On Track
+                        {athlete.pathway === "MFD" ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                            <Compass className="h-3 w-3" />
+                            MFD (Fondasi)
                           </span>
                         ) : (
-                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                            ⚪ Belum Tes
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">
+                            <Zap className="h-3 w-3" />
+                            Youth Performance
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="py-2.5">
+                        {isInjured ? (
+                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                            Perlu Pemulihan
+                          </span>
+                        ) : hasScore ? (
+                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            On Track
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-surface-2 text-muted border border-border">
+                            Belum Asesmen
                           </span>
                         )}
                       </TableCell>
 
                       <TableCell className="text-center font-mono font-bold text-xs py-2.5">
-                        {athlete.latestScore != null ? `${athlete.latestScore}%` : "—"}
-                      </TableCell>
-
-                      <TableCell className="text-center py-2.5 hidden sm:table-cell">
-                        {athlete.latestGrade ? (
-                          <span
-                            className={`inline-flex items-center justify-center h-5 w-6 rounded font-mono font-bold text-[10px] border ${
-                              gradeColorMap[athlete.latestGrade] ?? "bg-surface-2 border-border"
-                            }`}
-                          >
-                            {athlete.latestGrade}
-                          </span>
+                        {athlete.latestScore != null ? (
+                          <span className="text-foreground">{athlete.latestScore}%</span>
                         ) : (
-                          <span className="text-xs text-muted">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </TableCell>
 
@@ -183,7 +236,7 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
                       <TableCell className="text-right py-2.5">
                         <Link
                           href={`/athletes/${athlete.id}`}
-                          className="text-xs font-semibold text-accent hover:text-accent/80 transition-colors whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline transition-colors whitespace-nowrap"
                         >
                           Buka Profil
                         </Link>

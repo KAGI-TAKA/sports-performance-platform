@@ -56,10 +56,10 @@ export default async function NewAssessmentPage({
             </Link>
             <div>
               <h1 className="font-display text-xl font-bold text-foreground tracking-tight sm:text-2xl">
-                Mulai Assessment Baru
+                Asesmen &amp; Observasi Fisik
               </h1>
               <p className="mt-0.5 text-xs text-muted">
-                Pilih mode penilaian: Pengujian individu lengkap atau matriks tes squad massal di lapangan.
+                Step 01: Memahami profil gerak awal atlet sebagai dasar penentuan prioritas dan arah program latihan.
               </p>
             </div>
           </div>

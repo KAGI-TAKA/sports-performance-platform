@@ -60,10 +60,10 @@ export default async function SessionLogsPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            Catatan Sesi Latihan Harian
+            Step 05 — Catatan Sesi &amp; Pemantauan Harian
           </h1>
-          <p className="mt-0.5 text-sm text-muted">
-            Catat ringkasan aktivitas, umpan balik pelatih, dan video rekaman latihan harian atlet.
+          <p className="mt-0.5 text-xs text-muted">
+            Track response &amp; progress: Catat ringkasan aktivitas, umpan balik pelatih, dan video rekaman latihan harian atlet.
           </p>
         </div>
 

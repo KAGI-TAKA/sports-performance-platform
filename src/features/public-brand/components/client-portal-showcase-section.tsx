@@ -1,85 +1,93 @@
-import { Award, Users, CheckCircle2, FileText, Smartphone } from "lucide-react";
+import { Award, Users, CheckCircle2, FileText, Smartphone, Eye, BarChart2, MessageSquare } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
 
 export function ClientPortalShowcaseSection() {
+  const pillars = [
+    {
+      title: "Training Progress",
+      subtitle: "Presensi & Fokus Latihan",
+      desc: "Memantau kehadiran, konsistensi sesi, dan ketercapaian target modul latihan mingguan.",
+      icon: CheckCircle2,
+      points: ["Attendance & session log", "Weekly training focus", "Skill development tracking"],
+    },
+    {
+      title: "Physical Progress",
+      subtitle: "Kapasitas & Kualitas Gerak",
+      desc: "Melihat grafik perkembangan kualitas fisik objektif dari fase awal hingga berkala.",
+      icon: BarChart2,
+      points: ["Speed & acceleration", "Strength & functional power", "Movement & landing quality"],
+    },
+    {
+      title: "Coach Feedback",
+      subtitle: "Catatan Langsung dari Pelatih",
+      desc: "Ulasan berkala bahasa awam mengenai keunggulan anak, area perbaikan, dan target latihan berikutnya.",
+      icon: MessageSquare,
+      points: ["Identified strengths", "Areas to improve", "Next development priority"],
+    },
+  ];
+
   return (
-    <section className="py-16 sm:py-20 bg-slate-950 border-t border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
-            Nilai Tambah Layanan
-          </span>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-            Portal Pemantauan Personal untuk Setiap Klien
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Tanpa biaya aplikasi tambahan. Setiap atlet dan orang tua menerima tautan portal pribadi yang dapat diakses langsung dari browser ponsel.
-          </p>
+    <section className="py-14 sm:py-20 border-b border-border/40 bg-surface-1">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+        <SectionHeader
+          kicker="Transparansi Perkembangan"
+          title="PROGRESS YOU CAN UNDERSTAND"
+          description="Parents tidak seharusnya hanya mengetahui bahwa anak mereka 'sudah latihan'. Anda perlu memahami apa yang sedang dikembangkan, mengapa latihan tersebut diberikan, bagaimana kemajuan anak, dan apa fokus latihan selanjutnya."
+        />
+
+        {/* 3 Pillars Grid */}
+        <div className="grid md:grid-cols-3 gap-5">
+          {pillars.map((p) => {
+            const Icon = p.icon;
+            return (
+              <div
+                key={p.title}
+                className="rounded-2xl border border-border bg-surface-2/40 p-6 space-y-4 shadow-2xs hover:border-blue-500/40 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-sm sm:text-base text-foreground">
+                      {p.title}
+                    </h3>
+                    <p className="text-[11px] text-muted font-medium">
+                      {p.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-secondary leading-relaxed">
+                  {p.desc}
+                </p>
+
+                <div className="pt-2 border-t border-border/60 space-y-1.5">
+                  {p.points.map((pt) => (
+                    <div key={pt} className="flex items-center gap-2 text-[11px] text-muted font-medium">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />
+                      <span>{pt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Athlete View Card */}
-          <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 to-slate-900 p-6 sm:p-8 space-y-6">
-            <div className="flex items-center gap-3.5">
-              <div className="h-11 w-11 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Award className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-white">
-                  Tampilan Khusus Atlet
-                </h3>
-                <p className="text-xs text-indigo-300">
-                  Fokus: Motivasi, Latihan Mandiri, &amp; Capaian Pribadi
-                </p>
-              </div>
-            </div>
-
-            <ul className="space-y-3 text-xs text-slate-300">
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Checklist Menu Latihan Mandiri di Rumah</strong> lengkap dengan set, reps, dan catatan teknik.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Lencana Pencapaian &amp; Bintang Prestasi</strong> (Speed Demon, Explosive Jumper, Endurance Master).</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Jadwal Sesi Latihan Terdekat</strong> agar selalu siap dan tepat waktu di lapangan.</span>
-              </li>
-            </ul>
+        {/* Supporting System Context Note */}
+        <div className="p-5 rounded-2xl border border-border bg-surface-2/60 text-xs text-secondary flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+          <div className="space-y-0.5 text-center sm:text-left">
+            <span className="font-display font-bold text-foreground text-xs sm:text-sm block">
+              Transparent Development Support
+            </span>
+            <p className="text-muted text-xs leading-relaxed">
+              Portal adalah <em>supporting system</em> pendukung proses coaching agar perkembangan anak terdokumentasi dan terpantau secara terukur, bukan produk terpisah.
+            </p>
           </div>
-
-          {/* Parent View Card */}
-          <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/40 to-slate-900 p-6 sm:p-8 space-y-6">
-            <div className="flex items-center gap-3.5">
-              <div className="h-11 w-11 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Users className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-white">
-                  Tampilan Khusus Orang Tua
-                </h3>
-                <p className="text-xs text-violet-300">
-                  Fokus: Laporan Transparan, Presensi, &amp; Masukan Pelatih
-                </p>
-              </div>
-            </div>
-
-            <ul className="space-y-3 text-xs text-slate-300">
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Rangkuman Perkembangan Bahasa Awam</strong> tanpa istilah olahraga yang membingungkan.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Unduh Laporan Evaluasi Fisik Resmi (PDF)</strong> berkop dan berskor akurat untuk arsip keluarga.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Formulir Ulasan Bintang Sesi</strong> untuk memberi masukan langsung terhadap pendampingan pelatih.</span>
-              </li>
-            </ul>
-          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full shrink-0">
+            Termasuk dalam Layanan
+          </span>
         </div>
       </div>
     </section>

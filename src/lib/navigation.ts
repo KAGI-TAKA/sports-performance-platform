@@ -21,6 +21,7 @@ export interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  step?: string;
   keywords?: string[];
   description?: string;
   allowedRoles?: string[];
@@ -50,21 +51,22 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Command Center",
         icon: LayoutDashboard,
         keywords: ["beranda", "dashboard", "kpi", "ringkasan", "ikhtisar", "agenda", "jadwal hari ini"],
-        description: "Ikhtisar operasional, KPI tim, dan agenda sesi hari ini",
+        description: "Pusat komando pembinaan fisik terstruktur dan agenda harian",
       },
       {
         href: "/schedule",
         label: "Jadwal & Timetable",
         icon: Calendar,
-        keywords: ["jadwal", "kalender", "timetable", "sesi", "latihan", "agenda", "waktu"],
-        description: "Manajemen kalender sesi latihan mingguan dan timetable",
+        step: "04",
+        keywords: ["jadwal", "kalender", "timetable", "sesi", "latihan", "agenda", "waktu", "eksekusi"],
+        description: "04. DEVELOP — Manajemen kalender sesi latihan mingguan dan timetable",
       },
       {
         href: "/athletes",
         label: "Direktori Atlet",
         icon: Users,
-        keywords: ["atlet", "pemain", "murid", "roster", "direktori", "profil fisik", "antropometri"],
-        description: "Daftar atlet aktif, profil antropometri, dan riwayat perkembangan",
+        keywords: ["atlet", "pemain", "murid", "roster", "direktori", "profil fisik", "antropometri", "mfd"],
+        description: "Daftar atlet aktif, profil dual-pathway (MFD / Performance)",
       },
     ],
   },
@@ -72,25 +74,28 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Coaching",
     items: [
       {
+        href: "/assessments",
+        label: "Assessment Fisik",
+        icon: ClipboardList,
+        step: "01",
+        keywords: ["asesmen", "assessment", "tes fisik", "evaluasi", "radar chart", "skor", "grade", "komponen"],
+        description: "01. ASSESS — Pengujian profil awal gerak & kapasitas fisik atlet",
+      },
+      {
         href: "/training-plans",
         label: "Program Latihan",
         icon: Dumbbell,
+        step: "03",
         keywords: ["program", "training plan", "drill", "gerakan", "kurikulum", "latihan", "sets", "reps"],
-        description: "Penyusunan kurikulum latihan dan library gerakan",
+        description: "03. PLAN — Penyusunan kurikulum latihan dan library gerakan",
       },
       {
         href: "/session-logs",
         label: "Catatan Sesi",
         icon: ClipboardCheck,
-        keywords: ["catatan", "log", "session log", "presensi", "kehadiran", "evaluasi harian", "video"],
-        description: "Rekap pelaksanaan sesi harian, presensi, dan catatan video",
-      },
-      {
-        href: "/assessments",
-        label: "Assessment Fisik",
-        icon: ClipboardList,
-        keywords: ["asesmen", "assessment", "tes fisik", "evaluasi", "radar chart", "skor", "grade", "komponen"],
-        description: "Pengujian performa fisik atlet 7 komponen dan rapor evaluasi",
+        step: "05",
+        keywords: ["catatan", "log", "session log", "presensi", "kehadiran", "evaluasi harian", "video", "monitor"],
+        description: "05. MONITOR — Rekap pelaksanaan sesi harian, presensi, dan catatan video",
       },
     ],
   },
@@ -101,8 +106,9 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/progress",
         label: "Analisis Progres",
         icon: TrendingUp,
-        keywords: ["progres", "progress", "analisis", "tren", "perkembangan", "grafik", "riwayat"],
-        description: "Pantau tren perkembangan skor fisik dan personal best",
+        step: "02",
+        keywords: ["progres", "progress", "analisis", "tren", "perkembangan", "grafik", "riwayat", "identifikasi"],
+        description: "02. IDENTIFY — Pantau tren perkembangan skor fisik dan personal best",
       },
       {
         href: "/compare",
@@ -115,8 +121,9 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/reports",
         label: "Laporan & Ekspor",
         icon: FileText,
-        keywords: ["laporan", "reports", "ekspor", "export", "pdf", "csv", "whatsapp", "wa"],
-        description: "Unduh laporan resmi PDF/CSV dan generator ringkasan WhatsApp",
+        step: "06",
+        keywords: ["laporan", "reports", "ekspor", "export", "pdf", "csv", "whatsapp", "wa", "reassess"],
+        description: "06. REASSESS — Unduh laporan resmi PDF/CSV dan ringkasan orang tua",
       },
     ],
   },
@@ -178,59 +185,69 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   },
   {
     id: "qa-squad-assessment",
-    title: "Penilaian Squad (Massal)",
-    subtitle: "Input nilai tes fisik massal untuk seluruh tim di lapangan",
+    title: "Asesmen Squad Lapangan",
+    subtitle: "Matrix input massal satu squad di lapangan",
     href: "/assessments/new?mode=squad",
-    icon: Users,
-    keywords: ["squad assessment", "penilaian squad", "tes massal", "matriks tes", "tes tim", "sprint squad"],
+    icon: PlusCircle,
+    keywords: ["squad assessment", "tes squad", "input massal", "tes lapangan"],
+  },
+  {
+    id: "qa-new-plan",
+    title: "Susun Program Latihan",
+    subtitle: "Buat silabus latihan atau template kurikulum",
+    href: "/training-plans",
+    icon: Dumbbell,
+    keywords: ["buat program", "training plan", "kurikulum", "drill", "menu latihan", "plan"],
   },
   {
     id: "qa-new-schedule",
     title: "Jadwalkan Sesi Latihan",
-    subtitle: "Buka timetable dan buat jadwal latihan baru",
+    subtitle: "Tambah jadwal sesi latihan ke kalender",
     href: "/schedule",
     icon: Calendar,
-    keywords: ["buat jadwal", "tambah sesi", "jadwal baru", "new schedule", "sesi latihan"],
+    keywords: ["tambah jadwal", "jadwal baru", "sesi baru", "new session", "schedule"],
   },
   {
-    id: "qa-new-plan",
-    title: "Buat Program Latihan",
-    subtitle: "Rancang program latihan mingguan & drill",
-    href: "/training-plans",
-    icon: Dumbbell,
-    keywords: ["buat program", "training plan baru", "kurikulum", "new plan"],
-  },
-  {
-    id: "qa-today-agenda",
-    title: "Lihat Sesi Latihan Hari Ini",
-    subtitle: "Buka agenda sesi yang terjadwal untuk hari ini",
+    id: "qa-session-execution",
+    title: "Eksekusi Lapangan",
+    subtitle: "Buka cockpit presensi & checklist latihan aktif",
     href: "/schedule",
     icon: PlayCircle,
-    keywords: ["latihan hari ini", "sesi aktif", "agenda hari ini", "mulai sesi", "today session"],
+    keywords: ["eksekusi", "presensi lapangan", "mulai sesi", "checklist"],
+  },
+  {
+    id: "qa-new-session-log",
+    title: "Catat Log Harian",
+    subtitle: "Input catatan latihan, feedback, & video rekaman",
+    href: "/session-logs",
+    icon: ClipboardCheck,
+    keywords: ["catatan sesi", "input log", "session log", "presensi", "feedback"],
   },
 ];
 
 export const BREADCRUMB_MAP: Record<string, string> = {
   dashboard: "Command Center",
   schedule: "Jadwal & Timetable",
-  "training-plans": "Program Latihan",
-  exercises: "Bank Gerakan",
-  "session-logs": "Catatan Sesi",
   athletes: "Direktori Atlet",
+  "training-plans": "Program Latihan",
+  "session-logs": "Catatan Sesi",
   assessments: "Assessment Fisik",
-  benchmarks: "Master Benchmark",
   progress: "Analisis Progres",
   compare: "Komparasi Atlet",
   reports: "Laporan & Ekspor",
-  settings: "Pengaturan & Staf",
-  new: "Tambah Baru",
-  edit: "Edit Data",
-  execute: "Eksekusi Sesi",
+  benchmarks: "Master Benchmark",
+  settings: "Pengaturan Sistem",
+  users: "Manajemen Pengguna",
+  new: "Baru",
+  edit: "Ubah",
+  execute: "Eksekusi Lapangan",
+  templates: "Template Kurikulum",
+  exercises: "Library Latihan",
 };
 
-/**
- * Resolves a human-readable title for a path segment
- */
 export function getBreadcrumbTitle(segment: string): string {
-  return BREADCRUMB_MAP[segment] || segment;
+  if (BREADCRUMB_MAP[segment]) {
+    return BREADCRUMB_MAP[segment];
+  }
+  return segment;
 }

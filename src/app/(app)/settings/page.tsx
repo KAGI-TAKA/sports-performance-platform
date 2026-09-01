@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { SettingsOrgNameForm } from "@/features/organizations/components/settings-org-name-form";
 import { Building2, SlidersHorizontal } from "lucide-react";
 
+import { redirect } from "next/navigation";
+import { getDefaultRouteForRole } from "@/lib/access-policy";
+
 export const metadata = {
   title: "Pengaturan Sistem | Platform Performa Olahraga",
   description: "Konfigurasi profil akademi dan parameter item tes fisik.",
@@ -11,7 +14,12 @@ export const metadata = {
 
 export default async function SettingsPage() {
   const ctx = await requireOrgContext();
-  const isAdmin = ctx.role === "admin";
+  
+  if (ctx.role !== "admin") {
+    redirect(getDefaultRouteForRole(ctx.role));
+  }
+
+  const isAdmin = true;
 
   const org = await prisma.organization.findUnique({
     where: { id: ctx.organizationId },

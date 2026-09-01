@@ -1,7 +1,7 @@
 import { SectionHeader } from "@/components/ui/section-header";
 import {
   ClipboardCheck,
-  LineChart,
+  Search,
   CalendarCheck,
   Dumbbell,
   Eye,
@@ -14,43 +14,43 @@ export function CoachingProcessSection() {
     {
       step: "01",
       name: "ASSESS",
-      title: "Uji & Observasi Awal",
-      desc: "Mengukur profil kebugaran fisik objektif (kecepatan, power, kelincahan, daya tahan) dan menganalisis kualitas mekanika gerak dasar atlet.",
+      title: "Understand the Athlete",
+      desc: "Memahami kondisi awal atlet, latar belakang olahraga, usia biologis, dan riwayat gerak.",
       icon: ClipboardCheck,
     },
     {
       step: "02",
-      name: "ANALYZE",
-      title: "Analisis Profil Fisik",
-      desc: "Memetakan komponen terkuat dan area yang memerlukan penguatan khusus sebagai dasar pembuatan keputusan latihan.",
-      icon: LineChart,
+      name: "IDENTIFY",
+      title: "Find Strengths & Areas to Develop",
+      desc: "Menemukan keunggulan atlet dan memetakan area kualitas gerak yang memerlukan prioritas pembinaan.",
+      icon: Search,
     },
     {
       step: "03",
-      name: "PROGRAM",
-      title: "Penyusunan Program",
-      desc: "Merancang silabus dan menu latihan mingguan yang terarah, progresif, dan sesuai kapasitas fisik sang atlet.",
+      name: "PLAN",
+      title: "Set Priorities & Training Direction",
+      desc: "Menentukan prioritas latihan dan merancang arah silabus program yang sesuai fase perkembangan.",
       icon: CalendarCheck,
     },
     {
       step: "04",
       name: "DEVELOP",
-      title: "Eksekusi Sesi Latihan",
-      desc: "Pelatihan intensif di lapangan dengan koreksi teknik presisi, drill kelincahan, penguatan otot, dan mekanika deselerasi.",
+      title: "Train Progressively",
+      desc: "Menjalankan latihan bertahap dengan penekanan pada kualitas gerak, teknik presisi, dan beban adaptif.",
       icon: Dumbbell,
     },
     {
       step: "05",
       name: "MONITOR",
-      title: "Pemantauan Adaptasi",
-      desc: "Mencatat presensi, beban latihan, evaluasi harian, dan memberikan catatan umpan balik langsung kepada orang tua.",
+      title: "Track Response & Progress",
+      desc: "Memantau adaptasi latihan, presensi, respons pemulihan atlet, dan memberikan catatan berkala ke orang tua.",
       icon: Eye,
     },
     {
       step: "06",
       name: "REASSESS",
-      title: "Evaluasi Berkala",
-      desc: "Pengujian ulang secara periodik untuk memvalidasi kenaikan performa (Personal Best) dan memperbarui target siklus latihan baru.",
+      title: "Evaluate & Adjust the Next Phase",
+      desc: "Melakukan evaluasi ulang berkala untuk mengukur kemajuan dan menyesuaikan target siklus latihan selanjutnya.",
       icon: RotateCcw,
     },
   ];
@@ -60,60 +60,71 @@ export function CoachingProcessSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
         <SectionHeader
           kicker="Metodologi Kepelatihan"
-          title="Alur Pembinaan Terstruktur 6 Tahap"
-          description="Siklus terpadu dari asesmen awal hingga evaluasi berkala untuk memastikan setiap sesi latihan memberikan dampak nyata terhadap perkembangan fisik anak."
+          title="FROM ASSESSMENT TO DEVELOPMENT"
+          description="Assessment bukan tujuan akhir dan bukan produk utama. Assessment adalah alat untuk membantu coach memahami atlet dan mengambil keputusan terbaik dalam menyusun program latihan."
         />
 
-        {/* Process Flow Grid */}
+        {/* 6-Step Process Flow Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {steps.map((item, index) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.name}
-                className="relative rounded-xl border border-border bg-surface-1 p-5 sm:p-6 space-y-3 shadow-2xs hover:border-border-strong transition-all group"
+                className="relative rounded-2xl border border-border bg-surface-1 p-5 sm:p-6 space-y-3.5 shadow-2xs hover:border-blue-500/40 transition-all group"
               >
                 {/* Step badge & Icon */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-display font-extrabold text-xs text-accent px-2 py-0.5 rounded bg-accent-bg border border-accent/20">
+                    <span className="font-display font-extrabold text-[11px] text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
                       STEP {item.step}
                     </span>
                     <span className="font-display font-bold text-xs tracking-wider text-muted">
                       {item.name}
                     </span>
                   </div>
-                  <div className="h-8 w-8 rounded-lg bg-surface-2 flex items-center justify-center text-secondary group-hover:text-accent group-hover:bg-accent-bg transition-colors">
+                  <div className="h-8 w-8 rounded-lg bg-surface-2 flex items-center justify-center text-secondary group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-colors">
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
 
                 {/* Title & Desc */}
-                <h3 className="font-display font-bold text-base text-foreground">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-secondary leading-relaxed">
-                  {item.desc}
-                </p>
+                <div className="space-y-1">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-foreground">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-secondary leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
 
-                {/* Flow connector indicator on bottom */}
-                <div className="pt-2 flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+                {/* Flow connector indicator */}
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] font-semibold text-muted">
                   <span>Tahap {index + 1} dari 6</span>
-                  {index < 5 && <ArrowRight className="h-3 w-3 text-accent inline ml-auto" />}
+                  {index < 5 ? (
+                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[10px]">
+                      Lanjut ke Step 0{index + 2}
+                      <ArrowRight className="h-3 w-3 inline" />
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">
+                      Siklus Berkelanjutan ↺
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Coach Role Note */}
-        <div className="rounded-xl border border-border bg-surface-1 p-5 text-xs text-secondary leading-relaxed text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <span className="font-display font-bold text-foreground block">
-              Keputusan Dibuat Berdasarkan Pengamatan Pelatih Profesional
+        {/* Methodology Bottom Banner */}
+        <div className="rounded-2xl border border-border bg-surface-1 p-5 sm:p-6 text-xs text-secondary leading-relaxed flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+          <div className="space-y-0.5 text-center sm:text-left">
+            <span className="font-display font-bold text-sm text-foreground block">
+              Coaching Guided by Sport Science
             </span>
-            <span className="text-muted">
-              Sistem analitis membantu menyajikan data komparasi, sementara keputusan program dan intensitas tetap dipandu langsung oleh Coach Zulfi.
+            <span className="text-muted text-xs">
+              Program latihan menggunakan prinsip sport science, tetapi setiap keputusan latihan tetap mempertimbangkan kondisi nyata atlet, kualitas gerak, dan tujuan jangka panjangnya.
             </span>
           </div>
         </div>

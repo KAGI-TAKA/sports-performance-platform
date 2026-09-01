@@ -8,10 +8,17 @@ import { SlidersHorizontal, ArrowUp, ArrowDown } from "lucide-react";
 
 
 
+import { redirect } from "next/navigation";
+import { getDefaultRouteForRole } from "@/lib/access-policy";
+
 export default async function BenchmarksPage() {
   const ctx = await requireOrgContext();
-  // assistant_coach tidak memiliki izin benchmark:update
-  const canEdit = ctx.role !== "assistant_coach";
+  
+  if (ctx.role !== "admin") {
+    redirect(getDefaultRouteForRole(ctx.role));
+  }
+
+  const canEdit = true;
 
   const testItems = await prisma.testItem.findMany({
     where: { organizationId: ctx.organizationId, isActive: true },

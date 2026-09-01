@@ -1,6 +1,7 @@
 import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getDefaultRouteForRole } from "@/lib/access-policy";
 import { listOrganizationUsers } from "@/features/user-management/actions";
 import { getAssistantPerformanceList } from "@/features/assistant-performance/queries";
 import { UserManagementPanel } from "@/features/user-management/components/user-management-panel";
@@ -15,7 +16,7 @@ export default async function UsersPage() {
 
   // Route protection: Only Admin/Owner can access User Management
   if (ctx.role !== "admin") {
-    redirect("/dashboard");
+    redirect(getDefaultRouteForRole(ctx.role));
   }
 
   const [userList, athletes, perfData] = await Promise.all([

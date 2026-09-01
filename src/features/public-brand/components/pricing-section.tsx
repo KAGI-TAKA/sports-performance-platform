@@ -1,46 +1,95 @@
 import { SectionHeader } from "@/components/ui/section-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, Check, HelpCircle } from "lucide-react";
+import { MessageCircle, Check, HelpCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { APP_CONFIG } from "@/lib/constants";
 
 export function PricingSection() {
   const youthPricing = [
-    { type: "Individual Session", price: "Rp150.000", unit: "/ sesi", notes: "Cocok untuk atlet yang butuh perhatian & koreksi teknik 1-on-1 penuh" },
-    { type: "Duo Session", price: "Rp200.000", unit: "/ sesi", notes: "Cocok untuk 2 atlet dengan level & tujuan latihan yang sepadan" },
-    { type: "Trio Session", price: "Rp225.000", unit: "/ sesi", notes: "Cocok untuk grup kecil teman/saudara yang ingin latihan bersama" },
-    { type: "Small Group Session", price: "Rp260.000", unit: "/ sesi", notes: "Cocok untuk tim kecil yang ingin membangun kekompakan sekaligus performa" },
+    {
+      type: "Individual Session",
+      price: "Rp150.000",
+      unit: "/ session",
+      capacity: "1 atlet",
+      notes: "Cocok untuk atlet muda yang membutuhkan perhatian penuh, koreksi teknik mendalam, dan program terindividualisasi",
+    },
+    {
+      type: "Duo Session",
+      price: "Rp200.000",
+      unit: "/ session",
+      capacity: "2 athletes",
+      notes: "Cocok untuk 2 atlet dengan cabang olahraga atau fase perkembangan fisik yang sepadan",
+    },
+    {
+      type: "Trio Session",
+      price: "Rp225.000",
+      unit: "/ session",
+      capacity: "3 athletes",
+      notes: "Cocok untuk 3 atlet/rekan tim yang ingin berlatih fisik bersama dengan fokus terarah",
+    },
+    {
+      type: "Small Group Session",
+      price: "Rp260.000",
+      unit: "/ session",
+      capacity: "4 athletes",
+      notes: "Cocok untuk grup kecil atlet (4 atlet) yang ingin membangun chemistry dan kapasitas fisik kompetitif",
+    },
   ];
 
   const multilateralPricing = [
-    { type: "Individual Session", price: "Rp125.000", unit: "/ sesi", notes: "Cocok untuk anak yang butuh pendampingan penuh membangun fondasi gerak" },
-    { type: "Duo Session", price: "Rp170.000", unit: "/ sesi", notes: "Cocok untuk 2 anak seusia yang belajar bersama" },
-    { type: "Group Session", price: "Rp50.000", unit: "/ anak / sesi", notes: "Cocok untuk kelompok/kelas yang ingin eksplorasi gerak secara menyenangkan" },
+    {
+      type: "Individual Session",
+      price: "Rp125.000",
+      unit: "/ session",
+      capacity: "1 anak",
+      notes: "Cocok untuk anak yang membutuhkan bimbingan intensif 1-on-1 dalam membangun literasi fisik & pola gerak dasar",
+    },
+    {
+      type: "Duo Session",
+      price: "Rp170.000",
+      unit: "/ session",
+      capacity: "2 children",
+      notes: "Cocok untuk 2 anak/saudara yang ingin belajar koordinasi dan eksplorasi gerak bersama secara menyenangkan",
+    },
+    {
+      type: "Group Session",
+      price: "Rp50.000",
+      unit: "/ child / session",
+      capacity: "maximum 8 children",
+      notes: "Cocok untuk kelompok anak (maksimal 8 anak) yang ingin mengembangkan kelincahan, reaksi, dan kerja sama tim",
+    },
+  ];
+
+  const includedValues = [
+    "Structured Programming",
+    "Coach-led Training",
+    "Progress Monitoring",
+    "Periodic Reassessment",
+    "Parent Feedback",
   ];
 
   return (
     <section id="pricing" className="py-14 sm:py-20 border-b border-border/40 bg-surface-0">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
         <SectionHeader
-          kicker="Transparansi Biaya"
-          title="Biaya Sesi Pelatihan"
-          description="Pilihan paket sesi terstruktur yang transparan tanpa biaya tersembunyi. Penentuan program didasarkan pada hasil observasi kebutuhan dan tahap perkembangan anak."
+          kicker="Transparansi &amp; Nilai Layanan"
+          title="Pricelist &amp; Biaya Sesi"
+          description="Investasi pembinaan fisik anak yang transparan dan terstruktur. Setiap sesi dirancang berdasarkan fase perkembangan dan kebutuhan spesifik atlet."
         />
 
         {/* Pricing Grids */}
         <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-start">
           {/* Column 1: Youth Athlete Performance */}
-          <div className="rounded-2xl border border-accent/40 bg-surface-1 p-6 sm:p-7 space-y-5 shadow-2xs">
+          <div className="rounded-2xl border border-blue-600/30 bg-surface-1 p-6 sm:p-7 space-y-5 shadow-2xs">
             <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-4">
               <div>
-                <Badge variant="amber" size="sm">
-                  SPORT-SPECIFIC
-                </Badge>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1.5">
-                  Youth Athlete Performance
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded">
+                  FOR ATHLETES WITH SPORT BACKGROUND
+                </span>
+                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-2">
+                  YOUTH ATHLETE PERFORMANCE
                 </h3>
                 <p className="text-xs text-secondary mt-0.5">
-                  Untuk atlet muda dengan latar belakang cabang olahraga
+                  Untuk anak &amp; remaja yang sudah memiliki basic/cabor dan ingin meningkatkan physical performance.
                 </p>
               </div>
             </div>
@@ -50,24 +99,29 @@ export function PricingSection() {
               {youthPricing.map((item) => (
                 <div
                   key={item.type}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-surface-2/60 border border-border/60"
+                  className="p-3.5 rounded-xl bg-surface-2/60 border border-border/60 space-y-1"
                 >
-                  <div className="space-y-0.5">
-                    <div className="font-semibold text-xs text-foreground">
-                      {item.type}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-foreground">
+                        {item.type}
+                      </span>
+                      <span className="text-[10px] font-medium text-muted bg-surface-1 border border-border px-1.5 py-0.2 rounded">
+                        {item.capacity}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-muted">
-                      {item.notes}
+                    <div className="text-right">
+                      <span className="font-display font-bold text-sm sm:text-base text-blue-600 dark:text-blue-400 tabular-nums">
+                        {item.price}
+                      </span>
+                      <span className="text-[10px] text-muted ml-1">
+                        {item.unit}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-display font-bold text-sm sm:text-base text-foreground tabular-nums">
-                      {item.price}
-                    </span>
-                    <span className="text-[10px] text-muted block -mt-0.5">
-                      {item.unit}
-                    </span>
-                  </div>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    {item.notes}
+                  </p>
                 </div>
               ))}
             </div>
@@ -79,26 +133,29 @@ export function PricingSection() {
                 rel="noopener noreferrer"
                 className="w-full block"
               >
-                <Button variant="amber" size="default" className="w-full gap-2 justify-center">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Daftar Sesi Youth Performance</span>
-                </Button>
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition cursor-pointer"
+                >
+                  <MessageCircle className="h-4 w-4 text-white" />
+                  <span>Daftar Youth Athlete Performance</span>
+                </button>
               </a>
             </div>
           </div>
 
           {/* Column 2: Multilateral Athletic Development */}
-          <div className="rounded-2xl border border-indigo/40 bg-surface-1 p-6 sm:p-7 space-y-5 shadow-2xs">
+          <div className="rounded-2xl border border-emerald-500/30 bg-surface-1 p-6 sm:p-7 space-y-5 shadow-2xs">
             <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-4">
               <div>
-                <Badge variant="indigo" size="sm">
-                  FOUNDATION &amp; MOTOR LITERACY
-                </Badge>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1.5">
-                  Multilateral Athletic Development
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded">
+                  FOR FUNDAMENTAL MOVEMENT &amp; LITERACY
+                </span>
+                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-2">
+                  MULTILATERAL ATHLETIC DEVELOPMENT
                 </h3>
                 <p className="text-xs text-secondary mt-0.5">
-                  Untuk anak yang membangun fondasi gerak &amp; koordinasi
+                  Untuk anak yang membangun fundamental movement skills dan physical literacy sebelum spesialisasi olahraga.
                 </p>
               </div>
             </div>
@@ -108,24 +165,29 @@ export function PricingSection() {
               {multilateralPricing.map((item) => (
                 <div
                   key={item.type}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-surface-2/60 border border-border/60"
+                  className="p-3.5 rounded-xl bg-surface-2/60 border border-border/60 space-y-1"
                 >
-                  <div className="space-y-0.5">
-                    <div className="font-semibold text-xs text-foreground">
-                      {item.type}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-foreground">
+                        {item.type}
+                      </span>
+                      <span className="text-[10px] font-medium text-muted bg-surface-1 border border-border px-1.5 py-0.2 rounded">
+                        {item.capacity}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-muted">
-                      {item.notes}
+                    <div className="text-right">
+                      <span className="font-display font-bold text-sm sm:text-base text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {item.price}
+                      </span>
+                      <span className="text-[10px] text-muted ml-1">
+                        {item.unit}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-display font-bold text-sm sm:text-base text-foreground tabular-nums">
-                      {item.price}
-                    </span>
-                    <span className="text-[10px] text-muted block -mt-0.5">
-                      {item.unit}
-                    </span>
-                  </div>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    {item.notes}
+                  </p>
                 </div>
               ))}
             </div>
@@ -137,25 +199,36 @@ export function PricingSection() {
                 rel="noopener noreferrer"
                 className="w-full block"
               >
-                <Button variant="default" size="default" className="w-full gap-2 justify-center">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Daftar Sesi Multilateral Development</span>
-                </Button>
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition cursor-pointer"
+                >
+                  <MessageCircle className="h-4 w-4 text-white" />
+                  <span>Daftar Multilateral Development</span>
+                </button>
               </a>
             </div>
           </div>
         </div>
 
-        {/* Pricing Invariant Note */}
-        <div className="p-4 rounded-xl bg-surface-2 border border-border flex items-start gap-3 text-xs text-secondary">
-          <HelpCircle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <span className="font-bold text-foreground block">
-              Konsultasi &amp; Penentuan Jalur Awal
+        {/* Pricing Value Invariant Card */}
+        <div className="p-5 sm:p-6 rounded-2xl bg-surface-1 border border-border space-y-4 shadow-2xs">
+          <div className="space-y-1 text-center sm:text-left">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
+              Nilai Pembinaan Terstruktur:
             </span>
-            <p className="text-muted leading-relaxed">
-              Jika Anda belum yakin jalur mana yang paling sesuai, Anda dapat berkonsultasi terlebih dahulu dengan Coach Zulfi untuk mendiskusikan riwayat aktivitas dan tujuan sang anak sebelum sesi latihan pertama dijadwalkan.
+            <p className="text-xs sm:text-sm text-foreground font-semibold">
+              &ldquo;Every session follows an individualized training direction based on the athlete&apos;s current needs and development phase.&rdquo;
             </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-border/60">
+            {includedValues.map((val) => (
+              <div key={val} className="flex items-center gap-2 text-xs text-secondary">
+                <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="font-medium text-[11px] sm:text-xs">{val}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

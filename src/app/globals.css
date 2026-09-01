@@ -2,130 +2,130 @@
 
 /* ─────────────────────────────────────────────────────────────
    Coach Zulfi Athletic Performance Design System
-   Design Tokens (Light & Dark Mode)
+   Color Scheme: Deep Navy + Electric Cobalt Blue + Emerald (MFD) + Warm Gold
 ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Surface hierarchy */
-  --background: 210 20% 98%;          /* Canvas: #f8fafc / subtle neutral tint */
-  --foreground: 222 47% 11%;          /* Deep Charcoal / Near-black #0f172a */
-  --surface-0: 210 20% 98%;           /* Page Canvas */
-  --surface-1: 0 0% 100%;             /* Level 1: Standard Card / Surface */
-  --surface-2: 214 32% 96%;           /* Level 2: Sub-surface / Inset / Table header */
-  --surface-3: 213 27% 92%;           /* Level 3: Active tab / Hover */
-  --surface-elevated: 0 0% 100%;      /* Elevated surface / Modal / Dropdown */
-  --surface-featured: 214 40% 97%;    /* Highlighted card surface */
+  /* Surface hierarchy - Light Mode (Clean Ice Slate) */
+  --background: 214 32% 98%;          /* Canvas: #f8fafc */
+  --foreground: 222 47% 11%;          /* Deep Obsidian Navy #0f172a */
+  --surface-0: 214 32% 98%;           /* Page Canvas */
+  --surface-1: 0 0% 100%;             /* Level 1: Standard Card */
+  --surface-2: 214 32% 95%;           /* Level 2: Sub-surface / Inset */
+  --surface-3: 213 27% 91%;           /* Level 3: Active tab / Hover */
+  --surface-elevated: 0 0% 100%;      /* Elevated surface / Modal */
+  --surface-featured: 217 91% 97%;    /* Highlighted card surface */
 
   /* Text & Content */
   --text-primary: 222 47% 11%;
-  --text-secondary: 215 16% 38%;
-  --text-muted: 214 14% 54%;
-  --text-subtle: 214 12% 70%;
+  --text-secondary: 215 25% 35%;
+  --text-muted: 214 18% 50%;
+  --text-subtle: 214 14% 68%;
 
   /* Borders & Dividers */
   --border-color: 214 25% 88%;
-  --border-strong: 213 20% 76%;
+  --border-strong: 213 22% 76%;
   --border-subtle: 214 20% 93%;
 
-  /* Primary Brand: Athletic Deep Charcoal / High Contrast */
+  /* Primary Brand: Deep Navy / Obsidian */
   --primary: 222 47% 11%;
   --primary-foreground: 0 0% 100%;
 
   /* Secondary: Clean Neutral Slate */
-  --secondary: 215 16% 47%;
+  --secondary: 215 20% 45%;
   --secondary-foreground: 0 0% 100%;
   --secondary-bg: 214 32% 95%;
 
-  /* Signature Accent: Restrained Athletic Amber (#F97316) */
-  --accent: 25 95% 53%;               /* Energetic Amber */
+  /* Signature Accent: Electric Cobalt Blue (#2563EB) */
+  --accent: 221 83% 53%;               /* Electric Cobalt Blue */
   --accent-foreground: 0 0% 100%;
-  --accent-bg: 25 100% 96%;           /* Subtle Amber Tint */
-  --accent-border: 25 95% 53%;
-  --signature: 25 95% 53%;
-  --signature-bg: 25 100% 96%;
+  --accent-bg: 217 91% 95%;           /* Subtle Ice Blue Tint */
+  --accent-border: 221 83% 53%;
+  --signature: 221 83% 53%;
+  --signature-bg: 217 91% 95%;
 
   /* Secondary Athletic Indigo (#4F46E5) */
   --indigo: 243 75% 59%;
   --indigo-bg: 243 100% 97%;
 
   /* Semantic Status Colors */
-  --success: 152 58% 32%;
+  --success: 152 58% 36%;             /* Emerald MFD */
   --success-bg: 150 48% 94%;
-  --success-border: 152 58% 32%;
+  --success-border: 152 58% 36%;
 
-  --warning: 38 92% 40%;
+  --warning: 38 92% 45%;              /* Warm Gold / Achievement */
   --warning-bg: 44 80% 93%;
-  --warning-border: 38 92% 40%;
+  --warning-border: 38 92% 45%;
 
-  --danger: 3 65% 48%;
+  --danger: 3 70% 50%;
   --danger-bg: 3 70% 95%;
-  --danger-border: 3 65% 48%;
+  --danger-border: 3 70% 50%;
 
-  --info: 210 85% 45%;
+  --info: 210 85% 48%;
   --info-bg: 210 80% 95%;
-  --info-border: 210 85% 45%;
+  --info-border: 210 85% 48%;
 
   /* Focus & Ring */
-  --ring: 25 95% 53%;
+  --ring: 221 83% 53%;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Dark mode tokens — Athletic Slate/Graphite, bukan abu generik
+   Dark mode tokens — Deep Obsidian Navy & Electric Blue
 ───────────────────────────────────────────────────────────── */
 [data-mode="dark"],
 .dark {
-  --background: 224 20% 7%;           /* Canvas: Deep graphite #0c0f17 */
-  --foreground: 216 18% 92%;          /* Off-white #e2e8f0 */
-  --surface-0: 224 20% 7%;
-  --surface-1: 224 18% 11%;          /* Standard Card #131722 */
-  --surface-2: 224 16% 15%;          /* Inset / Sub-surface #181e2b */
-  --surface-3: 224 14% 19%;          /* Active tab / Hover #21293a */
-  --surface-elevated: 224 18% 13%;
-  --surface-featured: 224 22% 13%;
+  --background: 222 47% 7%;           /* Canvas: Deep Obsidian Navy #0B132B */
+  --foreground: 210 40% 96%;          /* Crisp Off-white #F1F5F9 */
+  --surface-0: 222 47% 7%;            /* Deep Navy Canvas */
+  --surface-1: 222 40% 11%;           /* Navy Card Surface #111C35 */
+  --surface-2: 222 35% 16%;           /* Inset / Sub-surface #182647 */
+  --surface-3: 222 30% 21%;           /* Active tab / Hover #21335C */
+  --surface-elevated: 222 42% 13%;
+  --surface-featured: 222 45% 15%;
 
-  --text-primary: 216 18% 92%;
-  --text-secondary: 216 12% 66%;
-  --text-muted: 216 8% 46%;
-  --text-subtle: 216 6% 32%;
+  --text-primary: 210 40% 96%;
+  --text-secondary: 215 20% 70%;
+  --text-muted: 215 15% 52%;
+  --text-subtle: 215 12% 38%;
 
-  --border-color: 224 14% 20%;
-  --border-strong: 224 12% 28%;
-  --border-subtle: 224 14% 14%;
+  --border-color: 222 25% 18%;
+  --border-strong: 222 25% 28%;
+  --border-subtle: 222 25% 13%;
 
-  --primary: 0 0% 98%;
-  --primary-foreground: 224 20% 7%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222 47% 7%;
 
-  --secondary: 216 12% 66%;
-  --secondary-foreground: 224 20% 7%;
-  --secondary-bg: 224 16% 18%;
+  --secondary: 215 20% 70%;
+  --secondary-foreground: 222 47% 7%;
+  --secondary-bg: 222 30% 16%;
 
-  --accent: 25 100% 56%;             /* High-visibility Amber in Dark */
+  --accent: 221 83% 58%;             /* Vibrant Electric Blue */
   --accent-foreground: 0 0% 100%;
-  --accent-bg: 25 50% 16%;
-  --accent-border: 25 100% 56%;
-  --signature: 25 100% 56%;
-  --signature-bg: 25 50% 16%;
+  --accent-bg: 221 83% 16%;
+  --accent-border: 221 83% 58%;
+  --signature: 221 83% 58%;
+  --signature-bg: 221 83% 16%;
 
-  --indigo: 230 90% 67%;
-  --indigo-bg: 228 50% 20%;
+  --indigo: 235 85% 65%;
+  --indigo-bg: 235 50% 18%;
 
-  --success: 150 52% 52%;
-  --success-bg: 155 46% 13%;
-  --success-border: 150 52% 52%;
+  --success: 152 60% 50%;            /* Vivid Emerald */
+  --success-bg: 155 46% 14%;
+  --success-border: 152 60% 50%;
 
-  --warning: 40 85% 62%;
+  --warning: 40 90% 55%;             /* Bright Gold */
   --warning-bg: 40 64% 15%;
-  --warning-border: 40 85% 62%;
+  --warning-border: 40 90% 55%;
 
-  --danger: 3 74% 66%;
+  --danger: 3 80% 62%;
   --danger-bg: 4 46% 16%;
-  --danger-border: 3 74% 66%;
+  --danger-border: 3 80% 62%;
 
-  --info: 210 80% 60%;
+  --info: 210 85% 60%;
   --info-bg: 210 60% 15%;
-  --info-border: 210 80% 60%;
+  --info-border: 210 85% 60%;
 
-  --ring: 25 100% 56%;
+  --ring: 221 83% 58%;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -147,15 +147,10 @@
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: hsl(var(--text-secondary));
   --color-secondary-bg: hsl(var(--secondary-bg));
-
   --color-muted: hsl(var(--text-muted));
-  --color-text-primary: hsl(var(--text-primary));
-  --color-text-secondary: hsl(var(--text-secondary));
-  --color-text-muted: hsl(var(--text-muted));
-  --color-text-subtle: hsl(var(--text-subtle));
+  --color-subtle: hsl(var(--text-subtle));
 
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
@@ -169,114 +164,28 @@
 
   --color-success: hsl(var(--success));
   --color-success-bg: hsl(var(--success-bg));
+  --color-success-border: hsl(var(--success-border));
+
   --color-warning: hsl(var(--warning));
   --color-warning-bg: hsl(var(--warning-bg));
+  --color-warning-border: hsl(var(--warning-border));
+
   --color-danger: hsl(var(--danger));
   --color-danger-bg: hsl(var(--danger-bg));
+  --color-danger-border: hsl(var(--danger-border));
+
   --color-info: hsl(var(--info));
   --color-info-bg: hsl(var(--info-bg));
+  --color-info-border: hsl(var(--info-border));
+
   --color-ring: hsl(var(--ring));
 
-  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), monospace;
-
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 9999px;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Base resets & global styles
-───────────────────────────────────────────────────────────── */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --font-sans: var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  --font-display: var(--font-display, "Outfit", var(--font-sans, "Inter", sans-serif));
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-inter, system-ui, sans-serif);
-  font-size: 0.875rem;
-  line-height: 1.5;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
 }
-
-::selection {
-  background-color: hsl(var(--accent) / 0.25);
-  color: hsl(var(--foreground));
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Athletic Design Signatures & Typography Helpers
-───────────────────────────────────────────────────────────── */
-
-/* Athletic Line Divider: Accent line signature inspired by track markings */
-.athletic-divider {
-  position: relative;
-}
-.athletic-divider::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background-color: hsl(var(--accent));
-  border-radius: 2px;
-}
-
-.athletic-divider-h {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--accent)) 0%,
-    hsl(var(--border-color)) 35%,
-    transparent 100%
-  );
-}
-
-/* Space Grotesk Metrics Utilities */
-.metric-value {
-  font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
-  font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-}
-
-/* Scrollbar — minimal athletic track */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border-strong));
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--text-muted));
-}
-
-@keyframes nav-progress {
-  0% {
-    transform: translateX(-100%) scaleX(0.2);
-  }
-  50% {
-    transform: translateX(0%) scaleX(0.8);
-  }
-  100% {
-    transform: translateX(100%) scaleX(0.2);
-  }
-}
-

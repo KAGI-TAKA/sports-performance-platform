@@ -126,7 +126,7 @@ export function CoachShell({
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+      <MobileBottomNav role={role} />
     </div>
   );
 }

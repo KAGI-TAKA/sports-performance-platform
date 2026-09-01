@@ -11,6 +11,8 @@ import {
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS, type NavItem, type NavGroup } from "@/lib/navigation";
 
+import { isRouteAllowedForRole } from "@/lib/access-policy";
+
 export type { NavItem, NavGroup };
 export { NAV_GROUPS };
 
@@ -56,7 +58,7 @@ export function AppSidebar({
         )}
       >
         <Link
-          href="/dashboard"
+          href={isAssistant ? "/schedule" : "/dashboard"}
           onClick={onCloseMobile}
           className="flex items-center gap-2.5 group focus:outline-none focus:ring-2 focus:ring-accent rounded-md p-1"
           title="Coach Zulfi Athletic Performance Hub"
@@ -95,11 +97,7 @@ export function AppSidebar({
       >
         {NAV_GROUPS.map((group) => {
           const visibleItems = group.items.filter((item) => {
-            if (item.allowedRoles && item.allowedRoles.length > 0) {
-              if (!role) return false;
-              return item.allowedRoles.includes(role.toLowerCase());
-            }
-            return true;
+            return isRouteAllowedForRole(role || "admin", item.href);
           });
 
           if (visibleItems.length === 0) return null;
@@ -145,7 +143,21 @@ export function AppSidebar({
                         )}
                       />
                       {!collapsed && (
-                        <span className="truncate text-xs">{item.label}</span>
+                        <>
+                          <span className="truncate text-xs">{item.label}</span>
+                          {item.step && (
+                            <span
+                              className={cn(
+                                "ml-auto text-[9px] font-extrabold px-1.5 py-0.2 rounded border font-mono shrink-0",
+                                active
+                                  ? "bg-white/20 text-white border-white/30"
+                                  : "bg-surface-3 text-blue-600 dark:text-blue-400 border-border"
+                              )}
+                            >
+                              {item.step}
+                            </span>
+                          )}
+                        </>
                       )}
                       {active && collapsed && (
                         <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-white shadow-xs" />
