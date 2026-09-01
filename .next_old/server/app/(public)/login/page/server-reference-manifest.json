@@ -1,0 +1,17 @@
+{
+  "node": {
+    "6029db3f270b1f62866515f7ccb53a4a61c385942c": {
+      "workers": {
+        "app/(public)/login/page": {
+          "moduleId": 649319,
+          "async": false,
+          "exportedName": "loginWithPortalCredentials",
+          "filename": "src/features/portal/actions.ts"
+        }
+      },
+      "exportedName": "loginWithPortalCredentials",
+      "filename": "src/features/portal/actions.ts"
+    }
+  },
+  "edge": {}
+}

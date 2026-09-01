@@ -1,0 +1,17 @@
+{
+  "node": {
+    "4009c7f4f1c70dc939eb6dfd5db1e5ae1c1c3b83fa": {
+      "workers": {
+        "app/onboarding/organization/page": {
+          "moduleId": 828963,
+          "async": false,
+          "exportedName": "seedOrgDefaults",
+          "filename": "src/features/organizations/actions.ts"
+        }
+      },
+      "exportedName": "seedOrgDefaults",
+      "filename": "src/features/organizations/actions.ts"
+    }
+  },
+  "edge": {}
+}

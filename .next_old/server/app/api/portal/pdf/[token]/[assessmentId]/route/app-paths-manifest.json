@@ -1,0 +1,3 @@
+{
+  "/api/portal/pdf/[token]/[assessmentId]/route": "app/api/portal/pdf/[token]/[assessmentId]/route.js"
+}

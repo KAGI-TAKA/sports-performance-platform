@@ -1,0 +1,41 @@
+{
+  "node": {
+    "4083deab88fbd244350a47428a705b1d777a4ed5e9": {
+      "workers": {
+        "app/(app)/session-logs/page": {
+          "moduleId": 610132,
+          "async": false,
+          "exportedName": "searchCommandPaletteAction",
+          "filename": "src/features/command-palette/actions.ts"
+        }
+      },
+      "exportedName": "searchCommandPaletteAction",
+      "filename": "src/features/command-palette/actions.ts"
+    },
+    "40d974934136cfa7d156f666e113fe30c15f916ada": {
+      "workers": {
+        "app/(app)/session-logs/page": {
+          "moduleId": 610132,
+          "async": false,
+          "exportedName": "deleteSessionLog",
+          "filename": "src/features/session-logs/actions.ts"
+        }
+      },
+      "exportedName": "deleteSessionLog",
+      "filename": "src/features/session-logs/actions.ts"
+    },
+    "40a5c01cb796a1d3ead96e23aaefdeb57485fb0769": {
+      "workers": {
+        "app/(app)/session-logs/page": {
+          "moduleId": 610132,
+          "async": false,
+          "exportedName": "createSessionLog",
+          "filename": "src/features/session-logs/actions.ts"
+        }
+      },
+      "exportedName": "createSessionLog",
+      "filename": "src/features/session-logs/actions.ts"
+    }
+  },
+  "edge": {}
+}

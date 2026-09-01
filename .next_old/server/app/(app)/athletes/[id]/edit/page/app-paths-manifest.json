@@ -1,0 +1,3 @@
+{
+  "/(app)/athletes/[id]/edit/page": "app/(app)/athletes/[id]/edit/page.js"
+}

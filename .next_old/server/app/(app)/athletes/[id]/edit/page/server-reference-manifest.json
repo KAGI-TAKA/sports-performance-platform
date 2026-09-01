@@ -1,0 +1,41 @@
+{
+  "node": {
+    "4083deab88fbd244350a47428a705b1d777a4ed5e9": {
+      "workers": {
+        "app/(app)/athletes/[id]/edit/page": {
+          "moduleId": 235575,
+          "async": false,
+          "exportedName": "searchCommandPaletteAction",
+          "filename": "src/features/command-palette/actions.ts"
+        }
+      },
+      "exportedName": "searchCommandPaletteAction",
+      "filename": "src/features/command-palette/actions.ts"
+    },
+    "40a697ae828f397eb0fedaf46e0f6f11750dfd6736": {
+      "workers": {
+        "app/(app)/athletes/[id]/edit/page": {
+          "moduleId": 235575,
+          "async": false,
+          "exportedName": "createAthlete",
+          "filename": "src/features/athletes/actions.ts"
+        }
+      },
+      "exportedName": "createAthlete",
+      "filename": "src/features/athletes/actions.ts"
+    },
+    "4060326b32fb5845d7cd0db8686ce42ca4b1bafdea": {
+      "workers": {
+        "app/(app)/athletes/[id]/edit/page": {
+          "moduleId": 235575,
+          "async": false,
+          "exportedName": "updateAthlete",
+          "filename": "src/features/athletes/actions.ts"
+        }
+      },
+      "exportedName": "updateAthlete",
+      "filename": "src/features/athletes/actions.ts"
+    }
+  },
+  "edge": {}
+}

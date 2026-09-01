@@ -1,0 +1,17 @@
+{
+  "node": {
+    "4083deab88fbd244350a47428a705b1d777a4ed5e9": {
+      "workers": {
+        "app/(app)/compare/page": {
+          "moduleId": 881889,
+          "async": false,
+          "exportedName": "searchCommandPaletteAction",
+          "filename": "src/features/command-palette/actions.ts"
+        }
+      },
+      "exportedName": "searchCommandPaletteAction",
+      "filename": "src/features/command-palette/actions.ts"
+    }
+  },
+  "edge": {}
+}
