@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PublicNavbar } from "@/features/public-brand/components/public-navbar";
 import { HeroSection } from "@/features/public-brand/components/hero-section";
+import { TrainingReelCarousel } from "@/features/public-brand/components/training-reel-carousel";
 import { WhyIndividualSection } from "@/features/public-brand/components/why-individual-section";
 import { CoachingProcessSection } from "@/features/public-brand/components/coaching-process-section";
 import { ProgramPathwaysSection } from "@/features/public-brand/components/program-pathways-section";
@@ -26,41 +27,44 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-accent/20 selection:text-foreground font-sans">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white">
       {/* 01. Navigation */}
       <PublicNavbar />
 
       {/* 02. Hero Section */}
       <HeroSection />
 
-      {/* 03. Why This Approach? (Philosophy & 6 Pillars) */}
+      {/* 03. Training Reel & Action Roll Carousel */}
+      <TrainingReelCarousel />
+
+      {/* 04. Why This Approach? (Philosophy & 6 Pillars) */}
       <WhyIndividualSection />
 
-      {/* 04. 6-Step Coaching Process: FROM ASSESSMENT TO DEVELOPMENT */}
+      {/* 05. 6-Step Coaching Process: FROM ASSESSMENT TO DEVELOPMENT */}
       <CoachingProcessSection />
 
-      {/* 05. WHO WE HELP: Dual Program Pathways (Youth Performance vs Multilateral) */}
+      {/* 06. WHO WE HELP: Dual Program Pathways (Youth Performance vs Multilateral) */}
       <ProgramPathwaysSection />
 
-      {/* 06. Coach Zulfi Profile & Official Certifications */}
+      {/* 07. Coach Zulfi Profile & Official Certifications */}
       <CoachProfileSection />
 
-      {/* 07. WHAT WE ASSESS & Movement Capacity */}
+      {/* 08. WHAT WE ASSESS & Movement Capacity */}
       <DevelopmentAreasSection />
 
-      {/* 08. PROGRESS YOU CAN UNDERSTAND (Transparent Development Monitoring) */}
+      {/* 09. PROGRESS YOU CAN UNDERSTAND (Transparent Development Monitoring) */}
       <ClientPortalShowcaseSection />
 
-      {/* 09. Contextual & Transparent Pricing */}
+      {/* 10. Contextual & Transparent Pricing */}
       <PricingSection />
 
-      {/* 10. Self-Identification Decision Aid (Mana Jalur yang Tepat?) */}
+      {/* 11. Self-Identification Decision Aid (Mana Jalur yang Tepat?) */}
       <WhoItsForSection />
 
-      {/* 11. Final CTA: START WITH UNDERSTANDING THE ATHLETE */}
+      {/* 12. Final High-Contrast Conversion CTA */}
       <FinalCtaSection />
 
-      {/* 12. Footer */}
+      {/* 13. Minimal Footer */}
       <PublicFooter />
     </div>
   );

@@ -1,103 +1,125 @@
-import { SectionHeader } from "@/components/ui/section-header";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Zap, Compass, ArrowRight, MessageCircle } from "lucide-react";
+import Image from "next/image";
+import { CheckCircle2, MessageCircle } from "lucide-react";
 import { APP_CONFIG } from "@/lib/constants";
 
 export function ProgramPathwaysSection() {
   return (
-    <section id="programs" className="py-14 sm:py-20 border-b border-border/40 bg-surface-1">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
-        <SectionHeader
-          kicker="Target &amp; Jalur Pembinaan"
-          title="WHO WE HELP"
-          description="Different stages of development require different approaches. Kami membagi program ke dalam dua kelompok utama agar setiap anak berlatih sesuai fase kesiapan dan tujuan perkembangannya."
-        />
+    <section id="programs" className="py-16 sm:py-24 bg-[#0A101D] text-white border-b border-slate-800 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Section Header */}
+        <div className="space-y-2">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400">
+            Target &amp; Jalur Pembinaan
+          </span>
+          <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            WHO WE HELP
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+            Different stages of development require different approaches. Kami membagi program ke dalam dua kelompok utama agar setiap anak berlatih sesuai fase kesiapan dan tujuan perkembangannya.
+          </p>
+        </div>
 
         {/* Dual Pathways Grid */}
-        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-10 items-stretch">
           {/* Pathway A: Multilateral Athletic Development */}
-          <div className="rounded-2xl border border-emerald-500/30 bg-surface-2/40 p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xs">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded">
-                  BUILD THE FOUNDATION
-                </span>
-                <div className="h-9 w-9 rounded-xl bg-surface-1 border border-border flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                  <Compass className="h-5 w-5" />
+          <div className="rounded-3xl border border-emerald-500/40 bg-slate-900/90 overflow-hidden flex flex-col justify-between shadow-xl hover:border-emerald-500 transition duration-300 group">
+            <div>
+              {/* Authentic Photo */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-950">
+                <Image
+                  src="/images/landing/training-action-2.jpg"
+                  alt="Multilateral Athletic Development Training"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent" />
+                
+                {/* Floating Pathway Badge */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span className="font-mono font-bold text-xs text-white bg-emerald-600 px-3 py-1 rounded-full shadow-md">
+                    PROGRAM 01
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-300 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/40">
+                    Fondasi Gerak &amp; Physical Literacy
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground">
-                  MULTILATERAL ATHLETIC DEVELOPMENT
-                </h3>
-                <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                  Program untuk anak yang masih membangun fundamental movement dan physical literacy, terutama pada tahap awal perkembangan.
-                </p>
-              </div>
+              {/* Card Body */}
+              <div className="p-6 sm:p-8 space-y-5">
+                <div className="space-y-1.5">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    MULTILATERAL ATHLETIC DEVELOPMENT
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Program untuk anak yang masih membangun fundamental movement dan physical literacy, terutama pada tahap awal perkembangan.
+                  </p>
+                </div>
 
-              {/* Focus Badge */}
-              <div className="p-2.5 rounded-xl bg-surface-1 border border-border text-xs flex items-center gap-2">
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[10px]">
-                  Fokus:
-                </span>
-                <span className="font-semibold text-foreground">
-                  Move → Explore → Learn → Develop
-                </span>
-              </div>
+                {/* Focus Badge */}
+                <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-xs flex items-center gap-2">
+                  <span className="font-bold text-emerald-400">
+                    Fokus:
+                  </span>
+                  <span className="font-medium text-slate-200">
+                    Move → Explore → Learn → Develop
+                  </span>
+                </div>
 
-              {/* Who is this for? */}
-              <div className="space-y-2 pt-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-foreground block">
-                  Cocok untuk anak yang:
-                </span>
-                <ul className="space-y-1.5 text-xs text-secondary">
-                  {[
-                    "Belum memiliki spesialisasi cabang olahraga tertentu",
-                    "Masih mengembangkan basic movement skills dan kontrol tubuh",
-                    "Membutuhkan peningkatan koordinasi gerak dan keseimbangan",
-                    "Ingin mengenal berbagai variasi aktivitas olahraga secara positif",
-                    "Membutuhkan fondasi gerak sebelum masuk ke tahap sport-specific training",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {/* Who is this for? */}
+                <div className="space-y-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                    Cocok untuk anak yang:
+                  </span>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    {[
+                      "Belum memiliki spesialisasi cabang olahraga tertentu",
+                      "Masih mengembangkan basic movement skills dan kontrol tubuh",
+                      "Membutuhkan peningkatan koordinasi gerak dan keseimbangan",
+                      "Ingin mengenal berbagai variasi aktivitas olahraga secara positif",
+                      "Membutuhkan fondasi gerak sebelum masuk ke tahap sport-specific training",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              {/* Developed Capacities */}
-              <div className="space-y-2 pt-1 border-t border-border/60">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
-                  Kemampuan yang Dikembangkan:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Running",
-                    "Jumping",
-                    "Landing",
-                    "Throwing",
-                    "Catching",
-                    "Balance",
-                    "Coordination",
-                    "Agility",
-                    "Body Control",
-                    "Basic Strength",
-                  ].map((cap) => (
-                    <span
-                      key={cap}
-                      className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded"
-                    >
-                      {cap}
-                    </span>
-                  ))}
+                {/* Developed Capacities */}
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                    Kemampuan yang Dikembangkan:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Running",
+                      "Jumping",
+                      "Landing",
+                      "Throwing",
+                      "Catching",
+                      "Balance",
+                      "Coordination",
+                      "Agility",
+                      "Body Control",
+                      "Basic Strength",
+                    ].map((cap) => (
+                      <span
+                        key={cap}
+                        className="text-xs font-medium text-emerald-300 bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-0.5 rounded-md"
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Card Footer Actions */}
+            <div className="p-6 sm:p-8 pt-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <a
                 href={APP_CONFIG.whatsappInquiryTemplate("Multilateral Athletic Development")}
                 target="_blank"
@@ -106,15 +128,15 @@ export function ProgramPathwaysSection() {
               >
                 <button
                   type="button"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-md transition cursor-pointer"
                 >
-                  <MessageCircle className="h-3.5 w-3.5 text-white" />
+                  <MessageCircle className="h-4 w-4 text-white" />
                   <span>EXPLORE MFD</span>
                 </button>
               </a>
               <a
                 href="#pricing"
-                className="text-xs font-semibold text-secondary hover:text-foreground text-center py-2 px-3 transition"
+                className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white text-center py-2.5 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 transition"
               >
                 Lihat Biaya Sesi →
               </a>
@@ -122,88 +144,104 @@ export function ProgramPathwaysSection() {
           </div>
 
           {/* Pathway B: Youth Athlete Performance */}
-          <div className="rounded-2xl border border-blue-600/30 bg-surface-2/40 p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xs">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded">
-                  DEVELOP PHYSICAL QUALITIES FOR SPORT
-                </span>
-                <div className="h-9 w-9 rounded-xl bg-surface-1 border border-border flex items-center justify-center text-blue-600 dark:text-blue-400">
-                  <Zap className="h-5 w-5" />
+          <div className="rounded-3xl border border-blue-500/40 bg-slate-900/90 overflow-hidden flex flex-col justify-between shadow-xl hover:border-blue-500 transition duration-300 group">
+            <div>
+              {/* Authentic Photo */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-950">
+                <Image
+                  src="/images/landing/training-action-1.jpg"
+                  alt="Youth Athlete Performance Training"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent" />
+                
+                {/* Floating Pathway Badge */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span className="font-mono font-bold text-xs text-white bg-blue-600 px-3 py-1 rounded-full shadow-md">
+                    PROGRAM 02
+                  </span>
+                  <span className="text-xs font-semibold text-blue-300 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full border border-blue-500/40">
+                    Physical Qualities for Sport
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground">
-                  YOUTH ATHLETE PERFORMANCE
-                </h3>
-                <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                  Program untuk anak dan remaja yang sudah memiliki basic atau spesialisasi olahraga tertentu dan ingin meningkatkan physical performance.
-                </p>
-              </div>
+              {/* Card Body */}
+              <div className="p-6 sm:p-8 space-y-5">
+                <div className="space-y-1.5">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    YOUTH ATHLETE PERFORMANCE
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Program untuk anak dan remaja yang sudah memiliki basic atau spesialisasi olahraga tertentu dan ingin meningkatkan physical performance.
+                  </p>
+                </div>
 
-              {/* Focus Badge */}
-              <div className="p-2.5 rounded-xl bg-surface-1 border border-border text-xs flex items-center gap-2">
-                <span className="font-bold text-blue-600 dark:text-blue-400 uppercase text-[10px]">
-                  Fokus:
-                </span>
-                <span className="font-semibold text-foreground">
-                  Prepare → Develop → Perform
-                </span>
-              </div>
+                {/* Focus Badge */}
+                <div className="p-3 rounded-xl bg-blue-950/60 border border-blue-800/60 text-xs flex items-center gap-2">
+                  <span className="font-bold text-blue-400">
+                    Fokus:
+                  </span>
+                  <span className="font-medium text-slate-200">
+                    Prepare → Develop → Perform
+                  </span>
+                </div>
 
-              {/* Who is this for? */}
-              <div className="space-y-2 pt-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-foreground block">
-                  Cocok untuk atlet yang:
-                </span>
-                <ul className="space-y-1.5 text-xs text-secondary">
-                  {[
-                    "Sudah aktif berlatih dalam cabang olahraga tertentu (Sepak Bola, Basket, dll.)",
-                    "Ingin meningkatkan physical performance penunjang cabor",
-                    "Membutuhkan physical preparation dan penguatan kapasitas fisik",
-                    "Ingin mengasah speed, power, strength, agility, atau conditioning",
-                    "Mempersiapkan turnamen kompetitif, seleksi tim, atau fase bertanding",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {/* Who is this for? */}
+                <div className="space-y-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                    Cocok untuk atlet yang:
+                  </span>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    {[
+                      "Sudah aktif berlatih dalam cabang olahraga tertentu (Sepak Bola, Basket, dll.)",
+                      "Ingin meningkatkan physical performance penunjang cabor",
+                      "Membutuhkan physical preparation dan penguatan kapasitas fisik",
+                      "Ingin mengasah speed, power, strength, agility, atau conditioning",
+                      "Mempersiapkan turnamen kompetitif, seleksi tim, atau fase bertanding",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              {/* Developed Capacities */}
-              <div className="space-y-2 pt-1 border-t border-border/60">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
-                  Kemampuan yang Dikembangkan:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Acceleration",
-                    "Sprint Mechanics",
-                    "Speed",
-                    "Strength",
-                    "Power",
-                    "Change of Direction",
-                    "Deceleration",
-                    "Jump & Landing",
-                    "Conditioning",
-                    "Sport-Specific Preparation",
-                  ].map((cap) => (
-                    <span
-                      key={cap}
-                      className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded"
-                    >
-                      {cap}
-                    </span>
-                  ))}
+                {/* Developed Capacities */}
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                    Kemampuan yang Dikembangkan:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Acceleration",
+                      "Sprint Mechanics",
+                      "Speed",
+                      "Strength",
+                      "Power",
+                      "Change of Direction",
+                      "Deceleration",
+                      "Jump & Landing",
+                      "Conditioning",
+                      "Sport-Specific Preparation",
+                    ].map((cap) => (
+                      <span
+                        key={cap}
+                        className="text-xs font-medium text-blue-300 bg-blue-950/60 border border-blue-800/50 px-2.5 py-0.5 rounded-md"
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Card Footer Actions */}
+            <div className="p-6 sm:p-8 pt-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <a
                 href={APP_CONFIG.whatsappInquiryTemplate("Youth Athlete Performance")}
                 target="_blank"
@@ -212,15 +250,15 @@ export function ProgramPathwaysSection() {
               >
                 <button
                   type="button"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-md transition cursor-pointer"
                 >
-                  <MessageCircle className="h-3.5 w-3.5 text-white" />
+                  <MessageCircle className="h-4 w-4 text-white" />
                   <span>EXPLORE ATHLETE PERFORMANCE</span>
                 </button>
               </a>
               <a
                 href="#pricing"
-                className="text-xs font-semibold text-secondary hover:text-foreground text-center py-2 px-3 transition"
+                className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white text-center py-2.5 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 transition"
               >
                 Lihat Biaya Sesi →
               </a>

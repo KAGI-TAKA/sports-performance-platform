@@ -1,195 +1,153 @@
-import { SectionHeader } from "@/components/ui/section-header";
 import {
-  Zap,
-  RotateCw,
-  Dumbbell,
-  Scale,
-  Footprints,
   Activity,
-  Maximize2,
-  Sparkles,
-  ArrowRight,
-  Info,
-  CheckCircle2,
-  ShieldCheck,
+  Zap,
+  Gauge,
+  RotateCcw,
+  ArrowUpDown,
+  Flame,
+  Scale,
+  HeartPulse,
 } from "lucide-react";
 
 export function DevelopmentAreasSection() {
   const assessmentAreas = [
     {
-      name: "MOVEMENT QUALITY",
-      desc: "Kemampuan melakukan fundamental movement dengan kontrol, postur stabil, dan koordinasi gerak yang baik.",
+      num: "01",
+      name: "Movement Quality & Mobility",
+      desc: "Menilai rentang gerak aktif, mobilitas sendi utama, dan stabilitas postur dasar.",
       icon: Activity,
     },
     {
-      name: "SPEED & ACCELERATION",
-      desc: "Kemampuan menghasilkan dan mempertahankan kecepatan langkah awal serta sprint sesuai kebutuhan atlet.",
+      num: "02",
+      name: "Sprint & Acceleration Mechanics",
+      desc: "Menganalisis teknik akselerasi awal 10 meter dan efisiensi mekanika lari cepat.",
       icon: Zap,
     },
     {
-      name: "STRENGTH",
-      desc: "Kemampuan menghasilkan dan mengontrol gaya dalam berbagai pola gerak fungsional maupun beban tubuh.",
-      icon: Dumbbell,
+      num: "03",
+      name: "Speed & Maximum Velocity",
+      desc: "Mengukur kapasitas kecepatan maksimal dan konsistensi langkah saat berlari.",
+      icon: Gauge,
     },
     {
-      name: "POWER",
-      desc: "Kemampuan menghasilkan gaya secara cepat dan eksplosif dalam aksi vertikal maupun horizontal.",
-      icon: Sparkles,
+      num: "04",
+      name: "Change of Direction & Deceleration",
+      desc: "Menilai kemampuan atlet melakukan pengereman aman dan perubahan arah dinamis.",
+      icon: RotateCcw,
     },
     {
-      name: "CHANGE OF DIRECTION",
-      desc: "Kemampuan melakukan braking (pengereman), changing direction (alih arah), dan re-acceleration efektif.",
-      icon: RotateCw,
+      num: "05",
+      name: "Jump & Landing Mechanics",
+      desc: "Memeriksa mekanika lepas landas dan stabilitas kontrol lutut serta pergelangan saat landing.",
+      icon: ArrowUpDown,
     },
     {
-      name: "BALANCE & CONTROL",
-      desc: "Kemampuan mengontrol dan menstabilkan tubuh pada posisi statis maupun saat bergerak dinamis.",
+      num: "06",
+      name: "Lower & Upper Body Strength",
+      desc: "Mengukur kekuatan relatif tubuh terhadap berat badan untuk menopang beban olahraga.",
+      icon: Flame,
+    },
+    {
+      num: "07",
+      name: "Coordination & Dynamic Balance",
+      desc: "Menguji sinkronisasi gerak anggota tubuh dan keseimbangan saat bergerak cepat.",
       icon: Scale,
     },
     {
-      name: "CONDITIONING",
-      desc: "Kapasitas fisik untuk mempertahankan kualitas kerja dan intensitas gerak sesuai kebutuhan olahraga.",
-      icon: Footprints,
-    },
-    {
-      name: "MOBILITY",
-      desc: "Kemampuan menghasilkan dan mengontrol gerakan dengan range of motion (ROM) sendi yang dibutuhkan.",
-      icon: Maximize2,
+      num: "08",
+      name: "Conditioning & Energy Systems",
+      desc: "Memetakan kapasitas daya tahan dan kecepatan pemulihan fisik setelah intensitas tinggi.",
+      icon: HeartPulse,
     },
   ];
 
   return (
-    <section className="py-14 sm:py-20 border-b border-border/40 bg-surface-0">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
+    <section className="py-16 sm:py-24 bg-[#0A101D] text-white border-b border-slate-800 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
-        <SectionHeader
-          kicker="Physical &amp; Movement Assessment"
-          title="WHAT WE ASSESS"
-          description="Assessment Based on Athlete's Needs. Tidak semua atlet membutuhkan assessment yang sama. Jenis dan prioritas assessment disesuaikan dengan usia, pengalaman olahraga, kebutuhan fisik, tujuan latihan, dan konteks olahraga atlet."
-        />
+        <div className="space-y-2">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400">
+            Parameter Observasi &amp; Evaluasi
+          </span>
+          <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            WHAT WE ASSESS
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+            Assessment dirancang untuk memetakan kapasitas fisik dan kualitas gerak atlet secara menyeluruh agar intervensi latihan tepat sasaran.
+          </p>
+        </div>
 
-        {/* 8 Areas Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {assessmentAreas.map((item) => {
-            const Icon = item.icon;
+        {/* 8 Areas: Clean Grid Layout */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          {assessmentAreas.map((area) => {
+            const Icon = area.icon;
             return (
               <div
-                key={item.name}
-                className="p-5 rounded-2xl border border-border bg-surface-1 hover:border-blue-500/40 transition-all space-y-3 shadow-2xs"
+                key={area.num}
+                className="group p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md hover:border-blue-500/60 hover:bg-slate-850 transition-all duration-300 space-y-3 transform hover:-translate-y-1"
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                    <Icon className="h-4.5 w-4.5" />
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <span className="font-mono font-bold text-lg text-blue-400 group-hover:text-blue-300 transition-colors">
+                    {area.num}
+                  </span>
+                  <div className="h-8 w-8 rounded-xl bg-blue-950/80 text-blue-400 flex items-center justify-center border border-blue-800/60 group-hover:border-blue-500 transition-colors">
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <h4 className="font-display font-bold text-xs sm:text-sm text-foreground leading-snug">
-                    {item.name}
-                  </h4>
                 </div>
-                <p className="text-xs text-secondary leading-relaxed">
-                  {item.desc}
-                </p>
+
+                <div className="space-y-1">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-white group-hover:text-blue-200 transition-colors">
+                    {area.name}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    {area.desc}
+                  </p>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* Movement & Capacity + Sample Report */}
-        <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-          {/* Movement & Physical Capacity Card */}
-          <div className="lg:col-span-6 p-6 sm:p-7 rounded-2xl border border-border bg-surface-1 space-y-4 shadow-2xs">
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                Prinsip Latihan
-              </span>
-              <h3 className="font-display text-lg font-bold text-foreground">
-                Movement &amp; Physical Capacity Development
-              </h3>
-            </div>
-
-            <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-              Latihan dirancang untuk mengembangkan kualitas gerak, kemampuan mengontrol tubuh, kapasitas fisik, serta kemampuan menerima dan menghasilkan gaya sesuai kebutuhan atlet.
-            </p>
-
-            <div className="space-y-2 pt-2 border-t border-border/60">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
-                Area Perhatian Utama:
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-xs text-secondary">
-                {[
-                  "Landing mechanics",
-                  "Deceleration control",
-                  "Single-leg stability",
-                  "Dynamic balance",
-                  "Trunk & core control",
-                  "Functional strength",
-                  "Mobility & flexibility",
-                  "Change of direction",
-                ].map((pt) => (
-                  <div key={pt} className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3 w-3 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="text-[11px] sm:text-xs">{pt}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Informative Decision-Making Context Block */}
+        <div className="p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-lg">
+          <div className="space-y-1">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400 block">
+              Bagaimana Data Assessment Digunakan?
+            </span>
+            <h3 className="font-display font-bold text-base sm:text-lg text-white">
+              Dari Data Lapangan Menjadi Keputusan Latihan Nyata
+            </h3>
           </div>
 
-          {/* Sample Athlete Report (Contextual Decision-Making Tool) */}
-          <div className="lg:col-span-6 p-6 sm:p-7 rounded-2xl border border-blue-500/30 bg-surface-2/40 space-y-4 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">
-                  SAMPLE ATHLETE REPORT
-                </span>
-                <h4 className="font-display text-sm font-bold text-foreground mt-1.5">
-                  Contoh Laporan Pengambilan Keputusan Program
-                </h4>
-              </div>
+          <p className="text-sm text-slate-300 leading-relaxed max-w-4xl">
+            Hasil assessment bukan sekadar angka atau skor. Coach Zulfi menggunakannya untuk menentukan titik awal latihan yang aman, mengidentifikasi ketidakseimbangan gerak yang perlu dikoreksi, dan menyusun dosis beban latihan yang tepat sesuai kapasitas atlet.
+          </p>
+
+          <div className="grid sm:grid-cols-3 gap-4 pt-3 border-t border-slate-800 text-sm">
+            <div className="space-y-1">
+              <strong className="text-white block font-display">
+                1. Identifikasi Awal
+              </strong>
+              <span className="text-slate-300 text-xs sm:text-sm leading-relaxed block">
+                Menemukan keunggulan atlet dan aspek gerak yang perlu diperkuat terlebih dahulu.
+              </span>
             </div>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 rounded-xl bg-surface-1 border border-border space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
-                  01. Assessment Result
-                </span>
-                <div className="font-semibold text-foreground flex items-center justify-between">
-                  <span>Landing Mechanics &amp; Single-Leg Control</span>
-                  <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
-                    Needs Development
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-center text-muted">
-                <ArrowRight className="h-3.5 w-3.5 rotate-90" />
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface-1 border border-border space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
-                  02. Training Priority
-                </span>
-                <p className="text-foreground font-medium">
-                  Single-leg control, knee alignment, and deceleration mechanics.
-                </p>
-              </div>
-
-              <div className="flex justify-center text-muted">
-                <ArrowRight className="h-3.5 w-3.5 rotate-90" />
-              </div>
-
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
-                  03. Training Direction
-                </span>
-                <p className="text-foreground font-medium">
-                  Progressive landing drills, step-down braking, and multi-directional stability work.
-                </p>
-              </div>
+            <div className="space-y-1">
+              <strong className="text-white block font-display">
+                2. Individualisasi Program
+              </strong>
+              <span className="text-slate-300 text-xs sm:text-sm leading-relaxed block">
+                Menyesuaikan variasi latihan, volume, dan intensitas dengan kapasitas aktual atlet.
+              </span>
             </div>
-
-            <p className="text-[10px] text-muted italic pt-1 text-center">
-              Illustrative example — actual assessment and reporting may vary based on athlete needs.
-            </p>
+            <div className="space-y-1">
+              <strong className="text-white block font-display">
+                3. Evaluasi Berkala
+              </strong>
+              <span className="text-slate-300 text-xs sm:text-sm leading-relaxed block">
+                Mengukur adaptasi fisik secara periodik untuk memastikan latihan terus memberikan hasil.
+              </span>
+            </div>
           </div>
         </div>
       </div>

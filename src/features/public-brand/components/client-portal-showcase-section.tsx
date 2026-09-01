@@ -1,93 +1,99 @@
-import { Award, Users, CheckCircle2, FileText, Smartphone, Eye, BarChart2, MessageSquare } from "lucide-react";
-import { SectionHeader } from "@/components/ui/section-header";
+import Link from "next/link";
+import { MessageSquareText, FileSpreadsheet, CalendarCheck, ArrowRight, ShieldCheck } from "lucide-react";
 
 export function ClientPortalShowcaseSection() {
-  const pillars = [
+  const transparencyPillars = [
     {
-      title: "Training Progress",
-      subtitle: "Presensi & Fokus Latihan",
-      desc: "Memantau kehadiran, konsistensi sesi, dan ketercapaian target modul latihan mingguan.",
-      icon: CheckCircle2,
-      points: ["Attendance & session log", "Weekly training focus", "Skill development tracking"],
+      num: "01",
+      title: "Parent Communication & Notes",
+      desc: "Setelah sesi latihan, pelatih dapat mendokumentasikan observasi gerak, respons fisik anak, dan arahan latihan di rumah yang dapat dipantau langsung oleh orang tua.",
+      icon: MessageSquareText,
     },
     {
-      title: "Physical Progress",
-      subtitle: "Kapasitas & Kualitas Gerak",
-      desc: "Melihat grafik perkembangan kualitas fisik objektif dari fase awal hingga berkala.",
-      icon: BarChart2,
-      points: ["Speed & acceleration", "Strength & functional power", "Movement & landing quality"],
+      num: "02",
+      title: "Digital Progress Records",
+      desc: "Setiap data observasi dan perkembangan fisik dicatat secara terstruktur, memberikan gambaran riwayat perkembangan jangka panjang tanpa kehilangan data historis.",
+      icon: FileSpreadsheet,
     },
     {
-      title: "Coach Feedback",
-      subtitle: "Catatan Langsung dari Pelatih",
-      desc: "Ulasan berkala bahasa awam mengenai keunggulan anak, area perbaikan, dan target latihan berikutnya.",
-      icon: MessageSquare,
-      points: ["Identified strengths", "Areas to improve", "Next development priority"],
+      num: "03",
+      title: "Session Attendance Transparency",
+      desc: "Rekam kehadiran, konsistensi sesi, dan keteraturan latihan anak tercatat rapi, mendukung pembentukan disiplin dan kebiasaan positif dalam berolahraga.",
+      icon: CalendarCheck,
     },
   ];
 
   return (
-    <section className="py-14 sm:py-20 border-b border-border/40 bg-surface-1">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
-        <SectionHeader
-          kicker="Transparansi Perkembangan"
-          title="PROGRESS YOU CAN UNDERSTAND"
-          description="Parents tidak seharusnya hanya mengetahui bahwa anak mereka 'sudah latihan'. Anda perlu memahami apa yang sedang dikembangkan, mengapa latihan tersebut diberikan, bagaimana kemajuan anak, dan apa fokus latihan selanjutnya."
-        />
+    <section className="py-16 sm:py-24 bg-[#0D1527] text-white border-b border-slate-800 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Section Header */}
+        <div className="space-y-2">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400">
+            Transparansi &amp; Komunikasi
+          </span>
+          <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            PROGRESS YOU CAN UNDERSTAND
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+            Data bukan untuk membingungkan orang tua dengan istilah rumit. Kami mengubah observasi teknis menjadi informasi yang jelas, relevan, dan mudah dipahami.
+          </p>
+        </div>
 
-        {/* 3 Pillars Grid */}
-        <div className="grid md:grid-cols-3 gap-5">
-          {pillars.map((p) => {
+        {/* 3 Pillars: Clean Grid */}
+        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
+          {transparencyPillars.map((p) => {
             const Icon = p.icon;
             return (
               <div
-                key={p.title}
-                className="rounded-2xl border border-border bg-surface-2/40 p-6 space-y-4 shadow-2xs hover:border-blue-500/40 transition-all"
+                key={p.num}
+                className="group p-6 sm:p-7 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md hover:border-blue-500/60 hover:bg-slate-850 transition-all duration-300 space-y-4 transform hover:-translate-y-1"
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-sm sm:text-base text-foreground">
-                      {p.title}
-                    </h3>
-                    <p className="text-[11px] text-muted font-medium">
-                      {p.subtitle}
-                    </p>
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <span className="font-mono font-bold text-xl text-blue-400 group-hover:text-blue-300 transition-colors">
+                    {p.num}
+                  </span>
+                  <div className="h-9 w-9 rounded-xl bg-blue-950/80 text-blue-400 flex items-center justify-center border border-blue-800/60 group-hover:border-blue-500 transition-colors">
+                    <Icon className="h-4.5 w-4.5" />
                   </div>
                 </div>
 
-                <p className="text-xs text-secondary leading-relaxed">
-                  {p.desc}
-                </p>
-
-                <div className="pt-2 border-t border-border/60 space-y-1.5">
-                  {p.points.map((pt) => (
-                    <div key={pt} className="flex items-center gap-2 text-[11px] text-muted font-medium">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />
-                      <span>{pt}</span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <h3 className="font-display font-bold text-base sm:text-lg text-white group-hover:text-blue-200 transition-colors">
+                    {p.title}
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    {p.desc}
+                  </p>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Supporting System Context Note */}
-        <div className="p-5 rounded-2xl border border-border bg-surface-2/60 text-xs text-secondary flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-          <div className="space-y-0.5 text-center sm:text-left">
-            <span className="font-display font-bold text-foreground text-xs sm:text-sm block">
-              Transparent Development Support
-            </span>
-            <p className="text-muted text-xs leading-relaxed">
-              Portal adalah <em>supporting system</em> pendukung proses coaching agar perkembangan anak terdokumentasi dan terpantau secara terukur, bukan produk terpisah.
+        {/* Portal Access Callout */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-blue-500/40 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="space-y-2 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-blue-400 uppercase tracking-wider">
+              <ShieldCheck className="h-4 w-4 text-blue-400" />
+              <span>Dedicated Client &amp; Parent Portal</span>
+            </div>
+            <h3 className="font-display text-lg sm:text-xl font-bold text-white">
+              Akses Catatan Perkembangan Anak Kapan Saja
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+              Orang tua yang telah terdaftar dapat mengakses jadwal sesi latihan, presensi, dan catatan evaluasi fisik anak secara privat melalui platform digital kami.
             </p>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full shrink-0">
-            Termasuk dalam Layanan
-          </span>
+
+          <Link href="/login" className="shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition cursor-pointer"
+            >
+              <span>MASUK KE CLIENT PORTAL</span>
+              <ArrowRight className="h-4 w-4 text-white" />
+            </button>
+          </Link>
         </div>
       </div>
     </section>

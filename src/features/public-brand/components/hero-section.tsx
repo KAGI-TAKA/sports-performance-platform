@@ -1,43 +1,48 @@
-import { MessageCircle, ArrowRight, Target, ShieldCheck, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
+import { MessageCircle, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { APP_CONFIG } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export function HeroSection() {
   return (
-    <section className="relative pt-10 sm:pt-16 pb-14 sm:pb-20 border-b border-border/40 overflow-hidden bg-surface-0">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          {/* Left Column: Brand Statement & CTA */}
+    <section className="relative pt-10 sm:pt-16 pb-14 sm:pb-20 bg-[#0A101D] text-white border-b border-slate-800 overflow-hidden">
+      {/* Subtle Background Glow */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Top Editorial Grid */}
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          {/* Left Column: Headline & Narrative */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             {/* Kicker Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/20 px-3.5 py-1 text-xs font-bold text-blue-600 dark:text-blue-400">
-              <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-950/80 border border-blue-800/60 px-4 py-1.5 text-xs font-semibold text-blue-300 shadow-xs">
+              <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
               <span>Strength &amp; Conditioning • Youth Athletic Development</span>
             </div>
 
             {/* Main Headline */}
             <div className="space-y-3">
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-[1.12]">
-                BUILD THE ATHLETE BEFORE CHASING PERFORMANCE.
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.08]">
+                BUILD THE ATHLETE <br />
+                BEFORE CHASING <br />
+                <span className="text-blue-400">PERFORMANCE.</span>
               </h1>
-              <p className="font-display text-base sm:text-lg font-semibold text-blue-600 dark:text-blue-400 leading-snug">
+              <p className="font-display text-lg sm:text-xl font-semibold text-slate-200 leading-snug">
                 &ldquo;Every Athlete Has Different Needs. Every Development Has Its Own Process.&rdquo;
               </p>
             </div>
 
             {/* Supporting Explanation */}
-            <div className="space-y-2 text-sm sm:text-base text-secondary leading-relaxed max-w-xl mx-auto lg:mx-0">
+            <div className="space-y-3 text-base text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
               <p>
-                Program pengembangan kemampuan fisik untuk anak dan atlet muda yang disusun berdasarkan kebutuhan individu, kualitas gerak, tahap perkembangan, dan tujuan jangka panjang bersama <strong>Coach Zulfi</strong>.
+                Program pengembangan kemampuan fisik untuk anak dan atlet muda yang disusun berdasarkan kebutuhan individu, kualitas gerak, tahap perkembangan, dan tujuan jangka panjang bersama <strong className="text-white font-bold">Coach Zulfi</strong>.
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-sm text-slate-400 leading-normal">
                 Structured athletic development for children and young athletes — built around individual needs, movement quality, physical development, and long-term progression.
               </p>
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
               <a
                 href={APP_CONFIG.whatsappInquiryTemplate()}
                 target="_blank"
@@ -46,7 +51,7 @@ export function HeroSection() {
               >
                 <button
                   type="button"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-blue-600/20 transition cursor-pointer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                 >
                   <MessageCircle className="h-4 w-4 text-white" />
                   <span>START YOUR ATHLETE&apos;S DEVELOPMENT</span>
@@ -56,106 +61,82 @@ export function HeroSection() {
               <a href="#programs" className="w-full sm:w-auto">
                 <button
                   type="button"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 px-5 py-3 text-xs sm:text-sm font-semibold text-foreground transition"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 px-6 py-3.5 text-sm font-semibold text-slate-200 transition duration-200"
                 >
                   <span>EXPLORE OUR PROGRAMS</span>
-                  <ArrowRight className="h-4 w-4 text-muted" />
+                  <ArrowRight className="h-4 w-4 text-slate-400" />
                 </button>
               </a>
             </div>
 
-            {/* Editorial Highlight Bar */}
-            <div className="pt-6 border-t border-border/60 grid grid-cols-3 gap-3 text-left">
-              <div className="p-3 rounded-xl bg-surface-1 border border-border/60">
-                <div className="font-display font-bold text-xs sm:text-sm text-foreground">
-                  Individualized
-                </div>
-                <div className="text-[11px] text-muted mt-0.5">
-                  Sesuai usia &amp; tahap atlet
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-surface-1 border border-border/60">
-                <div className="font-display font-bold text-xs sm:text-sm text-foreground">
-                  Movement Quality
-                </div>
-                <div className="text-[11px] text-muted mt-0.5">
-                  Kualitas gerak fundamental
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-surface-1 border border-border/60">
-                <div className="font-display font-bold text-xs sm:text-sm text-blue-600 dark:text-blue-400">
-                  Long-term
-                </div>
-                <div className="text-[11px] text-muted mt-0.5">
-                  Progresi jangka panjang
-                </div>
-              </div>
+            {/* Dual Pathway Concept Pill */}
+            <div className="pt-2 flex items-center justify-center lg:justify-start gap-2.5 flex-wrap text-xs">
+              <span className="font-medium text-slate-400">
+                Jalur Pembinaan:
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/60 border border-emerald-800/60 px-3.5 py-1 font-semibold text-emerald-300 text-xs shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Multilateral (MFD)
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-950/60 border border-blue-800/60 px-3.5 py-1 font-semibold text-blue-300 text-xs shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                Youth Performance (YAP)
+              </span>
             </div>
           </div>
 
-          {/* Right Column: Visual Coaching Card */}
+          {/* Right Column: Authentic Coaching Photography with Proper Framing */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-border bg-surface-1 p-5 sm:p-6 shadow-sm space-y-4 relative">
-              {/* Top Accent Line */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600 rounded-t-2xl" />
-
-              {/* Card Header */}
-              <div className="flex items-center justify-between border-b border-border/60 pb-3.5 pt-1">
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                    Dual Pathway Pembinaan
-                  </span>
-                  <div className="font-display font-bold text-sm text-foreground">
-                    Sistem Pengembangan Terstruktur
-                  </div>
-                </div>
-                <Badge variant="outline" size="sm" className="border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold">
-                  PROGRESSIVE
-                </Badge>
-              </div>
-
-              {/* Pathways Preview */}
-              <div className="space-y-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-surface-2/70 border border-border/60 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-display font-bold text-xs text-foreground">
-                      Multilateral Athletic Development
-                    </span>
-                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                      Fondasi Gerak
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted leading-relaxed">
-                    Untuk anak yang sedang membangun fundamental movement skills, koordinasi, keseimbangan, dan physical literacy sebelum spesialisasi olahraga.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-surface-2/70 border border-border/60 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-display font-bold text-xs text-foreground">
-                      Youth Athlete Performance
-                    </span>
-                    <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-                      Cabor &amp; S&amp;C
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted leading-relaxed">
-                    Untuk anak/remaja yang sudah memiliki spesifikasi cabor dan ingin meningkatkan speed, power, strength, agility, dan physical preparation.
-                  </p>
-                </div>
-              </div>
-
-              {/* Coaching Philosophy Quote */}
-              <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15 text-xs space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                  <Target className="h-3.5 w-3.5" />
-                  Prinsip Coaching Coach Zulfi:
-                </div>
-                <p className="text-secondary italic text-[11px] leading-relaxed">
-                  &ldquo;The goal is not simply to train harder. The goal is to develop better.&rdquo;
-                </p>
-              </div>
+            <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl h-[380px] sm:h-[460px] lg:h-[500px] w-full group">
+              <Image
+                src="/images/landing/coach-field-real.jpg"
+                alt="Coach Zulfi Field Coaching"
+                fill
+                sizes="(max-width: 768px) 100vw, 45vw"
+                className="object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
             </div>
+          </div>
+        </div>
+
+        {/* Clean Editorial Value Strip */}
+        <div className="pt-8 border-t border-slate-800 grid sm:grid-cols-3 gap-6 sm:gap-8 text-left">
+          <div className="space-y-1.5 sm:border-r sm:border-slate-800 sm:pr-6">
+            <span className="text-xs font-mono font-bold text-blue-400 tracking-wider block">
+              01 • INDIVIDUALIZED
+            </span>
+            <h3 className="font-display font-bold text-base text-white">
+              Sesuai Tahap Biologis
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Program dirancang berdasarkan usia biologis, kesiapan gerak, dan titik mulai spesifik tiap atlet.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 sm:border-r sm:border-slate-800 sm:pr-6">
+            <span className="text-xs font-mono font-bold text-emerald-400 tracking-wider block">
+              02 • MOVEMENT FIRST
+            </span>
+            <h3 className="font-display font-bold text-base text-white">
+              Kualitas Gerak Fondasi
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Mekanika pendaratan, kontrol tubuh, dan postur dinamis menjadi prioritas sebelum intensitas beban.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="text-xs font-mono font-bold text-blue-400 tracking-wider block">
+              03 • SUSTAINABLE
+            </span>
+            <h3 className="font-display font-bold text-base text-white">
+              Progresi Jangka Panjang
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Pengembangan kapasitas fisik berkelanjutan yang aman dan terukur tanpa memaksakan hasil instan.
+            </p>
           </div>
         </div>
       </div>
