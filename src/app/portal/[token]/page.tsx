@@ -15,6 +15,9 @@ import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/qu
 import { PortalView } from "@/features/portal/components/portal-view";
 import { ShieldAlert, Clock, Ban, UserX } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PortalPageProps {
   params: Promise<{ token: string }>;
 }

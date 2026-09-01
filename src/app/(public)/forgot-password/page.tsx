@@ -1,24 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
 import { forgotPasswordSchema } from "@/features/auth/schema";
+import { requestPasswordReset } from "@/features/auth/password-reset-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
+import { ArrowLeft, CheckCircle2, RefreshCw, KeyRound, Mail } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isLoading) return;
+    if (isPending) return;
     setError(null);
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -30,24 +31,14 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { error: requestError } = await authClient.requestPasswordReset({
-        email: parsed.data.email,
-        redirectTo: "/reset-password",
-      });
-      setIsLoading(false);
-
-      if (requestError) {
-        console.warn("[AUTH_FORGOT_PASSWORD] Notice:", requestError.message);
+    startTransition(async () => {
+      const res = await requestPasswordReset(normalizedEmail);
+      if (!res.success && res.error) {
+        toast.error(res.error);
+      } else {
+        setSent(true);
       }
-
-      // Anti-enumeration: Selalu tampilkan konfirmasi sukses generik
-      setSent(true);
-    } catch {
-      setIsLoading(false);
-      setSent(true);
-    }
+    });
   }
 
   return (
@@ -57,28 +48,37 @@ export default function ForgotPasswordPage() {
           {/* Header */}
           <div className="space-y-1.5 text-left">
             <div className="flex items-center gap-2 mb-2">
-              <div className="h-6 w-1 rounded-full bg-accent" />
-              <span className="font-display font-bold text-xs uppercase tracking-wider text-accent">
+              <div className="h-6 w-1 rounded-full bg-brand" />
+              <span className="font-display font-bold text-xs uppercase tracking-wider text-brand">
                 Pemulihan Akses
               </span>
             </div>
             <h1 className="font-display text-xl font-bold text-foreground">
               Lupa Password Akun
             </h1>
-            <p className="text-xs text-secondary leading-relaxed">
-              Masukkan alamat email terdaftar Anda. Kami akan mengirimkan tautan untuk membuat password baru.
+            <p className="text-xs text-muted leading-relaxed">
+              Masukkan alamat email terdaftar Anda. Kami akan mengirimkan tautan untuk membuat password baru yang berlaku selama 1 jam.
             </p>
           </div>
 
           {sent ? (
-            <div className="p-4 rounded-xl bg-success-bg border border-success/20 space-y-2 animate-in fade-in-50 duration-200">
-              <div className="flex items-center gap-2 text-xs font-bold text-success">
+            <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 animate-in fade-in-50 duration-200">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Permintaan Terkirim</span>
               </div>
-              <p className="text-xs text-secondary leading-relaxed">
-                Jika alamat email <strong>{email}</strong> terdaftar di sistem, tautan pemulihan password telah dikirimkan ke kotak masuk Anda.
+              <p className="text-xs text-muted leading-relaxed">
+                Jika alamat email <strong>{email}</strong> terdaftar di sistem kami, instruksi dan tautan pemulihan password telah dikirimkan ke kotak masuk Anda.
               </p>
+              <div className="pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Kembali ke Halaman Masuk
+                </Link>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,35 +94,33 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="coach@email.com"
-                    disabled={isLoading}
+                    disabled={isPending}
+                    required
                   />
                 </div>
-                {error && <p className="text-[11px] font-medium text-danger">{error}</p>}
+                {error && <p className="text-[11px] font-medium text-rose-500">{error}</p>}
               </div>
 
               <Button
                 type="submit"
-                variant="amber"
-                size="lg"
-                loading={isLoading}
-                className="w-full justify-center shadow-2xs font-bold text-xs sm:text-sm"
+                disabled={isPending}
+                className="w-full justify-center gap-2 bg-brand text-brand-foreground hover:bg-brand/90"
               >
-                <Mail className="h-4 w-4 mr-1.5" />
-                <span>{isLoading ? "Mengirim Tautan..." : "Kirim Tautan Reset Password"}</span>
+                <RefreshCw className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
+                <span>{isPending ? "Memproses Permintaan..." : "Kirim Tautan Pemulihan"}</span>
               </Button>
+
+              <div className="text-center pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground font-medium transition"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Kembali ke Halaman Masuk
+                </Link>
+              </div>
             </form>
           )}
-
-          {/* Navigation Links */}
-          <div className="pt-4 border-t border-border/60 text-center">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Kembali ke Halaman Login</span>
-            </Link>
-          </div>
         </Card>
       </div>
     </div>

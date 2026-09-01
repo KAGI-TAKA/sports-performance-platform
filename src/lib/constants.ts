@@ -31,9 +31,17 @@ export function scoreToGrade(score: number): string {
   return match?.grade ?? "D";
 }
 
-// Role coach di dalam satu organisasi (String di skema Better Auth, divalidasi di sini)
-export const MEMBER_ROLES = ["admin", "head_coach", "assistant_coach"] as const;
+// Role member di dalam satu organisasi (String di skema Better Auth, divalidasi di sini)
+export const MEMBER_ROLES = ["admin", "head_coach", "assistant_coach", "parent", "athlete"] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
+
+export const ROLE_LABELS: Record<MemberRole, string> = {
+  admin: "Admin / Owner",
+  head_coach: "Head Coach",
+  assistant_coach: "Assistant Coach",
+  parent: "Orang Tua / Wali",
+  athlete: "Atlet",
+};
 
 // ─── Satu sumber kebenaran untuk label & urutan komponen fisik ───────────────
 // Semua halaman (benchmarks, report, engine) HARUS import dari sini — jangan
@@ -50,20 +58,20 @@ export const APP_CONFIG = {
   subTitle: "Athletic Performance & Conditioning Specialist",
   instagram: "@zulficoach",
   instagramUrl: "https://www.instagram.com/zulficoach/",
-  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "6281234567890",
+  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "628886602440",
   whatsappInquiryTemplate: (program?: string) => {
-    const num = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "6281234567890";
+    const num = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "628886602440";
     if (program) {
       return `https://wa.me/${num}?text=${encodeURIComponent(
-        `Halo Coach Zulfi, saya ingin berkonsultasi mengenai paket layanan "${program}" untuk ananda/atlet kami.`
+        `Halo Coach Zulfi, saya ingin berkonsultasi mengenai program "${program}" untuk ananda/atlet kami.`
       )}`;
     }
     return `https://wa.me/${num}?text=${encodeURIComponent(
-      "Halo Coach Zulfi, saya ingin berkonsultasi mengenai program pelatihan performa fisik dan evaluasi atletik."
+      "Halo Coach Zulfi, saya ingin berkonsultasi mengenai program Youth Athletic Development & Strength & Conditioning."
     )}`;
   },
-  tagline: "Measure. Analyze. Elevate.",
+  tagline: "Build The Athlete Before Chasing Performance.",
   description:
-    "Pelatihan fisik privat & pembinaan performa atletik berbasis data sport-science bersama Coach Zulfi. Pengujian terukur, program terarah, dan pemantauan transparan untuk orang tua.",
+    "Pelatihan fisik terstruktur & pembinaan atlet muda berbasis individualisasi, movement literacy, dan sport science terukur bersama Coach Zulfi.",
   version: "v2.0",
 };

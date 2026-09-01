@@ -39,3 +39,15 @@ export const assistantCoach = ac.newRole({
   athlete: ["create", "update"],
   assessment: ["create", "update"],
 });
+
+// Parent: Akses perkembangan anak terhubung (read-only data anak + parent feedback)
+export const parent = ac.newRole({
+  athlete: [],
+  assessment: [],
+});
+
+// Athlete: Akses data pribadi (read-only self profile + goals)
+export const athlete = ac.newRole({
+  athlete: [],
+  assessment: [],
+});

@@ -506,7 +506,7 @@ export function AssessmentReportPDF({
         {/* Footer Page 2 */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Dokumen resmi hasil tes fisik — Coach Zulfi Athletic Performance Platform (@zulficoach)
+            Laporan Evaluasi &amp; Progres Perkembangan Fisik Atletik — Coach Zulfi Athletic Performance (@zulficoach)
           </Text>
           <Text style={styles.footerText}>Halaman 2 dari 2</Text>
         </View>

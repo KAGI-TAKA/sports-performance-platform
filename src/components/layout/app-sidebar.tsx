@@ -93,20 +93,31 @@ export function AppSidebar({
         aria-label="Navigasi Utama"
         className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-4"
       >
-        {NAV_GROUPS.map((group) => (
-          <div key={group.title}>
-            {!collapsed ? (
-              <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
-                {group.title}
-              </div>
-            ) : (
-              <div className="my-1.5 border-t border-border/50" />
-            )}
+        {NAV_GROUPS.map((group) => {
+          const visibleItems = group.items.filter((item) => {
+            if (item.allowedRoles && item.allowedRoles.length > 0) {
+              if (!role) return false;
+              return item.allowedRoles.includes(role.toLowerCase());
+            }
+            return true;
+          });
 
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isItemActive(item.href);
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={group.title}>
+              {!collapsed ? (
+                <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                  {group.title}
+                </div>
+              ) : (
+                <div className="my-1.5 border-t border-border/50" />
+              )}
+
+              <ul className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isItemActive(item.href);
 
                 return (
                   <li key={item.href}>
@@ -145,8 +156,9 @@ export function AppSidebar({
               })}
             </ul>
           </div>
-        ))}
-      </nav>
+        );
+      })}
+    </nav>
 
       {/* Sidebar Footer & Collapse Trigger */}
       <div className="border-t border-border p-2 bg-surface-2/30">

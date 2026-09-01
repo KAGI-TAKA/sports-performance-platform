@@ -14,6 +14,7 @@ import {
   PlusCircle,
   PlayCircle,
   UserPlus,
+  UserCheck,
 } from "lucide-react";
 
 export interface NavItem {
@@ -123,6 +124,24 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "System",
     items: [
       {
+        href: "/users",
+        label: "Manajemen Pengguna",
+        icon: UserCheck,
+        allowedRoles: ["admin"],
+        keywords: [
+          "pengguna",
+          "users",
+          "manajemen pengguna",
+          "role",
+          "hak akses",
+          "pelatih",
+          "orang tua",
+          "atlet",
+          "aktivasi",
+        ],
+        description: "Kelola akun, akses, peran, dan hubungan pengguna akademi",
+      },
+      {
         href: "/benchmarks",
         label: "Master Benchmark",
         icon: SlidersHorizontal,
@@ -131,10 +150,10 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         href: "/settings",
-        label: "Pengaturan & Staf",
+        label: "Pengaturan Sistem",
         icon: Settings,
-        keywords: ["pengaturan", "settings", "profil organisasi", "staf", "pelatih", "supervisi", "klub"],
-        description: "Konfigurasi profil organisasi, manajemen staf tim pelatih, dan supervisi",
+        keywords: ["pengaturan", "settings", "profil organisasi", "supervisi", "klub"],
+        description: "Konfigurasi profil organisasi dan supervisi mutu",
       },
     ],
   },

@@ -22,7 +22,7 @@ export function ProgramPathwaysSection() {
         "Kekuatan fungsional & stabilitas core",
         "Koordinasi & keseimbangan tubuh saat bergerak dinamis",
         "Power ledak & mekanika lompat-mendarat (landing mechanics)",
-        "Pencegahan cedera & efisiensi gerak spesifik cabang",
+        "Durabilitas fisik & efisiensi gerak spesifik cabang",
       ],
       idealAge: "Usia 9–16 Tahun (atau memiliki basic olahraga)",
       whatsappTag: "Youth Athlete Performance",

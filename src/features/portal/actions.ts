@@ -19,6 +19,109 @@ export async function generatePortalCredentials(athleteName: string, accessType:
   return { username, plainPassword };
 }
 
+export type QuickAccessDurationPreset = "1h" | "24h" | "7d" | "custom";
+
+export async function generateQuickAccess(input: {
+  athleteId: string;
+  accessType?: "PARENT" | "ATHLETE";
+  durationPreset?: QuickAccessDurationPreset;
+  customHours?: number;
+}): Promise<{
+  success: boolean;
+  error?: string;
+  rawToken?: string;
+  portalUrl?: string;
+  expiresAt?: string;
+  durationLabel?: string;
+}> {
+  const ctx = await requireOrgContext();
+
+  const athlete = await prisma.athlete.findFirst({
+    where: {
+      id: input.athleteId,
+      organizationId: ctx.organizationId,
+      isActive: true,
+    },
+  });
+
+  if (!athlete) {
+    return {
+      success: false,
+      error: "Atlet tidak ditemukan, tidak aktif, atau bukan milik organisasi Anda",
+    };
+  }
+
+  const accessType = input.accessType === "PARENT" ? "PARENT" : "ATHLETE";
+  const preset = input.durationPreset ?? "24h";
+
+  let durationMs = 24 * 60 * 60 * 1000; // Default 24 jam
+  let durationLabel = "24 Jam";
+
+  if (preset === "1h") {
+    durationMs = 1 * 60 * 60 * 1000;
+    durationLabel = "1 Jam";
+  } else if (preset === "24h") {
+    durationMs = 24 * 60 * 60 * 1000;
+    durationLabel = "24 Jam (Default)";
+  } else if (preset === "7d") {
+    durationMs = 7 * 24 * 60 * 60 * 1000;
+    durationLabel = "7 Hari";
+  } else if (preset === "custom" && input.customHours && input.customHours > 0) {
+    const hours = Math.min(Math.max(input.customHours, 1), 720); // 1 jam s/d 30 hari max
+    durationMs = hours * 60 * 60 * 1000;
+    durationLabel = `${hours} Jam`;
+  }
+
+  const expiresAt = new Date(Date.now() + durationMs);
+
+  // Invalidate / revoke existing active token for this athlete and accessType
+  await prisma.portalAccess.updateMany({
+    where: {
+      athleteId: athlete.id,
+      organizationId: ctx.organizationId,
+      accessType,
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: new Date(),
+    },
+  });
+
+  // Generate cryptographically secure token (64 hex characters)
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashPortalToken(rawToken);
+
+  try {
+    await prisma.portalAccess.create({
+      data: {
+        organizationId: ctx.organizationId,
+        athleteId: athlete.id,
+        createdByMemberId: ctx.memberId,
+        tokenHash,
+        accessType,
+        expiresAt,
+      },
+    });
+
+    revalidatePath(`/athletes/${athlete.id}`);
+    revalidatePath("/settings");
+
+    return {
+      success: true,
+      rawToken,
+      portalUrl: `/portal/${rawToken}`,
+      expiresAt: expiresAt.toISOString(),
+      durationLabel,
+    };
+  } catch (err) {
+    console.error("Gagal membuat Quick Access token:", err);
+    return {
+      success: false,
+      error: "Gagal membuat link Quick Access",
+    };
+  }
+}
+
 export async function createPortalAccess(
   athleteId: string,
   formData: FormData

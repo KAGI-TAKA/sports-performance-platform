@@ -51,7 +51,7 @@ export function CoachProfileSection() {
               </div>
 
               <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                Coach Zulfi berfokus pada pembinaan fisik atletik usia muda (Youth Athletic Development) dan persiapan fisik spesifik olahraga (Sports Conditioning). Pendekatan kepelatihannya menitikberatkan pada penguasaan mekanika gerak yang benar, pencegahan cedera dini, serta progresi beban yang adaptif sesuai kapasitas biologis atlet.
+                Coach Zulfi berfokus pada pembinaan fisik atletik usia muda (Youth Athletic Development) dan persiapan fisik spesifik olahraga (Youth Athlete Performance). Pendekatan kepelatihannya menitikberatkan pada penguasaan mekanika gerak yang benar, pembentukan durabilitas fisik &amp; kontrol pendaratan, serta progresi beban yang adaptif sesuai kapasitas biologis atlet.
               </p>
 
               <div className="space-y-2 pt-2 border-t border-border/60">

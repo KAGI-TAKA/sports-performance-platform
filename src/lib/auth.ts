@@ -4,7 +4,7 @@ import { organization } from "better-auth/plugins";
 import { prisma } from "./prisma";
 import { env } from "./env.server";
 import { sendPasswordResetEmail } from "./email";
-import { ac, admin, headCoach, assistantCoach } from "./permissions";
+import { ac, admin, headCoach, assistantCoach, parent, athlete } from "./permissions";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
@@ -50,12 +50,14 @@ export const auth = betterAuth({
 
   plugins: [
     organization({
-      creatorRole: "admin", // pembuat organisasi langsung jadi admin, bukan "owner"
+      creatorRole: "admin", // pembuat organisasi langsung jadi admin (Coach Zulfi: admin + head_coach)
       ac,
       roles: {
         admin,
         head_coach: headCoach,
         assistant_coach: assistantCoach,
+        parent,
+        athlete,
       },
     }),
   ],

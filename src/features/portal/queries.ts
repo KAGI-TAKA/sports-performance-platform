@@ -42,6 +42,7 @@ export async function getPortalContextByToken(
     where: { tokenHash },
     select: {
       id: true,
+      tokenHash: true,
       organizationId: true,
       athleteId: true,
       accessType: true,
@@ -52,12 +53,13 @@ export async function getPortalContextByToken(
     },
   });
 
-  // Fallback: jika parameter yang di-pass sudah berupa tokenHash langsung
-  if (!access) {
+  // Fallback: jika parameter yang di-pass sudah berupa 64-hex tokenHash langsung
+  if (!access && /^[a-f0-9]{64}$/i.test(rawToken.trim())) {
     access = await prisma.portalAccess.findUnique({
-      where: { tokenHash: rawToken },
+      where: { tokenHash: rawToken.trim() },
       select: {
         id: true,
+        tokenHash: true,
         organizationId: true,
         athleteId: true,
         accessType: true,
@@ -69,24 +71,24 @@ export async function getPortalContextByToken(
     });
   }
 
-  // Fallback: jika parameter yang di-pass adalah ID portalAccess langsung (misal untuk endpoint PDF)
-  if (!access) {
-    access = await prisma.portalAccess.findUnique({
-      where: { id: rawToken },
-      select: {
-        id: true,
-        organizationId: true,
-        athleteId: true,
-        accessType: true,
-        expiresAt: true,
-        revokedAt: true,
-        organization: { select: { name: true } },
-        athlete: { select: { fullName: true, isActive: true } },
-      },
-    });
+  if (!access || !access.tokenHash) {
+    return { success: false, error: "INVALID_TOKEN" };
   }
 
-  if (!access) {
+  // Constant-time hash verification
+  const storedHashBuf = Buffer.from(access.tokenHash, "hex");
+  const computedHashBuf = Buffer.from(tokenHash, "hex");
+  const rawHashBuf = Buffer.from(rawToken.trim(), "hex");
+
+  const matchesComputed =
+    storedHashBuf.length === computedHashBuf.length &&
+    crypto.timingSafeEqual(storedHashBuf, computedHashBuf);
+
+  const matchesDirect =
+    storedHashBuf.length === rawHashBuf.length &&
+    crypto.timingSafeEqual(storedHashBuf, rawHashBuf);
+
+  if (!matchesComputed && !matchesDirect) {
     return { success: false, error: "INVALID_TOKEN" };
   }
 
