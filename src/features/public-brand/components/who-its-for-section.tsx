@@ -12,7 +12,7 @@ export function WhoItsForSection() {
   const multilateralCriteria = [
     "Sedang membangun fondasi gerak dasar dan belum terspesialisasi pada satu cabang",
     "Memerlukan penguatan koordinasi mata-kaki-tangan dan keseimbangan tubuh",
-    "Ingin membangun kecakapan gerak (*physical literacy*) yang kaya dan bervariasi",
+    "Ingin membangun kecakapan gerak (physical literacy) yang kaya dan bervariasi",
     "Membutuhkan ruang latihan fisik yang mendidik, aman, dan memupuk rasa percaya diri",
   ];
 

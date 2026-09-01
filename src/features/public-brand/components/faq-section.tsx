@@ -8,7 +8,7 @@ export function FaqSection() {
     },
     {
       q: "Apakah program ini cocok untuk anak yang baru mulai atau belum pernah latihan fisik?",
-      a: "Sangat cocok. Justru melalui asesmen fisik awal, kami dapat memetakan pondasi gerak dasar (*fundamental movement skills*) agar anak terbiasa bergerak dengan postur dan teknik yang benar sejak awal tanpa risiko cedera.",
+      a: "Sangat cocok. Justru melalui asesmen fisik awal, kami dapat memetakan pondasi gerak dasar (fundamental movement skills) agar anak terbiasa bergerak dengan postur dan teknik yang benar sejak awal tanpa risiko cedera.",
     },
     {
       q: "Di mana lokasi sesi latihan fisik lapangan diadakan?",
@@ -16,7 +16,7 @@ export function FaqSection() {
     },
     {
       q: "Apa saja yang perlu dipersiapkan sebelum sesi pengujian fisik (Physical Assessment)?",
-      a: "Atlet cukup mengenakan pakaian olahraga yang nyaman, sepatu olahraga/lari (*running shoes*) yang pas, membawa botol air minum, serta memastikan tidur cukup dan makan ringan 1–2 jam sebelum tes.",
+      a: "Atlet cukup mengenakan pakaian olahraga yang nyaman, sepatu olahraga/lari (running shoes) yang pas, membawa botol air minum, serta memastikan tidur cukup dan makan ringan 1–2 jam sebelum tes.",
     },
     {
       q: "Bagaimana cara mendaftar dan memulai konsultasi?",

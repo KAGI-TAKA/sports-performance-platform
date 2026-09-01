@@ -16,8 +16,10 @@ export default async function TrainingPlansPage({
   const { type = "ALL" } = await searchParams;
   const ctx = await requireOrgContext();
 
-  const plans = await listTrainingPlans(ctx.organizationId, { type });
-  const athletesRaw = await listActiveAthletesForPlans(ctx.organizationId);
+  const [plans, athletesRaw] = await Promise.all([
+    listTrainingPlans(ctx.organizationId, { type }),
+    listActiveAthletesForPlans(ctx.organizationId),
+  ]);
 
   const athletes = athletesRaw.map((a) => ({
     id: a.id,

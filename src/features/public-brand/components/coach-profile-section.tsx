@@ -6,13 +6,13 @@ export function CoachProfileSection() {
     {
       level: "01",
       title: "National Level 2 Strength & Conditioning Coach",
-      issuer: "Lembaga Akreditasi Nasional Keolahragaan (LANKOR) – ICCA",
+      issuer: "LANKOR – ICCA (Indonesia Conditioning Coaches Association)",
       tag: "S&C ADVANCED",
     },
     {
       level: "02",
       title: "National Level 1 Strength & Conditioning Coach",
-      issuer: "Lembaga Akreditasi Nasional Keolahragaan (LANKOR) – ICCA",
+      issuer: "LANKOR – ICCA (Indonesia Conditioning Coaches Association)",
       tag: "S&C FOUNDATION",
     },
     {
@@ -51,7 +51,7 @@ export function CoachProfileSection() {
               </div>
 
               <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                Coach Zulfi berfokus pada pembinaan fisik atletik usia muda (*Youth Athletic Development*) dan persiapan fisik spesifik olahraga (*Sports Conditioning*). Pendekatan kepelatihannya menitikberatkan pada penguasaan mekanika gerak yang benar, pencegahan cedera dini, serta progresi beban yang adaptif sesuai kapasitas biologis atlet.
+                Coach Zulfi berfokus pada pembinaan fisik atletik usia muda (Youth Athletic Development) dan persiapan fisik spesifik olahraga (Sports Conditioning). Pendekatan kepelatihannya menitikberatkan pada penguasaan mekanika gerak yang benar, pencegahan cedera dini, serta progresi beban yang adaptif sesuai kapasitas biologis atlet.
               </p>
 
               <div className="space-y-2 pt-2 border-t border-border/60">

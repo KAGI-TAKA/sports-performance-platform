@@ -6,16 +6,16 @@ import { APP_CONFIG } from "@/lib/constants";
 
 export function PricingSection() {
   const youthPricing = [
-    { type: "Individual Session", price: "Rp150.000", unit: "/ sesi", notes: "1 Atlet (Fokus Eksklusif 1-on-1)" },
-    { type: "Duo Session", price: "Rp200.000", unit: "/ sesi", notes: "2 Atlet (Rp100.000 / atlet)" },
-    { type: "Trio Session", price: "Rp225.000", unit: "/ sesi", notes: "3 Atlet (Rp75.000 / atlet)" },
-    { type: "Small Group Session", price: "Rp260.000", unit: "/ sesi", notes: "4 Atlet (Rp65.000 / atlet)" },
+    { type: "Individual Session", price: "Rp150.000", unit: "/ sesi", notes: "Cocok untuk atlet yang butuh perhatian & koreksi teknik 1-on-1 penuh" },
+    { type: "Duo Session", price: "Rp200.000", unit: "/ sesi", notes: "Cocok untuk 2 atlet dengan level & tujuan latihan yang sepadan" },
+    { type: "Trio Session", price: "Rp225.000", unit: "/ sesi", notes: "Cocok untuk grup kecil teman/saudara yang ingin latihan bersama" },
+    { type: "Small Group Session", price: "Rp260.000", unit: "/ sesi", notes: "Cocok untuk tim kecil yang ingin membangun kekompakan sekaligus performa" },
   ];
 
   const multilateralPricing = [
-    { type: "Individual Session", price: "Rp125.000", unit: "/ sesi", notes: "1 Anak (Fondasi Gerak Eksklusif)" },
-    { type: "Duo Session", price: "Rp170.000", unit: "/ sesi", notes: "2 Anak (Rp85.000 / anak)" },
-    { type: "Group Session", price: "Rp50.000", unit: "/ anak / sesi", notes: "Maksimal 8 Anak per grup" },
+    { type: "Individual Session", price: "Rp125.000", unit: "/ sesi", notes: "Cocok untuk anak yang butuh pendampingan penuh membangun fondasi gerak" },
+    { type: "Duo Session", price: "Rp170.000", unit: "/ sesi", notes: "Cocok untuk 2 anak seusia yang belajar bersama" },
+    { type: "Group Session", price: "Rp50.000", unit: "/ anak / sesi", notes: "Cocok untuk kelompok/kelas yang ingin eksplorasi gerak secara menyenangkan" },
   ];
 
   return (

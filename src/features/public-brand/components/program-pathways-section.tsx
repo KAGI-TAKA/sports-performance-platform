@@ -18,9 +18,10 @@ export function ProgramPathwaysSection() {
         "Untuk atlet muda yang telah aktif di cabang olahraga tertentu (Sepak Bola, Basket, Bulutangkis, dll.) dan ingin meningkatkan kapasitas fisik penunjang performa pertandingan.",
       focusPoints: [
         "Kecepatan lari & akselerasi langkah awal",
-        "Kelincahan & kemampuan ubah arah (*change of direction*)",
+        "Kelincahan & kemampuan ubah arah (change of direction)",
         "Kekuatan fungsional & stabilitas core",
-        "Power ledak & mekanika lompat-mendarat (*landing mechanics*)",
+        "Koordinasi & keseimbangan tubuh saat bergerak dinamis",
+        "Power ledak & mekanika lompat-mendarat (landing mechanics)",
         "Pencegahan cedera & efisiensi gerak spesifik cabang",
       ],
       idealAge: "Usia 9–16 Tahun (atau memiliki basic olahraga)",
@@ -35,10 +36,10 @@ export function ProgramPathwaysSection() {
       accentBg: "bg-indigo-bg/30",
       icon: Compass,
       whoItsFor:
-        "Untuk anak yang sedang membangun kecakapan gerak dasar (*physical literacy*), koordinasi motorik, dan variasi gerak menyeluruh sebelum spesialisasi olahraga.",
+        "Untuk anak yang sedang membangun kecakapan gerak dasar (physical literacy), koordinasi motorik, dan variasi gerak menyeluruh sebelum spesialisasi olahraga.",
       focusPoints: [
         "Pola gerak dasar (lari, lompat, lempar, tangkap, merayap)",
-        "Keseimbangan dinamis & kesadaran ruang (*spatial awareness*)",
+        "Keseimbangan dinamis & kesadaran ruang (spatial awareness)",
         "Koordinasi motorik & kecepatan reaksi",
         "Kekuatan alami berbasis berat badan",
         "Eksplorasi aktivitas gerak multi-cabang yang menyenangkan",

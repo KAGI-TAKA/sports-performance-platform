@@ -44,7 +44,7 @@ export function ServiceProgramsSection() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Koreksi teknik gerak, biomekanik lari, dan *landing posture*.</span>
+                  <span>Koreksi teknik gerak, biomekanik lari, dan landing posture.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -92,7 +92,7 @@ export function ServiceProgramsSection() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Fokus pada *agility drills*, *reaction speed*, dan *stamina*.</span>
+                  <span>Fokus pada agility drills, reaction speed, dan stamina.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

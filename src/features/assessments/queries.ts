@@ -125,5 +125,10 @@ export async function listAssessments(
     prisma.assessment.count({ where }),
   ]);
 
-  return { assessments, total };
+  const serializedAssessments = assessments.map((a) => ({
+    ...a,
+    overallScore: a.overallScore != null ? Number(a.overallScore) : null,
+  }));
+
+  return { assessments: serializedAssessments, total };
 }

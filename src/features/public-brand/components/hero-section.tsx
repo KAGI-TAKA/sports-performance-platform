@@ -28,7 +28,7 @@ export function HeroSection() {
 
             {/* Supporting Explanation */}
             <p className="text-sm sm:text-base text-secondary leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Pelatihan fisik terstruktur untuk atlet muda yang disesuaikan secara presisi berdasarkan usia biologis, kemampuan gerak dasar (*movement literacy*), latar belakang olahraga, dan target perkembangan jangka panjang bersama <strong>Coach Zulfi</strong>.
+              Pelatihan fisik terstruktur untuk atlet muda yang disesuaikan secara presisi berdasarkan usia biologis, kemampuan gerak dasar (movement literacy), latar belakang olahraga, dan target perkembangan jangka panjang bersama <strong>Coach Zulfi</strong>.
             </p>
 
             {/* CTA Buttons */}

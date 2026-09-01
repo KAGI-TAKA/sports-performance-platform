@@ -87,6 +87,7 @@ export default async function ProgressPage({
               <Link
                 key={p}
                 href={href}
+                prefetch={false}
                 className={`rounded-md px-2.5 py-1 font-semibold transition ${
                   isActive
                     ? "bg-accent text-white shadow-sm"
@@ -128,12 +129,13 @@ export default async function ProgressPage({
             </div>
             <div className="divide-y divide-border max-h-[calc(100vh-220px)] overflow-y-auto">
               {athletes.map((athlete) => {
-                const isSelected = athlete.id === selectedAthlete?.id;
+                const isSelected = selectedAthlete?.id === athlete.id;
                 const lastAss = athlete.assessments[athlete.assessments.length - 1];
                 return (
                   <Link
                     key={athlete.id}
                     href={`/progress?athleteId=${athlete.id}&period=${period}`}
+                    prefetch={false}
                     className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                       isSelected
                         ? "bg-accent/10 border-l-2 border-accent"

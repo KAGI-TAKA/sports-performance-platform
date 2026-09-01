@@ -79,7 +79,7 @@ export async function listAthletes(
   ]);
 
   return {
-    athletes: JSON.parse(JSON.stringify(athletes)) as typeof athletes,
+    athletes,
     total,
   };
 }
@@ -102,7 +102,7 @@ export async function getAthleteById(
     },
   });
 
-  return athlete ? (JSON.parse(JSON.stringify(athlete)) as typeof athlete) : null;
+  return athlete;
 }
 
 export async function getAthleteFullProfile(
@@ -157,5 +157,5 @@ export async function getAthleteFullProfile(
     },
   });
 
-  return athlete ? (JSON.parse(JSON.stringify(athlete)) as typeof athlete) : null;
+  return athlete;
 }

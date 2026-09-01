@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 
 export async function listAthletesWithAssessments(organizationId: string) {
-  return prisma.athlete.findMany({
+  const athletes = await prisma.athlete.findMany({
     where: {
       organizationId,
       isActive: true,
@@ -27,6 +27,14 @@ export async function listAthletesWithAssessments(organizationId: string) {
     },
     orderBy: { fullName: "asc" },
   });
+
+  return athletes.map((athlete) => ({
+    ...athlete,
+    assessments: athlete.assessments.map((a) => ({
+      ...a,
+      overallScore: a.overallScore != null ? Number(a.overallScore) : null,
+    })),
+  }));
 }
 
 export async function getFullAssessmentDetails(

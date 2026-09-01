@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
 import { getDashboardStats } from "@/features/dashboard/queries";
@@ -18,18 +19,57 @@ import { DashboardAthleteDirectory } from "@/features/dashboard/components/dashb
 import { SquadProfileCard } from "@/features/dashboard/components/squad-profile-card";
 import { SquadAdaptationHub } from "@/features/analytics/components/squad-adaptation-hub";
 
+// Async Streaming Sub-Component for Re-Test Intelligence
+async function AsyncReTestSection({ organizationId, role, memberId }: { organizationId: string; role: string; memberId: string }) {
+  const result = await safeDashboardQuery(
+    getAthleteReTestIntelligence(organizationId, { role, coachMemberId: memberId }),
+    null,
+    "retest_intelligence"
+  );
+  return (
+    <DashboardReTestWidget
+      reTestSummary={result.data}
+      isUnavailable={result.isUnavailable}
+    />
+  );
+}
+
+// Async Streaming Sub-Component for Workload Intelligence
+async function AsyncWorkloadSection({ organizationId, role, memberId, isAssistant }: { organizationId: string; role: string; memberId: string; isAssistant: boolean }) {
+  const result = await safeDashboardQuery(
+    getCoachingWorkloadIntelligence(organizationId, { role, coachMemberId: memberId, period: "month" }),
+    null,
+    "workload_intelligence"
+  );
+  return (
+    <DashboardWorkloadWidget
+      workloadSummary={result.data}
+      isAssistant={isAssistant}
+      isUnavailable={result.isUnavailable}
+    />
+  );
+}
+
+// Async Streaming Sub-Component for Squad Adaptation Insights
+async function AsyncSquadAdaptationSection({ organizationId }: { organizationId: string }) {
+  const result = await safeDashboardQuery(
+    getSquadAdaptationData(organizationId),
+    null,
+    "squad_adaptation"
+  );
+  if (!result.data) return null;
+  return <SquadAdaptationHub data={result.data} />;
+}
+
 export default async function DashboardPage() {
   const ctx = await requireOrgContext();
   const isAssistant = (ctx.role || "").toLowerCase() === "assistant_coach";
 
-  // Execute all independent queries in a single parallel batch with isolated fault tolerance (Zero N+1)
+  // Primary critical path: fetch stats, org name, and session health in parallel
   const [
     statsResult,
     orgResult,
-    reTestResult,
-    workloadResult,
     sessionHealthResult,
-    squadAdaptationResult,
   ] = await Promise.all([
     safeDashboardQuery(getDashboardStats(ctx.organizationId), null, "dashboard_stats"),
     safeDashboardQuery(
@@ -41,23 +81,6 @@ export default async function DashboardPage() {
       "organization_name"
     ),
     safeDashboardQuery(
-      getAthleteReTestIntelligence(ctx.organizationId, {
-        role: ctx.role,
-        coachMemberId: ctx.memberId,
-      }),
-      null,
-      "retest_intelligence"
-    ),
-    safeDashboardQuery(
-      getCoachingWorkloadIntelligence(ctx.organizationId, {
-        role: ctx.role,
-        coachMemberId: ctx.memberId,
-        period: "month",
-      }),
-      null,
-      "workload_intelligence"
-    ),
-    safeDashboardQuery(
       getSessionHealthIntelligence(ctx.organizationId, {
         role: ctx.role,
         coachMemberId: ctx.memberId,
@@ -65,19 +88,11 @@ export default async function DashboardPage() {
       null,
       "session_health"
     ),
-    safeDashboardQuery(
-      getSquadAdaptationData(ctx.organizationId),
-      null,
-      "squad_adaptation"
-    ),
   ]);
 
   const stats = statsResult.data;
   const org = orgResult.data;
-  const reTestSummary = reTestResult.data;
-  const workloadSummary = workloadResult.data;
   const sessionHealth = sessionHealthResult.data;
-  const squadAdaptation = squadAdaptationResult.data;
 
   return (
     <div className="space-y-5 max-w-[1400px]">
@@ -89,9 +104,9 @@ export default async function DashboardPage() {
         <div className="lg:col-span-1">
           <DashboardOperationalAttention
             sessionHealth={sessionHealth}
-            reTestSummary={reTestSummary}
+            reTestSummary={null}
             activeInjuriesCount={stats?.attentionItems?.activeInjuriesCount ?? 0}
-            isUnavailable={sessionHealthResult.isUnavailable && reTestResult.isUnavailable}
+            isUnavailable={sessionHealthResult.isUnavailable}
           />
         </div>
         <div className="lg:col-span-2">
@@ -103,27 +118,33 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Level 3 (Re-Test Intelligence) & Level 4 (Coaching Workload Distribution) */}
+      {/* 2. Level 3 (Re-Test Intelligence) & Level 4 (Coaching Workload Distribution) - Streaming Suspense */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div>
-          <DashboardReTestWidget
-            reTestSummary={reTestSummary}
-            isUnavailable={reTestResult.isUnavailable}
-          />
+          <Suspense fallback={<div className="h-48 rounded-xl bg-surface-2 animate-pulse" />}>
+            <AsyncReTestSection
+              organizationId={ctx.organizationId}
+              role={ctx.role}
+              memberId={ctx.memberId}
+            />
+          </Suspense>
         </div>
         <div>
-          <DashboardWorkloadWidget
-            workloadSummary={workloadSummary}
-            isAssistant={isAssistant}
-            isUnavailable={workloadResult.isUnavailable}
-          />
+          <Suspense fallback={<div className="h-48 rounded-xl bg-surface-2 animate-pulse" />}>
+            <AsyncWorkloadSection
+              organizationId={ctx.organizationId}
+              role={ctx.role}
+              memberId={ctx.memberId}
+              isAssistant={isAssistant}
+            />
+          </Suspense>
         </div>
       </div>
 
-      {/* 3. Level 5: Squad Adaptational Insight Hub (P8-C5) */}
-      {squadAdaptation && (
-        <SquadAdaptationHub data={squadAdaptation} />
-      )}
+      {/* 3. Level 5: Squad Adaptational Insight Hub - Streaming Suspense */}
+      <Suspense fallback={<div className="h-64 rounded-xl bg-surface-2 animate-pulse" />}>
+        <AsyncSquadAdaptationSection organizationId={ctx.organizationId} />
+      </Suspense>
 
       {/* 4. Level 6: Athlete Quick Directory & Supporting Squad Performance Profile */}
       <div className="space-y-5 pt-2 border-t border-border/50">

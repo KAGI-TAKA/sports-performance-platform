@@ -5,6 +5,7 @@ import { AppSidebar } from "./app-sidebar";
 import { AppHeader } from "./app-header";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { CommandPalette } from "@/features/command-palette/command-palette";
+import { NavigationProgressBar } from "./navigation-progress";
 
 interface CoachShellProps {
   userName?: string;
@@ -68,6 +69,9 @@ export function CoachShell({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
+      {/* Instant Navigation Feedback Indicator (EXP-06) */}
+      <NavigationProgressBar />
+
       {/* Global Command Palette */}
       <CommandPalette
         open={commandPaletteOpen}

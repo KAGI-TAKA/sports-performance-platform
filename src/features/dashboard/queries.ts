@@ -8,67 +8,47 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
   const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Execute all independent database queries in a single parallel Promise.all call
+  // Execute consolidated SQL CTE aggregation alongside list queries in parallel
   const [
-    totalAthletes,
-    assessmentsThisMonth,
-    todaySessionsCount,
-    draftAssessmentsCount,
-    activeInjuriesCount,
-    unloggedPastSessionsCount,
-    completedAssessments,
+    cteStatsResult,
     assessmentsThisMonthWithAthlete,
     completedAnalyses,
     rawUpcomingSessions,
     rawLatestAssessments,
     rawAthletesOverview,
   ] = await Promise.all([
-    // 1. Active athletes count
-    prisma.athlete.count({ where: { organizationId, isActive: true } }),
+    // 1. Consolidated Single CTE Query for all Counts & Squad Average
+    prisma.$queryRaw<Array<{
+      totalAthletes: number;
+      assessmentsThisMonth: number;
+      todaySessionsCount: number;
+      draftAssessmentsCount: number;
+      activeInjuriesCount: number;
+      unloggedPastSessionsCount: number;
+      squadAverageScore: number | null;
+    }>>`
+      WITH stats AS (
+        SELECT
+          (SELECT COUNT(*)::int FROM athlete WHERE "organizationId" = ${organizationId} AND "isActive" = true) AS active_athletes,
+          (SELECT COUNT(*)::int FROM assessment WHERE "organizationId" = ${organizationId} AND "assessmentDate" >= ${startOfMonth}) AS month_assessments,
+          (SELECT COUNT(*)::int FROM schedule_session WHERE "organizationId" = ${organizationId} AND "startTime" >= ${startOfDay} AND "startTime" <= ${endOfDay}) AS today_sessions,
+          (SELECT COUNT(*)::int FROM assessment WHERE "organizationId" = ${organizationId} AND "status" = 'DRAFT') AS draft_assessments,
+          (SELECT COUNT(*)::int FROM athlete_injury_history h JOIN athlete a ON h."athleteId" = a.id WHERE a."organizationId" = ${organizationId} AND a."isActive" = true AND h."recoveredAt" IS NULL) AS active_injuries,
+          (SELECT COUNT(*)::int FROM schedule_session WHERE "organizationId" = ${organizationId} AND "startTime" < ${now} AND "status" = 'COMPLETED' AND NOT EXISTS (SELECT 1 FROM session_log WHERE "scheduleSessionId" = schedule_session.id)) AS unlogged_sessions,
+          (SELECT AVG("overallScore")::numeric FROM assessment WHERE "organizationId" = ${organizationId} AND "status" = 'COMPLETED' AND "overallScore" IS NOT NULL) AS avg_score
+      )
+      SELECT 
+        active_athletes AS "totalAthletes",
+        month_assessments AS "assessmentsThisMonth",
+        today_sessions AS "todaySessionsCount",
+        draft_assessments AS "draftAssessmentsCount",
+        active_injuries AS "activeInjuriesCount",
+        unlogged_sessions AS "unloggedPastSessionsCount",
+        ROUND(avg_score, 0)::int AS "squadAverageScore"
+      FROM stats;
+    `,
 
-    // 2. Assessments conducted this month
-    prisma.assessment.count({
-      where: { organizationId, assessmentDate: { gte: startOfMonth } },
-    }),
-
-    // 3. Sessions scheduled for today
-    prisma.scheduleSession.count({
-      where: {
-        organizationId,
-        startTime: { gte: startOfDay, lte: endOfDay },
-      },
-    }),
-
-    // 4. Assessments in DRAFT status
-    prisma.assessment.count({
-      where: { organizationId, status: "DRAFT" },
-    }),
-
-    // 5. Active athlete injuries (unrecovered)
-    prisma.athleteInjuryHistory.count({
-      where: {
-        athlete: { organizationId, isActive: true },
-        recoveredAt: null,
-      },
-    }),
-
-    // 6. Past completed sessions missing a session log
-    prisma.scheduleSession.count({
-      where: {
-        organizationId,
-        startTime: { lt: now },
-        status: "COMPLETED",
-        sessionLogs: { none: {} },
-      },
-    }),
-
-    // 7. Completed assessments for squad average calculation
-    prisma.assessment.findMany({
-      where: { organizationId, status: "COMPLETED", overallScore: { not: null } },
-      select: { overallScore: true },
-    }),
-
-    // 8. Top active athlete grouping for current month
+    // 2. Top active athlete grouping for current month
     prisma.assessment.groupBy({
       by: ["athleteId"],
       where: { organizationId, assessmentDate: { gte: startOfMonth } },
@@ -77,13 +57,13 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       take: 1,
     }),
 
-    // 9. Completed analyses for 7-component squad average radar
+    // 3. Completed analyses for 7-component squad average radar
     prisma.assessmentAnalysis.findMany({
       where: { assessment: { organizationId, status: "COMPLETED" } },
       select: { componentScores: true },
     }),
 
-    // 10. Upcoming scheduled sessions
+    // 4. Upcoming scheduled sessions
     prisma.scheduleSession.findMany({
       where: {
         organizationId,
@@ -97,7 +77,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       take: 6,
     }),
 
-    // 11. Recent assessments table
+    // 5. Recent assessments table
     prisma.assessment.findMany({
       where: { organizationId },
       include: {
@@ -107,7 +87,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       take: 5,
     }),
 
-    // 12. Active athletes quick directory overview
+    // 6. Active athletes quick directory overview
     prisma.athlete.findMany({
       where: { organizationId, isActive: true },
       orderBy: { fullName: "asc" },
@@ -138,16 +118,23 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
     }),
   ]);
 
-  // Squad average score calculation (null if no data)
-  const avgScore =
-    completedAssessments.length > 0
-      ? Math.round(
-          completedAssessments.reduce(
-            (acc, cur) => acc + Number(cur.overallScore ?? 0),
-            0
-          ) / completedAssessments.length
-        )
-      : null;
+  const cteRow = cteStatsResult[0] || {
+    totalAthletes: 0,
+    assessmentsThisMonth: 0,
+    todaySessionsCount: 0,
+    draftAssessmentsCount: 0,
+    activeInjuriesCount: 0,
+    unloggedPastSessionsCount: 0,
+    squadAverageScore: null,
+  };
+
+  const totalAthletes = cteRow.totalAthletes;
+  const assessmentsThisMonth = cteRow.assessmentsThisMonth;
+  const todaySessionsCount = cteRow.todaySessionsCount;
+  const draftAssessmentsCount = cteRow.draftAssessmentsCount;
+  const activeInjuriesCount = cteRow.activeInjuriesCount;
+  const unloggedPastSessionsCount = cteRow.unloggedPastSessionsCount;
+  const avgScore = cteRow.squadAverageScore;
 
   // Most active athlete resolution (resolve in-memory from fetched lists if available)
   let topActiveAthlete: { fullName: string; count: number } | null = null;

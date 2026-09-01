@@ -19,13 +19,13 @@ export function DevelopmentAreasSection() {
       icon: Zap,
     },
     {
-      name: "Kelincahan (*Change of Direction*)",
-      desc: "Deselerasi terkontrol, titik tumpu kaki rendah (*center of gravity*), dan kecepatan respon gerak.",
+      name: "Kelincahan (Change of Direction)",
+      desc: "Deselerasi terkontrol, titik tumpu kaki rendah (center of gravity), dan kecepatan respon gerak.",
       icon: RotateCw,
     },
     {
       name: "Kekuatan Fungsional",
-      desc: "Stabilitas otot inti (*core*), kekuatan tungkai bawah, dan kontrol postur tubuh saat bergerak.",
+      desc: "Stabilitas otot inti (core), kekuatan tungkai bawah, dan kontrol postur tubuh saat bergerak.",
       icon: Dumbbell,
     },
     {
@@ -45,7 +45,7 @@ export function DevelopmentAreasSection() {
     },
     {
       name: "Efisiensi Pola Gerak",
-      desc: "Mengeliminasi gerakan bocor yang membuang energi atlet selama pertandingan berlangsung.",
+      desc: "Mengeliminasi gerakan bocor yang membuang energi atlet saat bergerak, baik di sesi latihan maupun pertandingan.",
       icon: Activity,
     },
     {
@@ -66,7 +66,7 @@ export function DevelopmentAreasSection() {
         <SectionHeader
           kicker="Kualitas Atletik"
           title="Peta Pengembangan Fisik yang Kami Bangun"
-          description="Bukan sekadar latihan fisik umum, setiap sesi menyasar kualitas biomotorik spesifik yang terbukti mendukung ketahanan dan performa kompetisi."
+          description="Bukan sekadar latihan fisik umum, setiap sesi menyasar kualitas biomotorik spesifik yang terbukti mendukung kesiapan gerak, ketahanan, dan performa baik untuk anak yang membangun fondasi maupun yang mengejar performa kompetitif."
         />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">

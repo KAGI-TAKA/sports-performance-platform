@@ -1,6 +1,11 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
+import dynamic from "next/dynamic";
+
+const ReactECharts = dynamic(() => import("echarts-for-react"), {
+  ssr: false,
+  loading: () => <div className="h-[300px] w-full animate-pulse rounded-lg bg-surface-2/40" />,
+});
 
 interface ComponentScoreMap {
   FLEXIBILITY?: number;

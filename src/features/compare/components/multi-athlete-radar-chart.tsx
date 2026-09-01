@@ -1,8 +1,13 @@
 "use client";
 
 import React from "react";
-import ReactECharts from "echarts-for-react";
+import dynamic from "next/dynamic";
 import type { ComparedAthleteDTO } from "../types";
+
+const ReactECharts = dynamic(() => import("echarts-for-react"), {
+  ssr: false,
+  loading: () => <div className="h-[360px] w-full animate-pulse rounded-lg bg-surface-2/40" />,
+});
 
 interface MultiAthleteRadarChartProps {
   athletes: ComparedAthleteDTO[];

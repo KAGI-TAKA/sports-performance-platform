@@ -57,7 +57,7 @@ export function PhysicalComponentsSection() {
       color: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20",
       title: "Fleksibilitas & Mobilitas",
       test: "Sit and Reach Test",
-      desc: "Rentang gerak sendi (*range of motion*) dan kelenturan otot untuk meminimalisir risiko cedera hamstring.",
+      desc: "Rentang gerak sendi (range of motion) dan kelenturan otot untuk meminimalisir risiko cedera hamstring.",
     },
   ];
 

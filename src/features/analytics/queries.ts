@@ -19,13 +19,13 @@ export async function listAthletesForAnalytics(organizationId: string) {
       isActive: true,
       assessments: {
         where: { status: "COMPLETED" },
-        orderBy: { assessmentDate: "asc" },
+        orderBy: { assessmentDate: "desc" },
+        take: 1,
         select: {
           id: true,
           assessmentDate: true,
           overallScore: true,
           overallGrade: true,
-          analysis: { select: { componentScores: true } },
         },
       },
     },

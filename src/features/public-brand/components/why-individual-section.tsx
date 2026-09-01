@@ -10,7 +10,7 @@ export function WhyIndividualSection() {
     },
     {
       icon: Compass,
-      title: "Kemampuan Gerak Dasar (*Movement Literacy*)",
+      title: "Kemampuan Gerak Dasar (Movement Literacy)",
       desc: "Sebelum membebani fisik dengan latihan berat, atlet harus menguasai mekanika lari, lompat, mendarat, dan stabilisasi tubuh dengan benar.",
     },
     {
@@ -33,6 +33,19 @@ export function WhyIndividualSection() {
           title="Mengapa Pendekatan Pembinaan Harus Individual?"
           description="Tidak ada satu program latihan seragam yang cocok untuk semua anak. Kami membangun atlet berdasarkan titik mulai dan kebutuhan perkembangannya masing-masing."
         />
+
+        {/* Quality over Quantity Philosophy Statement */}
+        <div className="rounded-xl border border-border bg-surface-2/40 p-5 sm:p-6 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-accent">
+              Prinsip Utama: Quality over Quantity
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-secondary leading-relaxed">
+            Pendekatan latihan Coach Zulfi menggunakan prinsip <strong>&ldquo;Quality over Quantity&rdquo;</strong>, dengan menekankan <em>fundamental movement</em>, <em>physical literacy</em>, <em>strength</em>, <em>speed</em>, <em>agility</em>, <em>coordination</em>, <em>balance</em>, <em>power</em>, serta kemampuan melakukan gerakan secara efektif dan aman.
+          </p>
+        </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {factors.map((f, i) => {

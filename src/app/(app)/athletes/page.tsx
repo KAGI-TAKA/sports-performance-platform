@@ -31,20 +31,40 @@ export default async function AthletesPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const ctx = await requireOrgContext();
 
-  const { athletes, total } = await listAthletes(ctx.organizationId, {
-    search: q,
-    position,
-    ageGroup,
-    status: status ?? "active",
-    page,
-  });
-  const totalPages = Math.ceil(total / ATHLETES_PER_PAGE);
+  let athletes: Awaited<ReturnType<typeof listAthletes>>["athletes"] = [];
+  let total = 0;
+  let selectedAthlete: Awaited<ReturnType<typeof getAthleteById>> = null;
 
-  const selectedAthlete = athleteId
-    ? await getAthleteById(ctx.organizationId, athleteId)
-    : athletes[0]
-    ? await getAthleteById(ctx.organizationId, athletes[0].id)
-    : null;
+  if (athleteId) {
+    const [listResult, athleteResult] = await Promise.all([
+      listAthletes(ctx.organizationId, {
+        search: q,
+        position,
+        ageGroup,
+        status: status ?? "active",
+        page,
+      }),
+      getAthleteById(ctx.organizationId, athleteId),
+    ]);
+    athletes = listResult.athletes;
+    total = listResult.total;
+    selectedAthlete = athleteResult;
+  } else {
+    const listResult = await listAthletes(ctx.organizationId, {
+      search: q,
+      position,
+      ageGroup,
+      status: status ?? "active",
+      page,
+    });
+    athletes = listResult.athletes;
+    total = listResult.total;
+    if (athletes[0]) {
+      selectedAthlete = await getAthleteById(ctx.organizationId, athletes[0].id);
+    }
+  }
+
+  const totalPages = Math.ceil(total / ATHLETES_PER_PAGE);
 
   const now = new Date();
   const selectedAthleteAge = selectedAthlete
@@ -133,6 +153,7 @@ export default async function AthletesPage({
                   >
                     <Link
                       href={`/athletes?athleteId=${athlete.id}${qQuery}${posQuery}${ageQuery}${statusQuery}`}
+                      prefetch={false}
                       className="flex items-center gap-3 flex-1 min-w-0"
                     >
                       <div

@@ -10,7 +10,7 @@ export function TrainingShowcaseSection() {
     {
       title: "Sprint Acceleration & Resistance Run",
       category: "Kecepatan Eksplosif",
-      desc: "Latihan akselerasi 10–30 meter dengan penekanan pada sudut dorong badan (*drive phase*).",
+      desc: "Latihan akselerasi 10–30 meter dengan penekanan pada sudut dorong badan (drive phase).",
     },
     {
       title: "Plyometric Box Jump & Landing Technique",
