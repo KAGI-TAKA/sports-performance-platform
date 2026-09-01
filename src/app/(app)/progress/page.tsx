@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
-import { listAthletesForAnalytics, getAthleteProgressSummary } from "@/features/analytics/queries";
+import {
+  listAthletesForAnalytics,
+  getAthleteProgressSummary,
+  getAthleteDetailedProgressTimeline,
+} from "@/features/analytics/queries";
 import { ProgressLineChart } from "@/features/progress/components/progress-line-chart";
+import { AthleteProgressTimeline } from "@/features/progress/components/athlete-progress-timeline";
 import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
@@ -42,9 +47,14 @@ export default async function ProgressPage({
     ? (athletes.find((a) => a.id === athleteId) ?? athletes[0])
     : athletes[0];
 
-  const summary = selectedAthlete
-    ? await getAthleteProgressSummary(ctx.organizationId, selectedAthlete.id)
-    : null;
+  const [summary, detailedTimeline] = await Promise.all([
+    selectedAthlete
+      ? getAthleteProgressSummary(ctx.organizationId, selectedAthlete.id)
+      : Promise.resolve(null),
+    selectedAthlete
+      ? getAthleteDetailedProgressTimeline(ctx.organizationId, selectedAthlete.id)
+      : Promise.resolve(null),
+  ]);
 
   const assessments = summary?.assessmentTimeline ?? [];
 
@@ -363,6 +373,13 @@ export default async function ProgressPage({
                   })}
                 </div>
               </div>
+
+              {/* P8-C1 + P8-C2: ATHLETE PROGRESS TIMELINE & PERSONAL BEST HUB */}
+              {detailedTimeline && (
+                <div className="pt-2">
+                  <AthleteProgressTimeline data={detailedTimeline} />
+                </div>
+              )}
             </div>
           )}
         </div>

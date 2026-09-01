@@ -1,65 +1,67 @@
-import { Target, Users, Trophy, Sparkles } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
+import { CheckCircle2, UserCheck, Sparkles } from "lucide-react";
 
 export function WhoItsForSection() {
+  const youthCriteria = [
+    "Sudah aktif berlatih di cabang olahraga (misal: Sepak Bola, Basket, Bulutangkis)",
+    "Membutuhkan peningkatan kecepatan lari, kelincahan gerak, atau daya ledak lompatan",
+    "Mempersiapkan fisik untuk menghadapi kompetisi atau seleksi tim",
+    "Membutuhkan koreksi mekanika landing dan pencegahan cedera olahraga",
+  ];
+
+  const multilateralCriteria = [
+    "Sedang membangun fondasi gerak dasar dan belum terspesialisasi pada satu cabang",
+    "Memerlukan penguatan koordinasi mata-kaki-tangan dan keseimbangan tubuh",
+    "Ingin membangun kecakapan gerak (*physical literacy*) yang kaya dan bervariasi",
+    "Membutuhkan ruang latihan fisik yang mendidik, aman, dan memupuk rasa percaya diri",
+  ];
+
   return (
-    <section className="py-16 bg-slate-900/60 border-t border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
-            Siapa yang Kami Dampingi
-          </span>
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-            Program Pelatihan Fisik untuk Siapa?
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Dirancang khusus untuk membangun pondasi fisik atletik yang kokoh bagi atlet muda dan atlet kompetitif di berbagai cabang olahraga.
-          </p>
-        </div>
+    <section className="py-14 sm:py-20 border-b border-border/40 bg-surface-1">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+        <SectionHeader
+          kicker="Panduan Pemilihan"
+          title="Mana Jalur yang Tepat untuk Anak Anda?"
+          description="Gunakan panduan singkat ini untuk melihat keselarasan antara tujuan perkembangan anak dan kurikulum pelatihan yang kami sediakan."
+        />
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Target 1 */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 space-y-4 hover:border-indigo-500/40 transition-all">
-            <div className="h-11 w-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <Users className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display font-bold text-base text-white">
-                Atlet Muda Usia 8 – 18 Tahun
+        <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+          {/* Card 1 */}
+          <div className="p-6 sm:p-7 rounded-2xl border border-border bg-surface-2/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-accent" />
+              <h3 className="font-display text-base sm:text-lg font-bold text-foreground">
+                Anak Anda Cocok untuk Youth Athlete Performance:
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Membangun koordinasi motorik, kelincahan dasar (*agility*), kecepatan reaksi, dan postur tubuh yang kokoh sejak usia dini secara aman.
-              </p>
             </div>
+
+            <ul className="space-y-3 text-xs text-secondary">
+              {youthCriteria.map((c) => (
+                <li key={c} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Target 2 */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 space-y-4 hover:border-indigo-500/40 transition-all">
-            <div className="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <Trophy className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display font-bold text-base text-white">
-                Persiapan Seleksi &amp; Kompetisi
+          {/* Card 2 */}
+          <div className="p-6 sm:p-7 rounded-2xl border border-border bg-surface-2/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-indigo" />
+              <h3 className="font-display text-base sm:text-lg font-bold text-foreground">
+                Anak Anda Cocok untuk Multilateral Development:
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Atlet yang mempersiapkan turnamen, seleksi akademi/klub, atau kejuaraan daerah yang memerlukan akselerasi stamina dan *power* maksimal.
-              </p>
             </div>
-          </div>
 
-          {/* Target 3 */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 space-y-4 hover:border-indigo-500/40 transition-all sm:col-span-2 lg:col-span-1">
-            <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <Target className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display font-bold text-base text-white">
-                Segala Cabang Olahraga
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Pondasi atletik esensial untuk atlet Sepak Bola, Futsal, Bola Basket, Bulutangkis, Tenis, Lari/Atletik, Beladiri, dan Renang.
-              </p>
-            </div>
+            <ul className="space-y-3 text-xs text-secondary">
+              {multilateralCriteria.map((c) => (
+                <li key={c} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-indigo shrink-0 mt-0.5" />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

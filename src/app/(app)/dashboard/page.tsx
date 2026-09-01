@@ -1,4 +1,4 @@
-﻿import { requireOrgContext } from "@/lib/auth-context";
+import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
 import { getDashboardStats } from "@/features/dashboard/queries";
 import {
@@ -6,6 +6,7 @@ import {
   getCoachingWorkloadIntelligence,
   getSessionHealthIntelligence,
 } from "@/features/coaching-intelligence/queries";
+import { getSquadAdaptationData } from "@/features/analytics/squad-adaptation-queries";
 import { safeDashboardQuery } from "@/features/dashboard/utils";
 import { DashboardHeader } from "@/features/dashboard/components/dashboard-header";
 import { DashboardOperationalAttention } from "@/features/dashboard/components/dashboard-operational-attention";
@@ -15,6 +16,7 @@ import { DashboardWorkloadWidget } from "@/features/dashboard/components/dashboa
 import { DashboardStatGrid } from "@/features/dashboard/components/dashboard-stat-grid";
 import { DashboardAthleteDirectory } from "@/features/dashboard/components/dashboard-athlete-directory";
 import { SquadProfileCard } from "@/features/dashboard/components/squad-profile-card";
+import { SquadAdaptationHub } from "@/features/analytics/components/squad-adaptation-hub";
 
 export default async function DashboardPage() {
   const ctx = await requireOrgContext();
@@ -27,6 +29,7 @@ export default async function DashboardPage() {
     reTestResult,
     workloadResult,
     sessionHealthResult,
+    squadAdaptationResult,
   ] = await Promise.all([
     safeDashboardQuery(getDashboardStats(ctx.organizationId), null, "dashboard_stats"),
     safeDashboardQuery(
@@ -62,6 +65,11 @@ export default async function DashboardPage() {
       null,
       "session_health"
     ),
+    safeDashboardQuery(
+      getSquadAdaptationData(ctx.organizationId),
+      null,
+      "squad_adaptation"
+    ),
   ]);
 
   const stats = statsResult.data;
@@ -69,6 +77,7 @@ export default async function DashboardPage() {
   const reTestSummary = reTestResult.data;
   const workloadSummary = workloadResult.data;
   const sessionHealth = sessionHealthResult.data;
+  const squadAdaptation = squadAdaptationResult.data;
 
   return (
     <div className="space-y-5 max-w-[1400px]">
@@ -111,11 +120,16 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. Level 5: Athlete Quick Directory & Supporting Squad Performance Profile */}
+      {/* 3. Level 5: Squad Adaptational Insight Hub (P8-C5) */}
+      {squadAdaptation && (
+        <SquadAdaptationHub data={squadAdaptation} />
+      )}
+
+      {/* 4. Level 6: Athlete Quick Directory & Supporting Squad Performance Profile */}
       <div className="space-y-5 pt-2 border-t border-border/50">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-            Rangkuman Direktori Atlet & Statistik Skuad
+            Rangkuman Direktori Atlet &amp; Statistik Skuad
           </span>
         </div>
 

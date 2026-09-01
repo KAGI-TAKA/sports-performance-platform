@@ -1,10 +1,13 @@
 import { requireOrgContext } from "@/lib/auth-context";
-import { listAthletesForAnalytics } from "@/features/analytics/queries";
+import {
+  listAthletesWithAssessments,
+  getMultiAthleteComparisonData,
+  getFullAssessmentDetails,
+} from "@/features/compare/queries";
 import { CompareHeadToHead } from "@/features/compare/components/compare-head-to-head";
 import { CompareHistorical } from "@/features/compare/components/compare-historical";
 import { GitCompare, Users, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { getFullAssessmentDetails } from "@/features/compare/queries";
 
 export default async function ComparePage({
   searchParams,
@@ -14,29 +17,52 @@ export default async function ComparePage({
   const { mode = "head-to-head" } = await searchParams;
   const ctx = await requireOrgContext();
 
-  const athletesRaw = await listAthletesForAnalytics(ctx.organizationId);
+  const athletesRaw = await listAthletesWithAssessments(ctx.organizationId);
 
   // Filter athletes who have at least one completed assessment for comparison
   const athletes = athletesRaw.filter((a) => a.assessments.length > 0);
 
-  // Collect all assessment IDs from eligible athletes
-  const assessmentIds: string[] = [];
-  athletes.forEach((a) => {
-    a.assessments.forEach((ass) => {
-      assessmentIds.push(ass.id);
+  let assessmentDetailsMap: Record<string, any> = {};
+
+  if (mode === "historical") {
+    // For historical mode, collect all assessment IDs for the selected athlete
+    const assessmentIds: string[] = [];
+    athletes.forEach((a) => {
+      a.assessments.forEach((ass) => {
+        assessmentIds.push(ass.id);
+      });
     });
-  });
 
-  const details = await Promise.all(
-    assessmentIds.map((id) => getFullAssessmentDetails(ctx.organizationId, id))
-  );
+    const details = await Promise.all(
+      assessmentIds.map((id) => getFullAssessmentDetails(ctx.organizationId, id))
+    );
 
-  const assessmentDetailsMap: Record<string, Parameters<typeof CompareHeadToHead>[0]["assessmentDetailsMap"][string]> = {};
-  details.forEach((d) => {
-    if (d) {
+    details.forEach((d) => {
+      if (d) {
+        assessmentDetailsMap[d.id] = d;
+      }
+    });
+  } else {
+    // P8-C3: Single batch query for multi-athlete comparison (Zero N+1)
+    const allAthleteIds = athletes.map((a) => a.id);
+    const multiAthleteData = await getMultiAthleteComparisonData(
+      ctx.organizationId,
+      allAthleteIds
+    );
+
+    multiAthleteData.forEach((d) => {
       assessmentDetailsMap[d.id] = d;
-    }
-  });
+    });
+  }
+
+  const athleteOptions = athletes.map((a) => ({
+    id: a.id,
+    fullName: a.fullName,
+    position: a.position,
+    jerseyNumber: a.jerseyNumber,
+    assessmentCount: a.assessments.length,
+    assessments: a.assessments,
+  }));
 
   return (
     <div className="p-6 space-y-6 max-w-[1300px]">
@@ -45,10 +71,10 @@ export default async function ComparePage({
         <div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight flex items-center gap-2 sm:text-2xl">
             <GitCompare className="h-6 w-6 text-accent" />
-            Komparasi Assessment Fisik Atlet
+            Komparasi Profil Performa Atlet
           </h1>
           <p className="mt-1 text-xs text-muted">
-            Bandingkan performa fisik antar 2 atlet (Head-to-Head) atau lacak perkembangan historis (Lama vs Baru).
+            Bandingkan perkembangan fisik 2–4 atlet secara kontekstual &amp; terstandarisasi, bukan untuk menentukan pemenang.
           </p>
         </div>
 
@@ -63,7 +89,7 @@ export default async function ComparePage({
             }`}
           >
             <Users className="h-3.5 w-3.5" />
-            Head-to-Head (Atlet vs Atlet)
+            <span>Komparasi Skuad (2–4 Atlet)</span>
           </Link>
           <Link
             href="/compare?mode=historical"
@@ -74,7 +100,7 @@ export default async function ComparePage({
             }`}
           >
             <TrendingUp className="h-3.5 w-3.5" />
-            Historis (Lama vs Baru)
+            <span>Historis (Lama vs Baru)</span>
           </Link>
         </div>
       </div>
@@ -100,12 +126,12 @@ export default async function ComparePage({
         </div>
       ) : mode === "historical" ? (
         <CompareHistorical
-          athletes={athletes}
+          athletes={athletes as any}
           assessmentDetailsMap={assessmentDetailsMap}
         />
       ) : (
         <CompareHeadToHead
-          athletes={athletes}
+          athletes={athleteOptions}
           assessmentDetailsMap={assessmentDetailsMap}
         />
       )}

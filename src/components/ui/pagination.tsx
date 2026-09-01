@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PaginationProps {
   /** Halaman saat ini (1-based) */
@@ -49,30 +50,30 @@ export function Pagination({ page, totalPages, path, baseParams }: PaginationPro
   }
 
   const btnBase =
-    "inline-flex h-8 min-w-8 items-center justify-center rounded-md text-xs font-medium transition select-none";
+    "inline-flex h-8 min-w-8 items-center justify-center rounded-md text-xs font-semibold transition select-none";
   const btnInactive =
-    "border border-[hsl(var(--border-color))] bg-[hsl(var(--surface-1))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--surface-2))]";
+    "border border-border bg-surface-1 text-foreground hover:bg-surface-2 hover:border-border-strong";
   const btnActive =
-    "bg-[hsl(var(--accent))] text-white border border-transparent";
+    "bg-foreground text-background border border-foreground shadow-2xs";
   const btnDisabled =
-    "border border-[hsl(var(--border-color))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-muted))] cursor-not-allowed pointer-events-none opacity-50";
+    "border border-border bg-surface-2 text-muted cursor-not-allowed pointer-events-none opacity-40";
 
   return (
     <nav
       aria-label="Pagination"
-      className="flex items-center justify-center gap-1 pt-4"
+      className="flex items-center justify-center gap-1.5 pt-4"
     >
       {/* Previous */}
       {page > 1 ? (
         <Link
           href={buildUrl(path, page - 1, baseParams)}
-          className={`${btnBase} ${btnInactive} px-2`}
+          className={cn(btnBase, btnInactive, "px-2")}
           aria-label="Halaman sebelumnya"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </Link>
       ) : (
-        <span className={`${btnBase} ${btnDisabled} px-2`} aria-disabled>
+        <span className={cn(btnBase, btnDisabled, "px-2")} aria-disabled>
           <ChevronLeft className="h-3.5 w-3.5" />
         </span>
       )}
@@ -80,14 +81,14 @@ export function Pagination({ page, totalPages, path, baseParams }: PaginationPro
       {/* Number pills */}
       {range.map((n, i) =>
         n === "…" ? (
-          <span key={`ellipsis-${i}`} className="px-1 text-xs text-[hsl(var(--text-muted))]">
+          <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted">
             …
           </span>
         ) : (
           <Link
             key={n}
             href={buildUrl(path, n, baseParams)}
-            className={`${btnBase} px-2.5 ${n === page ? btnActive : btnInactive}`}
+            className={cn(btnBase, "px-2.5", n === page ? btnActive : btnInactive)}
             aria-current={n === page ? "page" : undefined}
           >
             {n}
@@ -99,13 +100,13 @@ export function Pagination({ page, totalPages, path, baseParams }: PaginationPro
       {page < totalPages ? (
         <Link
           href={buildUrl(path, page + 1, baseParams)}
-          className={`${btnBase} ${btnInactive} px-2`}
+          className={cn(btnBase, btnInactive, "px-2")}
           aria-label="Halaman berikutnya"
         >
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       ) : (
-        <span className={`${btnBase} ${btnDisabled} px-2`} aria-disabled>
+        <span className={cn(btnBase, btnDisabled, "px-2")} aria-disabled>
           <ChevronRight className="h-3.5 w-3.5" />
         </span>
       )}

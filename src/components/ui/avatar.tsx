@@ -7,13 +7,15 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;
   alt?: string;
   fallback?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
 const sizeClasses = {
+  xs: "h-6 w-6 text-[9px]",
   sm: "h-7 w-7 text-[10px]",
   md: "h-9 w-9 text-xs",
   lg: "h-12 w-12 text-sm",
+  xl: "h-16 w-16 text-base",
 };
 
 export function Avatar({
@@ -29,7 +31,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 overflow-hidden rounded-full border border-border/60 bg-accent text-white font-bold select-none items-center justify-center shadow-2xs",
+        "relative flex shrink-0 overflow-hidden rounded-full border border-border bg-foreground text-background font-bold select-none items-center justify-center shadow-2xs",
         sizeClasses[size],
         className
       )}
@@ -44,7 +46,7 @@ export function Avatar({
           className="aspect-square h-full w-full object-cover"
         />
       ) : (
-        <span className="uppercase">{fallback}</span>
+        <span className="uppercase font-display">{fallback}</span>
       )}
     </div>
   );

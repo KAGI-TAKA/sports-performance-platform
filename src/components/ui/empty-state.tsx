@@ -2,7 +2,7 @@ import * as React from "react";
 import { FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ElementType;
   title: string;
   description?: string;
@@ -20,15 +20,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-1/50 p-8 text-center animate-in fade-in-50 duration-200",
+        "flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-1/60 p-8 text-center animate-in fade-in-50 duration-200",
         className
       )}
       {...props}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-muted mb-3">
-        <Icon className="h-6 w-6" />
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-muted mb-3 border border-border/50">
+        <Icon className="h-5 w-5 text-secondary" />
       </div>
-      <h4 className="font-display text-sm font-semibold text-foreground">
+      <h4 className="font-display text-sm font-bold text-foreground tracking-tight">
         {title}
       </h4>
       {description && (

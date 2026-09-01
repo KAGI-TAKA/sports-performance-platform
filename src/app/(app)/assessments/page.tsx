@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
 import { scoreToGrade } from "@/lib/constants";
-import { ClipboardCheck, Plus, ChevronRight, Activity } from "lucide-react";
+import { ClipboardCheck, Plus, ChevronRight, Activity, Users } from "lucide-react";
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString("id-ID", {
@@ -59,12 +59,24 @@ export default async function AssessmentsPage({
           </p>
         </div>
 
-        <Link href="/assessments/new">
-          <Button size="sm" className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5 shadow-sm">
-            <Plus className="h-4 w-4" />
-            Assessment Baru
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <Link href="/assessments/new?mode=squad">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 font-semibold border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 hover:text-indigo-800"
+            >
+              <Users className="h-4 w-4 text-indigo-600" />
+              Penilaian Squad
+            </Button>
+          </Link>
+          <Link href="/assessments/new">
+            <Button size="sm" className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5 shadow-sm">
+              <Plus className="h-4 w-4" />
+              Assessment Baru
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Assessment Table / List Card */}

@@ -1,6 +1,4 @@
-import { headers } from "next/headers";
 import { requireOrgContext } from "@/lib/auth-context";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CoachShell } from "@/components/layout/coach-shell";
 
@@ -10,7 +8,6 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const ctx = await requireOrgContext();
-  const session = await auth.api.getSession({ headers: await headers() });
 
   const org = await prisma.organization.findUnique({
     where: { id: ctx.organizationId },
@@ -19,9 +16,10 @@ export default async function AppLayout({
 
   return (
     <CoachShell
-      userName={session?.user.name}
-      userEmail={session?.user.email}
+      userName={ctx.userName}
+      userEmail={ctx.userEmail}
       orgName={org?.name}
+      role={ctx.role}
     >
       {children}
     </CoachShell>

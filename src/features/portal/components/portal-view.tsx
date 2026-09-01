@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type {
   PortalAccessContext,
   PortalAthleteProfile,
@@ -17,10 +16,8 @@ import type {
 import { AthletePortalDashboard } from "./athlete-portal-dashboard";
 import { ParentPortalDashboard } from "./parent-portal-dashboard";
 import {
-  ShieldCheck,
   User,
   Users,
-  Award,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -46,9 +43,7 @@ interface PortalViewProps {
   achievements: PortalAchievementData;
   guidances?: CoachGuidanceItem[];
   feedbackSessions?: EligibleFeedbackSessionItem[];
-  /** P6-B4: Personal Best data from portal-safe query */
   personalBests?: PortalPersonalBestItem[];
-  /** P6-B4: Athlete Goals (excludes CANCELLED) from portal-safe query */
   portalGoals?: PortalAthleteGoalItem[];
 }
 
@@ -77,13 +72,13 @@ export function PortalView({
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-20 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-accent/20 selection:text-foreground">
       {/* ── TOP HERO BANNER ────────────────────────────────────────── */}
       <header
-        className={`text-white pt-8 pb-12 px-4 sm:px-6 shadow-md border-b ${
+        className={`pt-8 pb-12 px-4 sm:px-6 shadow-xs border-b border-border ${
           isParent
-            ? "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-slate-800"
-            : "bg-gradient-to-b from-[#0F172A] via-[#1E1B4B] to-[#0F172A] border-indigo-900/40"
+            ? "bg-surface-1"
+            : "bg-surface-1"
         }`}
       >
         <div className="max-w-4xl mx-auto space-y-4">
@@ -92,15 +87,15 @@ export function PortalView({
             <div className="flex items-center gap-2">
               <div
                 className={`h-6 w-6 rounded-lg flex items-center justify-center text-white ${
-                  isParent ? "bg-violet-600" : "bg-indigo-600"
+                  isParent ? "bg-indigo" : "bg-accent"
                 }`}
               >
                 <Zap className="h-3.5 w-3.5 fill-white" />
               </div>
-              <span className="font-display font-extrabold tracking-wide text-white uppercase text-[11px]">
+              <span className="font-display font-extrabold tracking-wide text-foreground uppercase text-[11px]">
                 {APP_CONFIG.name}
               </span>
-              <span className="text-[10px] text-indigo-300">
+              <span className="text-[10px] text-muted">
                 · {APP_CONFIG.instagram}
               </span>
             </div>
@@ -108,14 +103,14 @@ export function PortalView({
             {/* Role Badge: Locked to accessType */}
             <div>
               {context.accessType === "PARENT" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 px-3 py-1 text-xs font-bold text-violet-300 backdrop-blur-md">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-bg border border-indigo/20 px-3 py-1 text-xs font-bold text-indigo">
                   <Users className="h-3.5 w-3.5" />
-                  <span>Portal Informasi Orang Tua / Wali</span>
+                  <span>Portal Perkembangan Anak (Orang Tua / Wali)</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 px-3 py-1 text-xs font-bold text-indigo-300 backdrop-blur-md">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-bg border border-accent/20 px-3 py-1 text-xs font-bold text-accent">
                   <User className="h-3.5 w-3.5" />
-                  <span>Portal Atlet Muda</span>
+                  <span>Portal Atlet Muda (My Development)</span>
                 </span>
               )}
             </div>
@@ -125,35 +120,35 @@ export function PortalView({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-white">
+                <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                   {profile.fullName}
                 </h1>
                 <span
                   className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${
                     isParent
-                      ? "bg-violet-500/20 text-violet-200 border-violet-400/30"
-                      : "bg-indigo-500/30 text-indigo-200 border-indigo-400/30"
+                      ? "bg-indigo-bg text-indigo border-indigo/20"
+                      : "bg-accent-bg text-accent border-accent/20"
                   }`}
                 >
                   {profile.competitionLevel ?? "Fisik & Atletik"}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-indigo-200/90 flex flex-wrap items-center gap-2">
-                <span>Program: <strong className="text-white">{profile.competitionLevel ?? "Multi-Sport / Atletik"}</strong></span>
+              <p className="mt-1 text-xs text-secondary flex flex-wrap items-center gap-2">
+                <span>Program: <strong className="text-foreground">{profile.competitionLevel ?? "Youth Athletic Performance"}</strong></span>
                 <span>·</span>
                 <span>{profile.age} Tahun ({formattedDOB})</span>
               </p>
             </div>
 
             {/* Quick Perspective Badge */}
-            <div className="flex items-center gap-2 bg-white/10 px-3.5 py-2 rounded-2xl border border-white/15 backdrop-blur-md self-start sm:self-auto">
-              <Sparkles className="h-4 w-4 text-amber-400" />
+            <div className="flex items-center gap-2 bg-surface-2 px-3.5 py-2 rounded-2xl border border-border self-start sm:self-auto">
+              <Sparkles className="h-4 w-4 text-accent" />
               <div className="text-left text-xs">
-                <span className="text-[10px] text-indigo-300 uppercase font-semibold block leading-none">
+                <span className="text-[10px] text-muted uppercase font-semibold block leading-none">
                   Halaman Aktif
                 </span>
-                <strong className="text-white text-xs font-bold">
-                  {!isParent ? "Portal Latihan Atlet (Aksi & Latihan)" : "Perkembangan & Laporan Ananda"}
+                <strong className="text-foreground text-xs font-bold">
+                  {!isParent ? "Ruang Perkembangan Atlet" : "Pemantauan Perkembangan Anak"}
                 </strong>
               </div>
             </div>

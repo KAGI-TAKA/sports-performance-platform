@@ -149,19 +149,30 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
         )
       : null;
 
-  // Most active athlete resolution
+  // Most active athlete resolution (resolve in-memory from fetched lists if available)
   let topActiveAthlete: { fullName: string; count: number } | null = null;
   if (assessmentsThisMonthWithAthlete.length > 0) {
     const topEntry = assessmentsThisMonthWithAthlete[0];
-    const athlete = await prisma.athlete.findFirst({
-      where: { id: topEntry.athleteId, organizationId },
-      select: { fullName: true },
-    });
-    if (athlete) {
+    const inMemoryAthlete =
+      rawAthletesOverview.find((a) => a.id === topEntry.athleteId) ??
+      rawLatestAssessments.find((a) => a.athlete.id === topEntry.athleteId)?.athlete;
+
+    if (inMemoryAthlete) {
       topActiveAthlete = {
-        fullName: athlete.fullName,
+        fullName: inMemoryAthlete.fullName,
         count: topEntry._count.id,
       };
+    } else {
+      const athlete = await prisma.athlete.findFirst({
+        where: { id: topEntry.athleteId, organizationId },
+        select: { fullName: true },
+      });
+      if (athlete) {
+        topActiveAthlete = {
+          fullName: athlete.fullName,
+          count: topEntry._count.id,
+        };
+      }
     }
   }
 

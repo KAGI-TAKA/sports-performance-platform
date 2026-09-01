@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
@@ -247,3 +247,121 @@ export async function completeSessionExecutionAction(
     return { success: false, error: errorMsg };
   }
 }
+
+/**
+ * P8-B1.1: 1-Tap Attendance Batch Action ("Tandai Semua Hadir").
+ * Atomically transitions all UNMARKED athletes in a session to PRESENT.
+ * Strictly PRESERVES existing ABSENT, EXCUSED, RESCHEDULED, and LATE attendance statuses.
+ */
+export async function batchMarkAllPresentAction(sessionId: string): Promise<{
+  success: boolean;
+  error?: string;
+  updatedCount?: number;
+  preservedCount?: number;
+  sessionId?: string;
+}> {
+  try {
+    const ctx = await requireOrgContext();
+
+    if (!sessionId || typeof sessionId !== "string") {
+      return { success: false, error: "ID Sesi tidak valid." };
+    }
+
+    const session = await prisma.scheduleSession.findFirst({
+      where: {
+        id: sessionId,
+        organizationId: ctx.organizationId,
+      },
+      include: {
+        athletes: {
+          include: {
+            athlete: { select: { id: true, fullName: true, isActive: true } },
+          },
+        },
+        attendances: true,
+      },
+    });
+
+    if (!session) {
+      return { success: false, error: "Sesi jadwal tidak ditemukan atau akses ditolak." };
+    }
+
+    // Verify RBAC
+    const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.coachId);
+    if (!hasAuthority) {
+      return { success: false, error: "Anda tidak memiliki wewenang untuk mencatat sesi ini." };
+    }
+
+    const eligibility = isSessionEligibleForExecution(session.status);
+    if (!eligibility.eligible && eligibility.readOnly) {
+      return { success: false, error: eligibility.reason ?? "Sesi berstatus read-only." };
+    }
+
+    const attendanceMap = new Map(session.attendances.map((att) => [att.athleteId, att]));
+
+    // Determine target athletes whose status is UNMARKED (or have no record yet)
+    const toUpdateAthleteIds: string[] = [];
+    let preservedCount = 0;
+
+    for (const sa of session.athletes) {
+      const existing = attendanceMap.get(sa.athleteId);
+      if (!existing || existing.status === "UNMARKED") {
+        toUpdateAthleteIds.push(sa.athleteId);
+      } else {
+        preservedCount++;
+      }
+    }
+
+    if (toUpdateAthleteIds.length === 0) {
+      return {
+        success: true,
+        updatedCount: 0,
+        preservedCount,
+        sessionId: session.id,
+      };
+    }
+
+    const now = new Date();
+
+    // Atomic transaction: update all UNMARKED to PRESENT
+    await prisma.$transaction(async (tx) => {
+      for (const athleteId of toUpdateAthleteIds) {
+        await tx.attendance.upsert({
+          where: {
+            sessionId_athleteId: {
+              sessionId: session.id,
+              athleteId,
+            },
+          },
+          update: {
+            status: "PRESENT",
+            checkInTime: now,
+            markedByMemberId: ctx.memberId,
+          },
+          create: {
+            organizationId: ctx.organizationId,
+            sessionId: session.id,
+            athleteId,
+            status: "PRESENT",
+            checkInTime: now,
+            markedByMemberId: ctx.memberId,
+          },
+        });
+      }
+    });
+
+    revalidatePath(`/schedule/${session.id}/execute`);
+    revalidatePath("/schedule");
+
+    return {
+      success: true,
+      updatedCount: toUpdateAthleteIds.length,
+      preservedCount,
+      sessionId: session.id,
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui presensi massal.";
+    return { success: false, error: errorMsg };
+  }
+}
+

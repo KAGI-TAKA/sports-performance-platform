@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ScheduleStatus } from "@prisma/client";
+import { Badge } from "@/components/ui/badge";
 
 interface SessionExecutionHeaderProps {
   title: string;
@@ -48,33 +49,33 @@ function formatSessionTimeRange(start: Date, end: Date): string {
 function getStatusBadge(status: ScheduleStatus) {
   if (status === "COMPLETED") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-        Sesi Selesai
-      </span>
+      <Badge variant="success" size="default" className="gap-1.5">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        <span>Sesi Selesai</span>
+      </Badge>
     );
   }
   if (status === "CANCELLED") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-        <XCircle className="h-3.5 w-3.5 text-slate-500" />
-        Dibatalkan
-      </span>
+      <Badge variant="default" size="default" className="gap-1.5">
+        <XCircle className="h-3.5 w-3.5" />
+        <span>Dibatalkan</span>
+      </Badge>
     );
   }
   if (status === "NO_SHOW") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-        <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
-        Tidak Hadir (No Show)
-      </span>
+      <Badge variant="danger" size="default" className="gap-1.5">
+        <AlertCircle className="h-3.5 w-3.5" />
+        <span>Tidak Hadir (No Show)</span>
+      </Badge>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-      <Clock className="h-3.5 w-3.5 text-indigo-600" />
-      Terjadwal (Sedang / Siap Berlangsung)
-    </span>
+    <Badge variant="amber" size="default" className="gap-1.5">
+      <Clock className="h-3.5 w-3.5" />
+      <span>Sesi Aktif / Terjadwal</span>
+    </Badge>
   );
 }
 
@@ -88,12 +89,12 @@ export function SessionExecutionHeader({
   status,
 }: SessionExecutionHeaderProps) {
   return (
-    <header className="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-xs space-y-4">
+    <header className="rounded-2xl border border-border bg-surface-1 p-5 sm:p-6 shadow-2xs space-y-4">
       {/* Top Nav & Breadcrumb */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
         <Link
           href="/schedule"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors min-h-[44px]"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-secondary hover:text-foreground transition-colors min-h-[44px]"
         >
           <ChevronLeft className="h-4 w-4" />
           <span>Kembali ke Jadwal</span>
@@ -103,39 +104,39 @@ export function SessionExecutionHeader({
 
       {/* Main Title & Session Metadata */}
       <div className="space-y-2">
-        <span className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">
-          Workspace Eksekusi Sesi Latihan
+        <span className="text-[10px] uppercase font-bold text-accent tracking-wider block">
+          Field Execution Cockpit
         </span>
-        <h1 className="font-display text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+        <h1 className="font-display text-xl sm:text-2xl font-black text-foreground leading-tight">
           {title}
         </h1>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 pt-1">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-secondary pt-1">
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <Calendar className="h-3.5 w-3.5 text-muted" />
             <span>{formatSessionDate(startTime)}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono font-semibold text-slate-800">
-            <Clock className="h-3.5 w-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 font-mono font-semibold text-foreground">
+            <Clock className="h-3.5 w-3.5 text-muted" />
             <span>{formatSessionTimeRange(startTime, endTime)}</span>
           </div>
 
           {location && (
             <div className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <MapPin className="h-3.5 w-3.5 text-muted" />
               <span>{location}</span>
             </div>
           )}
 
           <div className="flex items-center gap-1.5">
-            <User className="h-3.5 w-3.5 text-slate-400" />
-            <span>Pelatih: <strong className="text-slate-800 font-semibold">{coachName}</strong></span>
+            <User className="h-3.5 w-3.5 text-muted" />
+            <span>Pelatih: <strong className="text-foreground font-semibold">{coachName}</strong></span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5 text-slate-400" />
-            <span>Peserta: <strong className="text-slate-800 font-semibold">{athleteCount} Atlet</strong></span>
+            <Users className="h-3.5 w-3.5 text-muted" />
+            <span>Peserta: <strong className="text-foreground font-semibold">{athleteCount} Atlet</strong></span>
           </div>
         </div>
       </div>

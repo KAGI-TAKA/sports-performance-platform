@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { AppSidebar } from "./app-sidebar";
 import { AppHeader } from "./app-header";
 import { MobileBottomNav } from "./mobile-bottom-nav";
+import { CommandPalette } from "@/features/command-palette/command-palette";
 
 interface CoachShellProps {
   userName?: string;
   userEmail?: string;
   orgName?: string;
+  role?: string;
   children: React.ReactNode;
 }
 
@@ -16,10 +18,12 @@ export function CoachShell({
   userName,
   userEmail,
   orgName,
+  role,
   children,
 }: CoachShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Restore collapsed state from localStorage on mount
   useEffect(() => {
@@ -64,11 +68,18 @@ export function CoachShell({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
+      {/* Global Command Palette */}
+      <CommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+      />
+
       {/* Desktop Sidebar (3-State) */}
       <div className="hidden lg:block h-screen sticky top-0 shrink-0">
         <AppSidebar
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
+          role={role}
         />
       </div>
 
@@ -87,6 +98,7 @@ export function CoachShell({
               collapsed={false}
               onCloseMobile={() => setMobileOpen(false)}
               className="w-full border-r-0"
+              role={role}
             />
           </div>
         </div>
@@ -98,9 +110,11 @@ export function CoachShell({
           userName={userName}
           userEmail={userEmail}
           orgName={orgName}
+          role={role}
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
           onOpenMobile={() => setMobileOpen(true)}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
           {children}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { CheckCircle2, Save, AlertCircle, Loader2 } from "lucide-react";
@@ -91,22 +91,22 @@ export function SessionCompletionBar({
       {/* ── STICKY BOTTOM ACTION BAR ── */}
       <aside
         aria-label="Aksi Penyelesaian Sesi"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 sm:py-3.5 shadow-lg"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-surface-1/95 backdrop-blur-md border-t border-border px-4 py-3 sm:py-3.5 shadow-lg"
       >
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Status info strip */}
-          <div className="text-xs text-slate-600 flex items-center gap-3">
-            <span className="font-semibold text-slate-800">
+          <div className="text-xs text-secondary flex items-center gap-3">
+            <span className="font-semibold text-foreground">
               {participatedCount} dari {athletes.length} Hadir
             </span>
             <span>·</span>
             {hasUnmarked ? (
-              <span className="text-amber-700 font-bold flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-warning font-bold flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5 text-warning" />
                 {unmarkedCount} Atlet Belum Dipresensi
               </span>
             ) : (
-              <span className="text-emerald-700 font-medium">
+              <span className="text-success font-medium">
                 Presensi Lengkap ✓
               </span>
             )}
@@ -119,7 +119,7 @@ export function SessionCompletionBar({
               type="button"
               disabled={isSavingDraft || isCompleting}
               onClick={onSaveDraft}
-              className="min-h-[44px] flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+              className="min-h-[44px] flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 text-foreground text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
               {isSavingDraft ? (
                 <>
@@ -128,7 +128,7 @@ export function SessionCompletionBar({
                 </>
               ) : (
                 <>
-                  <Save className="h-3.5 w-3.5 text-slate-500" />
+                  <Save className="h-3.5 w-3.5 text-muted" />
                   <span>Simpan Draf</span>
                 </>
               )}
@@ -139,7 +139,7 @@ export function SessionCompletionBar({
               type="button"
               disabled={isSavingDraft || isCompleting}
               onClick={() => setShowConfirmModal(true)}
-              className="min-h-[44px] flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition flex items-center justify-center gap-2 shadow-xs active:scale-95 disabled:opacity-50"
+              className="min-h-[44px] flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-xs font-black transition flex items-center justify-center gap-2 shadow-2xs active:scale-95 disabled:opacity-50"
             >
               {isCompleting ? (
                 <>
@@ -160,53 +160,53 @@ export function SessionCompletionBar({
       {/* ── CONFIRMATION MODAL ── */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface-1 p-5 sm:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             {/* Header */}
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <div className="h-9 w-9 rounded-xl bg-accent-bg text-accent flex items-center justify-center shrink-0">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-slate-900">
+                <h3 className="font-display font-bold text-base text-foreground">
                   Konfirmasi Selesaikan Sesi
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-secondary">
                   Periksa ringkasan sebelum menyimpan permanen.
                 </p>
               </div>
             </div>
 
             {/* Breakdown Box */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs">
+            <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3 text-xs">
               <div>
-                <span className="font-bold text-slate-800 uppercase text-[10.5px] block mb-1">
+                <span className="font-bold text-foreground uppercase text-[10.5px] block mb-1">
                   Ringkasan Presensi:
                 </span>
-                <div className="grid grid-cols-2 gap-2 text-slate-700">
-                  <span>Hadir: <strong>{presentCount}</strong></span>
-                  <span>Terlambat: <strong>{lateCount}</strong></span>
-                  <span>Izin: <strong>{excusedCount}</strong></span>
-                  <span>Alpa: <strong>{absentCount}</strong></span>
+                <div className="grid grid-cols-2 gap-2 text-secondary">
+                  <span>Hadir: <strong className="text-foreground">{presentCount}</strong></span>
+                  <span>Terlambat: <strong className="text-foreground">{lateCount}</strong></span>
+                  <span>Izin: <strong className="text-foreground">{excusedCount}</strong></span>
+                  <span>Alpa: <strong className="text-foreground">{absentCount}</strong></span>
                 </div>
               </div>
 
               {exercises.length > 0 && (
-                <div className="pt-2 border-t border-slate-200">
-                  <span className="font-bold text-slate-800 uppercase text-[10.5px] block mb-1">
+                <div className="pt-2 border-t border-border">
+                  <span className="font-bold text-foreground uppercase text-[10.5px] block mb-1">
                     Eksekusi Gerakan Latihan:
                   </span>
-                  <div className="grid grid-cols-2 gap-2 text-slate-700">
-                    <span className="text-emerald-700 font-semibold">
+                  <div className="grid grid-cols-2 gap-2 text-secondary">
+                    <span className="text-success font-semibold">
                       Selesai: {doneCount}
                     </span>
-                    <span className="text-amber-700 font-semibold">
+                    <span className="text-warning font-semibold">
                       Modifikasi: {modifiedCount}
                     </span>
-                    <span className="text-slate-600">
+                    <span className="text-secondary">
                       Dilewati: {skippedCount}
                     </span>
                     {plannedCount > 0 && (
-                      <span className="text-slate-500 italic">
+                      <span className="text-muted italic">
                         Belum Dilakukan: {plannedCount}
                       </span>
                     )}
@@ -217,8 +217,8 @@ export function SessionCompletionBar({
 
             {/* Validation Alerts */}
             {hasUnmarked && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+              <div className="p-3 rounded-xl bg-danger-bg border border-danger/20 text-danger text-xs flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-danger mt-0.5" />
                 <span>
                   <strong>Presensi Belum Lengkap:</strong> Masih ada {unmarkedCount} atlet yang belum ditandai presensinya.
                 </span>
@@ -226,24 +226,24 @@ export function SessionCompletionBar({
             )}
 
             {!hasUnmarked && participatedCount === 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+              <div className="p-3 rounded-xl bg-warning-bg border border-warning/20 text-warning text-xs flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-warning mt-0.5" />
                 <span>
                   <strong>Tidak Ada Atlet yang Hadir:</strong> Sesi tidak dapat diselesaikan jika tidak ada atlet yang hadir. Gunakan status <em>Tidak Hadir (NO_SHOW)</em> atau <em>Batalkan Sesi</em>.
                 </span>
               </div>
             )}
 
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+            <p className="text-[11px] text-muted leading-relaxed">
               Setelah diselesaikan, <strong>Session Log</strong> akan dibuat otomatis untuk atlet yang hadir dan formulir <strong>Parent Feedback</strong> akan aktif di portal orang tua.
             </p>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="min-h-[44px] px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                className="min-h-[44px] px-4 py-2 text-xs font-bold text-secondary hover:bg-surface-2 rounded-xl transition"
               >
                 Batal
               </button>
@@ -255,7 +255,7 @@ export function SessionCompletionBar({
                   setShowConfirmModal(false);
                   onCompleteSession();
                 }}
-                className="min-h-[44px] px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                className="min-h-[44px] px-5 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
               >
                 {isCompleting ? "Memproses..." : "Ya, Selesaikan & Buat Log"}
               </button>

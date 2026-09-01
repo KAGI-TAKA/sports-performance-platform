@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
-import { createAssessmentSchema } from "./schema";
+import { createAssessmentSchema, batchSquadAssessmentSchema } from "./schema";
 import {
   calculateAssessmentEngine,
   calculateAgeAtDate,
@@ -167,3 +167,194 @@ export async function createAssessment(input: unknown) {
     return { success: false, error: errorMsg };
   }
 }
+
+/**
+ * P8-B2: Squad Field Scoring Matrix Batch Action.
+ * Evaluates and atomically creates assessments for an entire squad (multi-athlete)
+ * on a single test item using the authoritative assessment scoring engine.
+ */
+export async function batchCreateSquadAssessmentAction(input: unknown): Promise<{
+  success: boolean;
+  error?: string;
+  savedCount?: number;
+  assessmentIds?: string[];
+}> {
+  try {
+    const ctx = await requireOrgContext();
+
+    // Verify role authorization (Parents/Athletes are rejected)
+    const role = ctx.role.toLowerCase();
+    if (role !== "owner" && role !== "admin" && role !== "head_coach" && role !== "assistant_coach") {
+      return { success: false, error: "Anda tidak memiliki wewenang untuk mencatat penilaian fisik." };
+    }
+
+    const parseResult = batchSquadAssessmentSchema.safeParse(input);
+    if (!parseResult.success) {
+      return {
+        success: false,
+        error: parseResult.error.issues[0]?.message ?? "Validasi data squad assessment gagal",
+      };
+    }
+
+    const parsed = parseResult.data;
+
+    // Reject duplicate athletes in the batch
+    const athleteIds = parsed.entries.map((e: { athleteId: string }) => e.athleteId);
+    if (new Set(athleteIds).size !== athleteIds.length) {
+      return {
+        success: false,
+        error: "Terdapat duplikasi atlet pada daftar penilaian squad.",
+      };
+    }
+
+    // 1. Verify that all athletes belong to ctx.organizationId and are active
+    const validAthletes = await prisma.athlete.findMany({
+      where: {
+        id: { in: athleteIds },
+        organizationId: ctx.organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        gender: true,
+        dateOfBirth: true,
+      },
+    });
+
+    if (validAthletes.length !== athleteIds.length) {
+      return {
+        success: false,
+        error: "Sebagian atlet tidak ditemukan, tidak aktif, atau bukan milik organisasi Anda.",
+      };
+    }
+
+    const athleteMap = new Map(validAthletes.map((a) => [a.id, a]));
+
+    // 2. Fetch the test item with its benchmarks
+    let testItem = await prisma.testItem.findFirst({
+      where: {
+        id: parsed.testItemId,
+        organizationId: ctx.organizationId,
+      },
+      include: {
+        benchmarks: true,
+      },
+    });
+
+    if (!testItem) {
+      try {
+        await seedDefaultTestItemsAndBenchmarks(ctx.organizationId);
+        testItem = await prisma.testItem.findFirst({
+          where: {
+            id: parsed.testItemId,
+            organizationId: ctx.organizationId,
+          },
+          include: {
+            benchmarks: true,
+          },
+        });
+      } catch {
+        // seeding fallback
+      }
+    }
+
+    if (!testItem) {
+      return {
+        success: false,
+        error: "Item tes tidak ditemukan dalam master benchmark organisasi.",
+      };
+    }
+
+    const assessmentDate = new Date(parsed.assessmentDate);
+
+    // 3. Atomically create assessments in a single prisma.$transaction
+    const createdAssessmentIds = await prisma.$transaction(async (tx) => {
+      const ids: string[] = [];
+
+      for (const entry of parsed.entries) {
+        const athlete = athleteMap.get(entry.athleteId);
+        if (!athlete) continue;
+
+        const athleteAge = calculateAgeAtDate(athlete.dateOfBirth, assessmentDate);
+        const bm = pickBestBenchmark(testItem.benchmarks || [], athlete.gender, athleteAge);
+
+        const engineItems: TestItemValue[] = [
+          {
+            testItemId: testItem.id,
+            physicalComponent: testItem.physicalComponent || "FLEXIBILITY",
+            rawValue: entry.rawValue,
+            scoreDirection: testItem.scoreDirection || "HIGHER_IS_BETTER",
+            thresholdA: bm ? Number(bm.thresholdA) : undefined,
+            thresholdB: bm ? Number(bm.thresholdB) : undefined,
+            thresholdC: bm ? Number(bm.thresholdC) : undefined,
+            thresholdD: bm ? Number(bm.thresholdD) : undefined,
+          },
+        ];
+
+        const engineResult = calculateAssessmentEngine(engineItems);
+
+        const newAssessment = await tx.assessment.create({
+          data: {
+            organizationId: ctx.organizationId,
+            athleteId: entry.athleteId,
+            createdByMemberId: ctx.memberId,
+            assessmentDate,
+            assessmentType: parsed.assessmentType ?? "BENCHMARK_BASED",
+            status: "COMPLETED",
+            overallScore: engineResult.overallScore,
+            overallGrade: engineResult.overallGrade,
+            resultItems: {
+              create: [
+                {
+                  testItemId: testItem.id,
+                  rawValue: entry.rawValue,
+                  score: engineResult.itemScores[testItem.id] ?? engineResult.overallScore,
+                },
+              ],
+            },
+          },
+        });
+
+        await tx.assessmentAnalysis.create({
+          data: {
+            assessmentId: newAssessment.id,
+            componentScores: JSON.stringify(engineResult.componentScores),
+            bestComponent: engineResult.bestComponent,
+            weakestComponents: engineResult.weakestComponents,
+            insightText: engineResult.insightText,
+            recommendationText: entry.notes?.trim()
+              ? `${entry.notes.trim()}\n${engineResult.recommendationText}`
+              : engineResult.recommendationText,
+            ruleEngineVersion: "v2.1-squad-batch",
+          },
+        });
+
+        // Trigger goal achievement check
+        await evaluateAssessmentGoals(newAssessment.id, tx);
+
+        ids.push(newAssessment.id);
+      }
+
+      return ids;
+    });
+
+    // Revalidate paths
+    revalidatePath("/assessments");
+    revalidatePath("/athletes");
+    revalidatePath("/dashboard");
+    revalidatePath("/reports");
+    revalidatePath("/progress");
+    revalidatePath("/compare");
+
+    return {
+      success: true,
+      savedCount: createdAssessmentIds.length,
+      assessmentIds: createdAssessmentIds,
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal menyimpan batch assessment squad.";
+    return { success: false, error: errorMsg };
+  }
+}
+

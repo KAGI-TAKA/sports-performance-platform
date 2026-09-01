@@ -78,14 +78,17 @@ export async function listAthletes(
     prisma.athlete.count({ where }),
   ]);
 
-  return { athletes, total };
+  return {
+    athletes: JSON.parse(JSON.stringify(athletes)) as typeof athletes,
+    total,
+  };
 }
 
 export async function getAthleteById(
   organizationId: string,
   athleteId: string
 ) {
-  return prisma.athlete.findFirst({
+  const athlete = await prisma.athlete.findFirst({
     where: { id: athleteId, organizationId },
     include: {
       injuryHistories: { orderBy: { injuryDate: "desc" } },
@@ -98,6 +101,8 @@ export async function getAthleteById(
       },
     },
   });
+
+  return athlete ? (JSON.parse(JSON.stringify(athlete)) as typeof athlete) : null;
 }
 
 export async function getAthleteFullProfile(
@@ -152,5 +157,5 @@ export async function getAthleteFullProfile(
     },
   });
 
-  return athlete;
+  return athlete ? (JSON.parse(JSON.stringify(athlete)) as typeof athlete) : null;
 }

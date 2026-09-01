@@ -1,10 +1,11 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 
-export async function requireOrgContext() {
+export const requireOrgContext = cache(async function requireOrgContext() {
   const reqHeaders = await headers();
   const session = await auth.api.getSession({ headers: reqHeaders });
   if (!session) redirect("/login");
@@ -34,34 +35,30 @@ export async function requireOrgContext() {
     }
   }
 
-  const member = await auth.api.getActiveMember({ headers: reqHeaders });
-
-  if (!member) {
-    const dbMember = await prisma.member.findUnique({
-      where: {
-        organizationId_userId: {
-          organizationId: organizationId,
-          userId: session.user.id,
-        },
+  // Optimized indexed direct lookup by compound key (organizationId, userId)
+  const dbMember = await prisma.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId: organizationId,
+        userId: session.user.id,
       },
-    });
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
 
-    if (!dbMember) {
-      redirect("/onboarding/organization");
-    }
-
-    return {
-      userId: session.user.id,
-      organizationId,
-      memberId: dbMember.id,
-      role: dbMember.role,
-    };
+  if (!dbMember) {
+    redirect("/onboarding/organization");
   }
 
   return {
     userId: session.user.id,
     organizationId,
-    memberId: member.id,
-    role: member.role,
+    memberId: dbMember.id,
+    role: dbMember.role,
+    userName: session.user.name,
+    userEmail: session.user.email,
   };
-}
+});

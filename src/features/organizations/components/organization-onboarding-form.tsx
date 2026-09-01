@@ -8,6 +8,11 @@ import {
   slugify,
 } from "@/features/organizations/schema";
 import { seedOrgDefaults } from "@/features/organizations/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Building2 } from "lucide-react";
 
 export function OrganizationOnboardingForm({
   userName,
@@ -23,12 +28,13 @@ export function OrganizationOnboardingForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isLoading) return;
     setError(null);
 
     const parsed = createOrganizationSchema.safeParse({ name });
     if (!parsed.success) {
       setError(
-        parsed.error.flatten().fieldErrors.name?.[0] ?? "Nama tidak valid",
+        parsed.error.flatten().fieldErrors.name?.[0] ?? "Nama organisasi tidak valid"
       );
       return;
     }
@@ -36,8 +42,6 @@ export function OrganizationOnboardingForm({
     setIsLoading(true);
 
     const slugBase = slugify(parsed.data.name);
-    // Tambahan suffix acak supaya slug tidak gampang tabrakan antar
-    // organisasi dengan nama mirip (mis. dua akademi "SMA 1")
     const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
     const { data, error: createError } = await authClient.organization.create({
@@ -47,16 +51,14 @@ export function OrganizationOnboardingForm({
 
     if (createError || !data) {
       setIsLoading(false);
-      setError(createError?.message ?? "Gagal membuat organisasi, coba lagi");
+      setError(createError?.message ?? "Gagal menginisialisasi organisasi, silakan coba lagi");
       return;
     }
 
-    // Seed TestItem & Benchmark default untuk organisasi baru ini.
-    // Dipanggil di sini (bukan saat render benchmarks/page.tsx) agar data
-    // sudah tersedia begitu user pertama kali membuka halaman Benchmark.
+    // Seed data default benchmarks & test items untuk organisasi baru
     await seedOrgDefaults(data.id);
 
-    // Jadikan organisasi baru ini aktif di sesi
+    // Set organisasi aktif di session
     await authClient.organization.setActive({ organizationId: data.id });
 
     setIsLoading(false);
@@ -65,63 +67,51 @@ export function OrganizationOnboardingForm({
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <svg width="32" height="32" viewBox="0 0 28 28">
-          <polygon
-            points="14,2 24,8.5 24,19.5 14,26 4,19.5 4,8.5"
-            fill="none"
-            stroke="hsl(var(--accent))"
-            strokeWidth="1.6"
-          />
-          <polygon
-            points="14,8 19,11 19,17 14,20 9,17 9,11"
-            fill="hsl(var(--accent))"
-            opacity="0.85"
-          />
-        </svg>
-        <h1 className="font-display text-lg font-semibold text-foreground">
-          Kinetiq
-        </h1>
-      </div>
+    <div className="w-full max-w-md">
+      <Card className="p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="space-y-1.5 text-left">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-6 w-1 rounded-full bg-accent" />
+            <span className="font-display font-bold text-xs uppercase tracking-wider text-accent">
+              Inisialisasi Master Workspace
+            </span>
+          </div>
+          <h1 className="font-display text-xl font-bold text-foreground">
+            Selamat Datang, {userName}
+          </h1>
+          <p className="text-xs text-secondary leading-relaxed">
+            Inisialisasi organisasi atau sentra pelatihan tempat Anda akan mengelola database atlet dan program performa.
+          </p>
+        </div>
 
-      <div className="rounded-lg border border-border bg-surface-1 p-6">
-        <h2 className="font-display text-base font-semibold text-foreground">
-          Halo, {userName} 👋
-        </h2>
-        <p className="mt-1 text-sm text-secondary">
-          Sebelum lanjut, buat organisasi (akademi/klub) tempat kamu akan
-          mengelola atlet.
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="orgName"
-              className="text-xs font-medium text-secondary"
-            >
-              Nama akademi/klub
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="orgName" required>
+              Nama Organisasi / Sentra Latihan
+            </Label>
+            <Input
               id="orgName"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-              placeholder="Coach Zulfi Athletic Hub"
+              placeholder="Coach Zulfi Athletic Performance Hub"
+              disabled={isLoading}
             />
-            {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+            {error && <p className="text-[11px] font-medium text-danger">{error}</p>}
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={isLoading}
-            className="mt-2 rounded-sm bg-accent px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            variant="amber"
+            size="lg"
+            loading={isLoading}
+            className="w-full justify-center shadow-2xs font-bold text-xs sm:text-sm"
           >
-            {isLoading ? "Membuat organisasi..." : "Buat organisasi & lanjut"}
-          </button>
+            <Building2 className="h-4 w-4 mr-1.5" />
+            <span>{isLoading ? "Menginisialisasi Workspace..." : "Buat Workspace & Lanjutkan"}</span>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

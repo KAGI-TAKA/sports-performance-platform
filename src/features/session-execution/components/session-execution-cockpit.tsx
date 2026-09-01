@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -9,9 +9,14 @@ import type {
   SessionExecutionData,
   SessionExecutionPayload,
 } from "../types";
-import { saveSessionExecutionDraftAction, completeSessionExecutionAction } from "../actions";
+import {
+  saveSessionExecutionDraftAction,
+  completeSessionExecutionAction,
+  batchMarkAllPresentAction,
+} from "../actions";
 import { SessionExecutionHeader } from "./session-execution-header";
 import { InjuryAlertBanner } from "./injury-alert-banner";
+import { FieldStopwatch } from "./field-stopwatch";
 import { AttendanceChecklistSection } from "./attendance-checklist-section";
 import { AthleteExecutionPanel } from "./athlete-execution-panel";
 import { SessionCompletionBar } from "./session-completion-bar";
@@ -99,7 +104,7 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
   // General notes state
   const [generalNotes, setGeneralNotes] = useState<string>(initialData.notes || "");
 
-  // Handlers
+  // Attendance change handler
   const handleAttendanceChange = (
     athleteId: string,
     status: AttendanceStatus,
@@ -112,6 +117,37 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
     }));
   };
 
+  // P8-B1.1: 1-Tap Attendance ("Tandai Semua Hadir")
+  const handleMarkAllPresent = () => {
+    if (initialData.isReadOnly) return;
+
+    // 1. Optimistic client update: only change UNMARKED -> PRESENT
+    setAttendanceState((prev) => {
+      const next = { ...prev };
+      initialData.athletes.forEach((a) => {
+        if (!next[a.id] || next[a.id].status === "UNMARKED") {
+          next[a.id] = { status: "PRESENT", notes: next[a.id]?.notes };
+        }
+      });
+      return next;
+    });
+
+    // 2. Server transaction
+    startTransition(async () => {
+      const result = await batchMarkAllPresentAction(initialData.id);
+      if (result.success) {
+        if (result.updatedCount && result.updatedCount > 0) {
+          toast.success(`${result.updatedCount} atlet berhasil ditandai Hadir`);
+        } else {
+          toast.info("Semua presensi atlet telah diperbarui");
+        }
+      } else {
+        toast.error(result.error || "Gagal memperbarui presensi massal");
+      }
+    });
+  };
+
+  // Exercise execution status change handler
   const handleExerciseStatusChange = (
     athleteId: string,
     exerciseId: string,
@@ -130,6 +166,7 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
     }));
   };
 
+  // Coach feedback change handler
   const handleFeedbackChange = (
     athleteId: string,
     coachFeedback?: string,
@@ -214,15 +251,19 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
           {/* 2. INJURY ALERT WARNING BANNER */}
           <InjuryAlertBanner athletes={initialData.athletes} />
 
-          {/* 3. ATTENDANCE SECTION */}
+          {/* 3. FIELD STOPWATCH & DRILL TIMER (P8-B1.2) */}
+          <FieldStopwatch />
+
+          {/* 4. ATTENDANCE SECTION (P8-B1.1 with 1-Tap Attendance) */}
           <AttendanceChecklistSection
             athletes={initialData.athletes}
             attendanceState={attendanceState}
             onAttendanceChange={handleAttendanceChange}
+            onMarkAllPresent={handleMarkAllPresent}
             isReadOnly={initialData.isReadOnly}
           />
 
-          {/* 4. PER-ATHLETE TRAINING EXECUTION PANEL */}
+          {/* 5. PER-ATHLETE TRAINING EXECUTION PANEL */}
           <AthleteExecutionPanel
             athletes={initialData.athletes}
             trainingPlan={initialData.trainingPlan}
@@ -236,7 +277,7 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
             isReadOnly={initialData.isReadOnly}
           />
 
-          {/* 5. STICKY BOTTOM COMPLETION BAR */}
+          {/* 6. STICKY BOTTOM COMPLETION BAR */}
           <SessionCompletionBar
             athletes={initialData.athletes}
             trainingPlan={initialData.trainingPlan}
@@ -253,3 +294,4 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
     </div>
   );
 }
+
