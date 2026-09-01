@@ -107,91 +107,166 @@ export default async function AssessmentsPage({
               className="py-12"
             />
           ) : (
-            <div className="divide-y divide-border/60">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Atlet</TableHead>
-                    <TableHead>Tanggal Tes</TableHead>
-                    <TableHead>Komponen Utama</TableHead>
-                    <TableHead className="text-right">Skor Keseluruhan</TableHead>
-                    <TableHead className="text-right">Grade</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assessments.map((item) => {
-                    const overallScoreNum = item.overallScore ? Number(item.overallScore) : 0;
-                    const grade = item.overallGrade || scoreToGrade(overallScoreNum);
-                    const bestComp = item.analysis?.bestComponent;
+            <div>
+              {/* Mobile Card View (< md) */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {assessments.map((item) => {
+                  const overallScoreNum = item.overallScore ? Number(item.overallScore) : 0;
+                  const grade = item.overallGrade || scoreToGrade(overallScoreNum);
+                  const bestComp = item.analysis?.bestComponent;
 
-                    return (
-                      <TableRow key={item.id} className="hover:bg-surface-2/40 transition-colors">
-                        <TableCell className="font-semibold text-xs text-foreground">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent font-bold text-[11px]">
-                              {item.athlete.fullName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .slice(0, 2)
-                                .join("")}
-                            </div>
-                            <div>
-                              <Link
-                                href={`/athletes/${item.athlete.id}`}
-                                className="hover:text-accent transition-colors font-bold"
-                              >
-                                {item.athlete.fullName}
-                              </Link>
-                              <div className="text-[11px] text-muted font-normal flex items-center gap-1 mt-0.5">
-                                <span>{item.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
-                                <span>·</span>
-                                <span>{calculateAgeAtDate(item.athlete.dateOfBirth)} Thn</span>
-                                {item.athlete.sportCategory && (
-                                  <>
-                                    <span>·</span>
-                                    <span className="text-accent">{item.athlete.sportCategory}</span>
-                                  </>
-                                )}
-                              </div>
+                  return (
+                    <div key={item.id} className="p-4 space-y-3 hover:bg-surface-2/40 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent font-bold text-xs">
+                            {item.athlete.fullName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join("")}
+                          </div>
+                          <div className="min-w-0">
+                            <Link
+                              href={`/athletes/${item.athlete.id}`}
+                              className="font-display text-sm font-bold text-foreground hover:text-accent truncate block"
+                            >
+                              {item.athlete.fullName}
+                            </Link>
+                            <div className="text-[11px] text-muted flex items-center gap-1 flex-wrap">
+                              <span>{item.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
+                              <span>·</span>
+                              <span>{calculateAgeAtDate(item.athlete.dateOfBirth)} Thn</span>
+                              {item.athlete.sportCategory && (
+                                <>
+                                  <span>·</span>
+                                  <span className="text-accent font-medium">{item.athlete.sportCategory}</span>
+                                </>
+                              )}
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted font-mono">
-                          {formatDate(item.assessmentDate)}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {bestComp ? (
-                            <Badge variant="accent" className="text-[10px]">
-                              {bestComp.replace(/_/g, " ")}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted text-[11px]">7 Komponen Standard</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-extrabold text-sm text-foreground">
-                          {overallScoreNum}%
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </div>
+
+                        <div className="text-right shrink-0">
                           <Badge
                             variant={GRADE_BADGE_VARIANTS[grade] ?? "accent"}
                             className="text-xs px-2.5 py-0.5 font-bold font-mono"
                           >
-                            {grade}
+                            Grade {grade}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Link href={`/assessments/${item.id}`}>
-                            <Button variant="outline" size="xs" className="gap-1 text-xs">
-                              Detail <ChevronRight className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          <div className="text-xs font-mono font-extrabold text-foreground mt-0.5">
+                            {overallScoreNum}%
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40 text-muted">
+                        <div className="flex items-center gap-2">
+                          <span>📅 {formatDate(item.assessmentDate)}</span>
+                          {bestComp && (
+                            <Badge variant="accent" className="text-[9px] px-1.5 py-0.2">
+                              {bestComp.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                        </div>
+                        <Link href={`/assessments/${item.id}`}>
+                          <Button variant="outline" size="xs" className="gap-1 text-xs">
+                            Detail <ChevronRight className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Atlet</TableHead>
+                      <TableHead>Tanggal Tes</TableHead>
+                      <TableHead>Komponen Utama</TableHead>
+                      <TableHead className="text-right">Skor Keseluruhan</TableHead>
+                      <TableHead className="text-right">Grade</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assessments.map((item) => {
+                      const overallScoreNum = item.overallScore ? Number(item.overallScore) : 0;
+                      const grade = item.overallGrade || scoreToGrade(overallScoreNum);
+                      const bestComp = item.analysis?.bestComponent;
+
+                      return (
+                        <TableRow key={item.id} className="hover:bg-surface-2/40 transition-colors">
+                          <TableCell className="font-semibold text-xs text-foreground">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent font-bold text-[11px]">
+                                {item.athlete.fullName
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .slice(0, 2)
+                                  .join("")}
+                              </div>
+                              <div>
+                                <Link
+                                  href={`/athletes/${item.athlete.id}`}
+                                  className="hover:text-accent transition-colors font-bold"
+                                >
+                                  {item.athlete.fullName}
+                                </Link>
+                                <div className="text-[11px] text-muted font-normal flex items-center gap-1 mt-0.5">
+                                  <span>{item.athlete.gender === "MALE" ? "👦 Putra" : "👧 Putri"}</span>
+                                  <span>·</span>
+                                  <span>{calculateAgeAtDate(item.athlete.dateOfBirth)} Thn</span>
+                                  {item.athlete.sportCategory && (
+                                    <>
+                                      <span>·</span>
+                                      <span className="text-accent">{item.athlete.sportCategory}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted font-mono">
+                            {formatDate(item.assessmentDate)}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {bestComp ? (
+                              <Badge variant="accent" className="text-[10px]">
+                                {bestComp.replace(/_/g, " ")}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted text-[11px]">7 Komponen Standard</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-extrabold text-sm text-foreground">
+                            {overallScoreNum}%
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge
+                              variant={GRADE_BADGE_VARIANTS[grade] ?? "accent"}
+                              className="text-xs px-2.5 py-0.5 font-bold font-mono"
+                            >
+                              {grade}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link href={`/assessments/${item.id}`}>
+                              <Button variant="outline" size="xs" className="gap-1 text-xs">
+                                Detail <ChevronRight className="h-3 w-3" />
+                              </Button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>

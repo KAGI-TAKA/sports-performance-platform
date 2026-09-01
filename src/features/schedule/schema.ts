@@ -12,7 +12,7 @@ export const createScheduleSchema = z.object({
   startTime: z.string().min(1, "Waktu mulai wajib diisi"),
   endTime: z.string().min(1, "Waktu selesai wajib diisi"),
   coachId: z.string().min(1, "Pelatih wajib dipilih"),
-  athleteIds: z.array(z.string()).min(1, "Pilih minimal 1 atlet"),
+  athleteIds: z.array(z.string()).default([]),
   location: z.string().optional(),
   notes: z.string().optional(),
 });

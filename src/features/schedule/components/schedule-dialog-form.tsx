@@ -188,8 +188,10 @@ export function ScheduleDialogForm({
       return;
     }
 
-    if (selectedAthleteIds.length === 0) {
-      toast.error("Pilih minimal 1 atlet");
+    const isBlockout = slotType === "TERKUNCI";
+
+    if (!isBlockout && selectedAthleteIds.length === 0) {
+      toast.error("Pilih minimal 1 atlet (atau gunakan slot Off / Terkunci untuk libur pelatih)");
       return;
     }
 
@@ -263,8 +265,10 @@ export function ScheduleDialogForm({
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    if (selectedAthleteIds.length === 0) {
-      toast.error("Pilih minimal 1 atlet");
+    const isBlockout = slotType === "TERKUNCI";
+
+    if (!isBlockout && selectedAthleteIds.length === 0) {
+      toast.error("Pilih minimal 1 atlet (atau gunakan slot Off / Terkunci untuk libur pelatih)");
       return;
     }
 
@@ -325,27 +329,25 @@ export function ScheduleDialogForm({
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent onClose={() => setIsOpen(false)} className="max-w-lg">
-          <DialogHeader>
+        <DialogContent onClose={() => setIsOpen(false)} className="max-w-lg p-0 flex flex-col max-h-[90vh]">
+          <DialogHeader className="p-4 sm:p-5 pb-3 border-b border-border shrink-0 pr-10">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-accent" />
-              <DialogTitle className="text-base font-bold">
+              <DialogTitle className="text-base font-bold text-foreground">
                 {isEditing ? "Edit Jadwal Sesi Latihan" : "Buat Jadwal Sesi Latihan"}
               </DialogTitle>
             </div>
-          </DialogHeader>
 
-          <form onSubmit={scheduleMode === "RECURRING" ? handlePreviewRecurring : handleSubmit} className="space-y-4 text-xs">
-            {/* Mode Pembuatan Sesi (Hanya saat membuat sesi baru) */}
+            {/* Mode Pembuatan Sesi (Selalu terlihat & bisa diubah kapan saja) */}
             {!isEditing && (
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-1.5 p-1 bg-surface-2 rounded-xl border border-border mt-3">
                 <button
                   type="button"
                   onClick={() => setScheduleMode("SINGLE")}
-                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[40px] ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[36px] ${
                     scheduleMode === "SINGLE"
-                      ? "bg-white text-indigo-700 shadow-2xs border border-slate-200"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-surface-1 text-accent shadow-xs border border-border"
+                      : "text-muted hover:text-foreground"
                   }`}
                 >
                   <CalendarDays className="h-4 w-4" />
@@ -354,10 +356,10 @@ export function ScheduleDialogForm({
                 <button
                   type="button"
                   onClick={() => setScheduleMode("RECURRING")}
-                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[40px] ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition min-h-[36px] ${
                     scheduleMode === "RECURRING"
-                      ? "bg-white text-indigo-700 shadow-2xs border border-slate-200"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-surface-1 text-accent shadow-xs border border-border"
+                      : "text-muted hover:text-foreground"
                   }`}
                 >
                   <Repeat className="h-4 w-4" />
@@ -365,6 +367,10 @@ export function ScheduleDialogForm({
                 </button>
               </div>
             )}
+          </DialogHeader>
+
+          <form onSubmit={scheduleMode === "RECURRING" ? handlePreviewRecurring : handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
 
             {/* Judul Sesi */}
             <div>
@@ -448,58 +454,70 @@ export function ScheduleDialogForm({
               </div>
             )}
 
-            {/* Atlet Selection (Multi-select with search) */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-medium text-foreground flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5 text-muted" />
-                  Pilih Atlet (Private / Group) <span className="text-danger">*</span>
-                </label>
-                {selectedAthleteIds.length > 0 && (
-                  <Badge variant="accent" className="text-[10px]">
-                    {selectedAthleteIds.length} atlet terpilih
-                  </Badge>
-                )}
-              </div>
+            {/* Atlet Selection (Multi-select with search) - Disembunyikan saat Slot Libur/Terkunci */}
+            {slotType !== "TERKUNCI" ? (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-medium text-foreground flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-muted" />
+                    Pilih Atlet (Private / Group) <span className="text-danger">*</span>
+                  </label>
+                  {selectedAthleteIds.length > 0 && (
+                    <Badge variant="accent" className="text-[10px]">
+                      {selectedAthleteIds.length} atlet terpilih
+                    </Badge>
+                  )}
+                </div>
 
-              <Input
-                type="text"
-                placeholder="Cari nama atlet..."
-                value={athleteSearch}
-                onChange={(e) => setAthleteSearch(e.target.value)}
-                className="mb-2 text-xs py-1"
-              />
+                <Input
+                  type="text"
+                  placeholder="Cari nama atlet..."
+                  value={athleteSearch}
+                  onChange={(e) => setAthleteSearch(e.target.value)}
+                  className="mb-2 text-xs py-1"
+                />
 
-              <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-surface-2/50 p-2 space-y-1 divide-y divide-border/30">
-                {filteredAthletes.length === 0 ? (
-                  <p className="text-muted text-center py-2 text-xs">
-                    Tidak ada atlet ditemukan
-                  </p>
-                ) : (
-                  filteredAthletes.map((a) => {
-                    const isSelected = selectedAthleteIds.includes(a.id);
-                    return (
-                      <label
-                        key={a.id}
-                        className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors select-none"
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleAthlete(a.id)}
-                            className="rounded border-border text-accent focus:ring-accent"
-                          />
-                          <span className="font-medium text-foreground">
-                            {a.fullName}
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  })
-                )}
+                <div className="max-h-36 overflow-y-auto rounded-md border border-border bg-surface-2/50 p-2 space-y-1 divide-y divide-border/30">
+                  {filteredAthletes.length === 0 ? (
+                    <p className="text-muted text-center py-2 text-xs">
+                      Tidak ada atlet ditemukan
+                    </p>
+                  ) : (
+                    filteredAthletes.map((a) => {
+                      const isSelected = selectedAthleteIds.includes(a.id);
+                      return (
+                        <label
+                          key={a.id}
+                          className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors select-none"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleAthlete(a.id)}
+                              className="rounded border-border text-accent focus:ring-accent"
+                            />
+                            <span className="font-medium text-foreground">
+                              {a.fullName}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-3.5 space-y-1 text-xs">
+                <div className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-rose-500 inline-block animate-pulse" />
+                  Slot Libur / Istirahat Pelatih (Off)
+                </div>
+                <p className="text-muted leading-relaxed text-[11px]">
+                  Slot ini berfungsi mengunci kalender pelatih agar tidak dapat dijadwalkan sesi lain di jam ini (tanpa perlu memilih atlet binaan).
+                </p>
+              </div>
+            )}
 
             {/* Waktu & Pengaturan Jadwal */}
             {scheduleMode === "SINGLE" ? (
@@ -716,8 +734,10 @@ export function ScheduleDialogForm({
               />
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-2 pt-3 border-t border-border mt-4">
+            </div>
+
+            {/* Action Buttons (Sticky Footer) */}
+            <div className="flex items-center justify-end gap-2 p-3 sm:p-4 border-t border-border bg-surface-1 shrink-0">
               <Button
                 type="button"
                 variant="outline"

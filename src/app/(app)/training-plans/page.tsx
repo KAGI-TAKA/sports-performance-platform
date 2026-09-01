@@ -30,9 +30,9 @@ export default async function TrainingPlansPage({
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
-          <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
+          <h1 className="font-display text-xl font-bold text-foreground tracking-tight sm:text-2xl">
             Step 03 — Program &amp; Rencana Latihan
           </h1>
           <p className="mt-0.5 text-xs text-muted">
@@ -40,7 +40,7 @@ export default async function TrainingPlansPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/training-plans/exercises"
             className="inline-flex items-center gap-2 rounded-lg bg-surface-2 border border-border px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-surface-3 transition-colors"
@@ -52,10 +52,10 @@ export default async function TrainingPlansPage({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-3 text-xs">
+      <div className="flex items-center gap-2 border-b border-border pb-3 text-xs overflow-x-auto no-scrollbar">
         <Link
           href="/training-plans"
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition shrink-0 ${
             type === "ALL"
               ? "bg-accent text-white"
               : "bg-surface-2 text-muted hover:text-foreground"
@@ -66,7 +66,7 @@ export default async function TrainingPlansPage({
         </Link>
         <Link
           href="/training-plans?type=TEMPLATE"
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition shrink-0 ${
             type === "TEMPLATE"
               ? "bg-accent text-white"
               : "bg-surface-2 text-muted hover:text-foreground"
@@ -77,7 +77,7 @@ export default async function TrainingPlansPage({
         </Link>
         <Link
           href="/training-plans?type=ATHLETE"
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition shrink-0 ${
             type === "ATHLETE"
               ? "bg-accent text-white"
               : "bg-surface-2 text-muted hover:text-foreground"

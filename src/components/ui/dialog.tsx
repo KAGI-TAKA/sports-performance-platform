@@ -54,7 +54,7 @@ const DialogContent = React.forwardRef<
     role="dialog"
     aria-modal="true"
     className={cn(
-      "relative w-full rounded-xl border border-border bg-surface-1 p-6 shadow-xl animate-in zoom-in-95 duration-150",
+      "relative w-full max-h-[90vh] flex flex-col rounded-xl border border-border bg-surface-1 shadow-xl animate-in zoom-in-95 duration-150 overflow-hidden",
       className
     )}
     {...props}
@@ -63,7 +63,7 @@ const DialogContent = React.forwardRef<
     {onClose && (
       <button
         onClick={onClose}
-        className="absolute right-4 top-4 rounded-sm text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
+        className="absolute right-3.5 top-3.5 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-muted hover:text-foreground hover:bg-surface-3 transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
         aria-label="Tutup modal"
       >
         <X className="h-4 w-4" />

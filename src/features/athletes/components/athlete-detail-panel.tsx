@@ -112,70 +112,74 @@ export function AthleteDetailPanel({
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Profile Header */}
-      <div className="flex items-start gap-3">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-display text-base font-bold text-white shadow-sm"
-          style={{
-            background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))",
-          }}
-        >
-          {athlete.fullName
-            .split(" ")
-            .map((w) => w[0])
-            .slice(0, 2)
-            .join("")}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-display text-base font-bold text-foreground truncate">
-            {athlete.fullName}
-          </h2>
-          <p className="mt-0.5 text-xs text-muted font-medium">
-            Cabang: <span className="text-foreground font-semibold">{athlete.sportCategory ?? "Multi-Sport / Atletik"}</span> · Level: <span className="text-foreground font-semibold">{athlete.competitionLevel ?? "Pemula"}</span>
-            {age != null && ` · ${age} tahun`}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted">
-            {athlete.gender === "FEMALE" ? "Perempuan" : "Laki-laki"} ·{" "}
-            Lahir {formatDate(athlete.dateOfBirth)}
-          </p>
-
-          {/* Dual Pathway Tag */}
-          <div className="mt-1 flex items-center gap-1.5">
-            {(age ?? 0) < 11 || (athlete.sportCategory && athlete.sportCategory.toLowerCase().includes("mfd")) ? (
-              <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                Jalur: Multilateral Athletic Development (MFD)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                Jalur: Youth Athlete Performance
-              </span>
-            )}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3.5 pb-2 border-b border-border/60">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-display text-base font-bold text-white shadow-sm"
+            style={{
+              background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))",
+            }}
+          >
+            {athlete.fullName
+              .split(" ")
+              .map((w) => w[0])
+              .slice(0, 2)
+              .join("")}
           </div>
-
-          {/* Parent contact info */}
-          {(athlete.parentName || athlete.parentPhone) && (
-            <p className="mt-1 text-[11px] text-accent font-medium">
-              Ortu: {athlete.parentName || "—"}{" "}
-              {athlete.parentPhone && `(${athlete.parentPhone})`}
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-base font-bold text-foreground truncate">
+              {athlete.fullName}
+            </h2>
+            <p className="mt-0.5 text-xs text-muted font-medium leading-relaxed">
+              Cabang: <span className="text-foreground font-semibold">{athlete.sportCategory ?? "Multi-Sport / Atletik"}</span> · Level: <span className="text-foreground font-semibold">{athlete.competitionLevel ?? "Pemula"}</span>
+              {age != null && ` · ${age} tahun`}
             </p>
-          )}
+            <p className="mt-0.5 text-[11px] text-muted">
+              {athlete.gender === "FEMALE" ? "Perempuan" : "Laki-laki"} ·{" "}
+              Lahir {formatDate(athlete.dateOfBirth)}
+            </p>
 
-          {/* Allergies / Health Notes */}
-          {(athlete.allergies || athlete.healthNotes) && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {athlete.allergies && (
-                <span className="rounded bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-rose-400">
-                  Alergi: {athlete.allergies}
+            {/* Dual Pathway Tag */}
+            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+              {(age ?? 0) < 11 || (athlete.sportCategory && athlete.sportCategory.toLowerCase().includes("mfd")) ? (
+                <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  Jalur: Multilateral Athletic Development (MFD)
                 </span>
-              )}
-              {athlete.healthNotes && (
-                <span className="rounded bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
-                  Kesehatan: {athlete.healthNotes}
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                  Jalur: Youth Athlete Performance
                 </span>
               )}
             </div>
-          )}
+
+            {/* Parent contact info */}
+            {(athlete.parentName || athlete.parentPhone) && (
+              <p className="mt-1 text-[11px] text-accent font-medium">
+                Ortu: {athlete.parentName || "—"}{" "}
+                {athlete.parentPhone && `(${athlete.parentPhone})`}
+              </p>
+            )}
+
+            {/* Allergies / Health Notes */}
+            {(athlete.allergies || athlete.healthNotes) && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {athlete.allergies && (
+                  <span className="rounded bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-rose-400">
+                    Alergi: {athlete.allergies}
+                  </span>
+                )}
+                {athlete.healthNotes && (
+                  <span className="rounded bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
+                    Kesehatan: {athlete.healthNotes}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 self-stretch sm:self-start justify-end shrink-0 pt-1 sm:pt-0">
           <GuidanceDialogForm
             athletes={athletes && athletes.length > 0 ? athletes : [{ id: athlete.id, fullName: athlete.fullName }]}
             defaultAthleteId={athlete.id}
@@ -183,7 +187,7 @@ export function AthleteDetailPanel({
           />
           <Link
             href={`/athletes/${athlete.id}/edit`}
-            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-secondary hover:text-foreground hover:bg-surface-2 transition"
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-secondary hover:text-foreground hover:bg-surface-2 transition shrink-0"
           >
             Edit
           </Link>
