@@ -23,9 +23,16 @@ export async function submitRescheduleRequestAction(
     return { success: false, error: "Alasan reschedule minimal harus 5 karakter." };
   }
 
-  // Verify session exists and belongs to this org and is assigned to this coach
+  // Verify session exists and belongs to this org and is assigned to this coach/executor
   const session = await prisma.scheduleSession.findFirst({
-    where: { id: sessionId, organizationId: ctx.organizationId, coachId: ctx.memberId },
+    where: {
+      id: sessionId,
+      organizationId: ctx.organizationId,
+      OR: [
+        { executorId: ctx.memberId },
+        { executorId: null, coachId: ctx.memberId },
+      ],
+    },
     select: { id: true, status: true },
   });
 

@@ -10,6 +10,7 @@ export const provisionUserSchema = z
       .email("Format email tidak valid")
       .optional()
       .or(z.literal("")),
+    image: z.string().optional().or(z.literal("")),
     username: z
       .string()
       .max(30, "Username maksimal 30 karakter")
@@ -95,6 +96,7 @@ export interface UserManagementItem {
   memberId: string;
   name: string;
   email: string;
+  image?: string | null;
   role: MemberRole;
   createdAt: Date;
   username?: string;
@@ -111,6 +113,7 @@ export const updateUserProfileSchema = z.object({
   memberId: z.string().min(1, "Member ID wajib diisi"),
   name: z.string().min(2, "Nama minimal 2 karakter").max(100),
   email: z.string().email("Format email tidak valid").optional().or(z.literal("")),
+  image: z.string().optional().or(z.literal("")).nullable(),
   username: z
     .string()
     .min(3, "Username minimal 3 karakter")

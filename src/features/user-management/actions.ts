@@ -80,7 +80,13 @@ export async function provisionUser(
             name: name.trim(),
             email: normalizedEmail,
             emailVerified: false,
+            image: parsed.image && parsed.image.trim() ? parsed.image.trim() : null,
           },
+        });
+      } else if (parsed.image && parsed.image.trim()) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { image: parsed.image.trim() },
         });
       }
 
@@ -179,7 +185,13 @@ export async function provisionUser(
             name: name.trim(),
             email: normalizedEmail,
             emailVerified: false,
+            image: parsed.image && parsed.image.trim() ? parsed.image.trim() : null,
           },
+        });
+      } else if (parsed.image && parsed.image.trim()) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { image: parsed.image.trim() },
         });
       }
 
@@ -366,7 +378,7 @@ export async function updateUserProfile(
     };
   }
 
-  const { userId, memberId, name, email, username, role } = validation.data;
+  const { userId, memberId, name, email, image, username, role } = validation.data;
 
   try {
     const member = await prisma.member.findFirst({
@@ -379,7 +391,10 @@ export async function updateUserProfile(
     }
 
     // 1. Update User basic info
-    const updateUserData: { name: string; email?: string } = { name: name.trim() };
+    const updateUserData: { name: string; email?: string; image?: string | null } = { name: name.trim() };
+    if (image !== undefined) {
+      updateUserData.image = image && image.trim() ? image.trim() : null;
+    }
     if (email && email.trim() && !member.user.email.endsWith("@athlete.internal")) {
       const normalizedEmail = email.toLowerCase().trim();
       const existingUser = await prisma.user.findUnique({
@@ -446,6 +461,39 @@ export async function updateUserProfile(
     return {
       success: false,
       error: (err as Error).message || "Gagal memperbarui profil pengguna.",
+    };
+  }
+}
+
+export async function updateMyProfile(input: {
+  name: string;
+  image?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const ctx = await requireOrgContext();
+
+  if (!input.name || input.name.trim().length < 2) {
+    return { success: false, error: "Nama lengkap minimal 2 karakter." };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: ctx.userId },
+      data: {
+        name: input.name.trim(),
+        image: input.image !== undefined ? (input.image && input.image.trim() ? input.image.trim() : null) : undefined,
+      },
+    });
+
+    revalidatePath("/settings");
+    revalidatePath("/users");
+    revalidatePath("/dashboard");
+    revalidatePath("/schedule");
+    return { success: true };
+  } catch (err) {
+    console.error("[updateMyProfile] Gagal:", err);
+    return {
+      success: false,
+      error: (err as Error).message || "Gagal memperbarui profil akun Anda.",
     };
   }
 }
@@ -869,6 +917,7 @@ export async function listOrganizationUsers(): Promise<UserManagementItem[]> {
       memberId: m.id,
       name: m.user.name,
       email: m.user.email,
+      image: m.user.image,
       role: m.role as MemberRole,
       createdAt: m.createdAt,
       username,

@@ -8,6 +8,7 @@ export async function listScheduleSessions(
     startDate?: Date;
     endDate?: Date;
     coachId?: string;
+    executorId?: string;
     athleteId?: string;
     status?: ScheduleStatus;
   }
@@ -26,6 +27,13 @@ export async function listScheduleSessions(
     where.coachId = opts.coachId;
   }
 
+  if (opts?.executorId && opts.executorId !== "ALL") {
+    where.OR = [
+      { executorId: opts.executorId },
+      { executorId: null, coachId: opts.executorId },
+    ];
+  }
+
   if (opts?.status) {
     where.status = opts.status;
   }
@@ -42,6 +50,13 @@ export async function listScheduleSessions(
     where,
     include: {
       coach: {
+        include: {
+          user: {
+            select: { name: true, email: true, image: true },
+          },
+        },
+      },
+      executor: {
         include: {
           user: {
             select: { name: true, email: true, image: true },
@@ -106,6 +121,13 @@ export async function getScheduleSessionById(
           },
         },
       },
+      executor: {
+        include: {
+          user: {
+            select: { name: true, email: true, image: true },
+          },
+        },
+      },
       trainingPlan: {
         include: {
           exercises: {
@@ -116,6 +138,14 @@ export async function getScheduleSessionById(
       athletes: {
         include: {
           athlete: true,
+        },
+      },
+      rescheduleRequests: {
+        select: {
+          id: true,
+          status: true,
+          reason: true,
+          requestedByMemberId: true,
         },
       },
     },

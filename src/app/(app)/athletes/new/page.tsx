@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireOrgContext } from "@/lib/auth-context";
+import { listCoachesForOrg } from "@/features/schedule/queries";
 import { AthleteForm } from "@/features/athletes/components/athlete-form";
 
 export default async function NewAthletePage() {
@@ -8,6 +9,13 @@ export default async function NewAthletePage() {
   if (ctx.role !== "admin" && ctx.role !== "head_coach") {
     redirect("/athletes");
   }
+
+  const coachesRaw = await listCoachesForOrg(ctx.organizationId);
+  const coaches = coachesRaw.map((m) => ({
+    id: m.id,
+    name: m.user.name ?? "Pelatih",
+    role: m.role,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl p-7">
@@ -29,7 +37,7 @@ export default async function NewAthletePage() {
       </div>
 
       <div className="rounded-lg border border-border bg-surface-1 p-6">
-        <AthleteForm />
+        <AthleteForm coaches={coaches} />
       </div>
     </div>
   );

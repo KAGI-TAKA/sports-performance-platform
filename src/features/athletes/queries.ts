@@ -57,13 +57,21 @@ export async function listAthletes(
     ...(birthRange ? { dateOfBirth: birthRange } : {}),
     ...(opts?.assignedCoachMemberId
       ? {
-          scheduleSessions: {
-            some: {
-              session: {
-                coachId: opts.assignedCoachMemberId,
+          OR: [
+            { assignedCoachId: opts.assignedCoachMemberId },
+            {
+              scheduleSessions: {
+                some: {
+                  session: {
+                    OR: [
+                      { executorId: opts.assignedCoachMemberId },
+                      { executorId: null, coachId: opts.assignedCoachMemberId },
+                    ],
+                  },
+                },
               },
             },
-          },
+          ],
         }
       : {}),
   };
@@ -75,6 +83,13 @@ export async function listAthletes(
       take: ATHLETES_PER_PAGE,
       skip,
       include: {
+        assignedCoach: {
+          include: {
+            user: {
+              select: { name: true, image: true },
+            },
+          },
+        },
         assessments: {
           where: { status: "COMPLETED" },
           orderBy: { assessmentDate: "desc" },
@@ -107,17 +122,32 @@ export async function getAthleteById(
       organizationId,
       ...(assignedCoachMemberId
         ? {
-            scheduleSessions: {
-              some: {
-                session: {
-                  coachId: assignedCoachMemberId,
+            OR: [
+              { assignedCoachId: assignedCoachMemberId },
+              {
+                scheduleSessions: {
+                  some: {
+                    session: {
+                      OR: [
+                        { executorId: assignedCoachMemberId },
+                        { executorId: null, coachId: assignedCoachMemberId },
+                      ],
+                    },
+                  },
                 },
               },
-            },
+            ],
           }
         : {}),
     },
     include: {
+      assignedCoach: {
+        include: {
+          user: {
+            select: { name: true, email: true, image: true },
+          },
+        },
+      },
       injuryHistories: { orderBy: { injuryDate: "desc" } },
       assessments: {
         orderBy: { assessmentDate: "desc" },
@@ -143,17 +173,32 @@ export async function getAthleteFullProfile(
       organizationId,
       ...(assignedCoachMemberId
         ? {
-            scheduleSessions: {
-              some: {
-                session: {
-                  coachId: assignedCoachMemberId,
+            OR: [
+              { assignedCoachId: assignedCoachMemberId },
+              {
+                scheduleSessions: {
+                  some: {
+                    session: {
+                      OR: [
+                        { executorId: assignedCoachMemberId },
+                        { executorId: null, coachId: assignedCoachMemberId },
+                      ],
+                    },
+                  },
                 },
               },
-            },
+            ],
           }
         : {}),
     },
     include: {
+      assignedCoach: {
+        include: {
+          user: {
+            select: { name: true, email: true, image: true },
+          },
+        },
+      },
       injuryHistories: { orderBy: { injuryDate: "desc" } },
       assessments: {
         orderBy: { assessmentDate: "desc" },

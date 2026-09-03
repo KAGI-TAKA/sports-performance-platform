@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { ScheduleStatus } from "@prisma/client";
 import type { ScheduleSessionItem } from "./schedule-agenda-view";
@@ -22,9 +22,12 @@ import {
   Eye,
   Copy,
   RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { AttendanceSessionDialog } from "@/features/attendance/components/attendance-session-dialog";
 import { CloneScheduleDialog } from "./clone-schedule-dialog";
+import { toLocalDateStr } from "@/features/schedule/utils";
 
 interface ScheduleWeeklyMatrixViewProps {
   sessions: ScheduleSessionItem[];
@@ -33,29 +36,17 @@ interface ScheduleWeeklyMatrixViewProps {
   userRole?: string;
 }
 
-const TIME_SLOTS = [
-  "08:00",
-  "09:15",
-  "11:00",
-  "12:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
-  "20:00",
-];
+const DEFAULT_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
-const DAYS_OF_WEEK = [
-  { key: 1, nameEn: "Monday", nameId: "Senin" },
-  { key: 2, nameEn: "Tuesday", nameId: "Selasa" },
-  { key: 3, nameEn: "Wednesday", nameId: "Rabu" },
-  { key: 4, nameEn: "Thursday", nameId: "Kamis" },
-  { key: 5, nameEn: "Friday", nameId: "Jumat" },
-  { key: 6, nameEn: "Saturday", nameId: "Sabtu" },
-  { key: 0, nameEn: "Sunday", nameId: "Minggu" },
-];
+// Find Monday of the current week (Senin)
+function getMondayOfWeek(d: Date = new Date()): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // If Sunday (0), go back 6 days to Monday
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
 export function ScheduleWeeklyMatrixView({
   sessions,
@@ -70,13 +61,65 @@ export function ScheduleWeeklyMatrixView({
   const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
   const [createSlotData, setCreateSlotData] = useState<{ startTime: Date; endTime: Date } | null>(null);
 
-  // Helper to construct a date on the current week for a given dayKey (0=Sun..6=Sat) and slotTime "08:00"
-  const getSlotDate = (dayKey: number, slotTime: string) => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const distance = (dayKey + 7 - currentDay) % 7;
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + distance);
+  // Active week anchor (Senin / Monday 00:00:00)
+  const [activeWeekMonday, setActiveWeekMonday] = useState<Date>(() => getMondayOfWeek());
+
+  // Generate 7 days of the active week with exact dates & labels (Senin s/d Minggu)
+  const weekDays = useMemo(() => {
+    const days = [];
+    const todayStr = toLocalDateStr(new Date());
+
+    const ID_DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const EN_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(activeWeekMonday);
+      d.setDate(activeWeekMonday.getDate() + i);
+      const dateStr = toLocalDateStr(d);
+      const dayIndex = d.getDay();
+      const formattedDate = d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+      const isToday = dateStr === todayStr;
+
+      days.push({
+        date: d,
+        dateStr,
+        dayIndex,
+        dayNameId: ID_DAYS[dayIndex],
+        dayNameEn: EN_DAYS[dayIndex],
+        formattedDate,
+        isToday,
+      });
+    }
+    return days;
+  }, [activeWeekMonday]);
+
+  // Navigate between weeks
+  const handlePrevWeek = () => {
+    const prev = new Date(activeWeekMonday);
+    prev.setDate(activeWeekMonday.getDate() - 7);
+    setActiveWeekMonday(prev);
+  };
+
+  const handleNextWeek = () => {
+    const next = new Date(activeWeekMonday);
+    next.setDate(activeWeekMonday.getDate() + 7);
+    setActiveWeekMonday(next);
+  };
+
+  const handleTodayWeek = () => {
+    setActiveWeekMonday(getMondayOfWeek());
+  };
+
+  // Dynamically compute all active hours needed for sessions + standard hours
+  const timeSlots = useMemo(() => {
+    const sessionHours = sessions.map((s) => new Date(s.startTime).getHours());
+    const allHours = Array.from(new Set([...DEFAULT_HOURS, ...sessionHours])).sort((a, b) => a - b);
+    return allHours.map((h) => `${String(h).padStart(2, "0")}:00`);
+  }, [sessions]);
+
+  // Helper to construct a date on this specific column day for slotTime "08:00"
+  const getSlotDate = (columnDate: Date, slotTime: string) => {
+    const targetDate = new Date(columnDate);
     const [h, m] = slotTime.split(":").map(Number);
     targetDate.setHours(h, m || 0, 0, 0);
 
@@ -85,25 +128,16 @@ export function ScheduleWeeklyMatrixView({
     return { startTime: targetDate, endTime: endDate };
   };
 
-  // Group sessions by day of week (0=Sun..6=Sat) and find matching hour slot
-  const getSessionsForSlot = (dayKey: number, slotTime: string) => {
-    const [slotHour, slotMin] = slotTime.split(":").map(Number);
+  // Match sessions for an exact date and hour slot
+  const getSessionsForSlot = (dateStr: string, slotTime: string) => {
+    const slotHour = parseInt(slotTime.split(":")[0], 10);
 
     return sessions.filter((s) => {
-      const sessionDate = new Date(s.startTime);
-      const sessionDay = sessionDate.getDay();
-      if (sessionDay !== dayKey) return false;
+      const sDateStr = toLocalDateStr(new Date(s.startTime));
+      if (sDateStr !== dateStr) return false;
 
-      const sHour = sessionDate.getHours();
-      const sMin = sessionDate.getMinutes();
-
-      // Toleransi slot matching: within 45 mins of slot start
-      const slotTotalMinutes = slotHour * 60 + (slotMin || 0);
-      const sessionTotalMinutes = sHour * 60 + sMin;
-      return (
-        sessionTotalMinutes >= slotTotalMinutes - 15 &&
-        sessionTotalMinutes <= slotTotalMinutes + 45
-      );
+      const sHour = new Date(s.startTime).getHours();
+      return sHour === slotHour;
     });
   };
 
@@ -112,7 +146,6 @@ export function ScheduleWeeklyMatrixView({
     if (session.status === "CANCELLED" || session.status === "NO_SHOW") {
       return "bg-rose-500 text-white border-rose-600 hover:bg-rose-600";
     }
-    // Check if notes indicate flexibility or off-schedule
     const notesLower = (session.notes || "").toLowerCase();
     if (notesLower.includes("off") || notesLower.includes("tutup") || notesLower.includes("full")) {
       return "bg-rose-500 text-white border-rose-600 hover:bg-rose-600";
@@ -120,69 +153,91 @@ export function ScheduleWeeklyMatrixView({
     if (notesLower.includes("fleksibel") || notesLower.includes("reschedule") || notesLower.includes("tentative") || notesLower.includes("60%")) {
       return "bg-sky-400 text-slate-950 border-sky-500 hover:bg-sky-300 font-semibold";
     }
-    // Default high-certainty schedule (Green)
     return "bg-emerald-400 text-slate-950 border-emerald-500 hover:bg-emerald-300 font-semibold";
   };
 
+  const weekEndSunday = new Date(activeWeekMonday);
+  weekEndSunday.setDate(activeWeekMonday.getDate() + 6);
+
+  const rangeTitle = `${weekDays[0]?.formattedDate} – ${weekDays[6]?.formattedDate} ${weekEndSunday.getFullYear()}`;
+
   return (
-    <div className="space-y-6">
-      {/* ── HEADER & LEGEND ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-border shadow-xs">
+    <div className="space-y-4">
+      {/* ── HEADER & WEEK NAVIGATION ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-border shadow-xs">
         <div>
-          <h2 className="font-display text-lg font-bold text-foreground tracking-tight">
+          <h2 className="font-display text-base font-bold text-foreground tracking-tight">
             Peta Jadwal Mingguan (Weekly Timetable)
           </h2>
           <p className="text-xs text-muted mt-0.5">
-            Peta ketersediaan slot &amp; jadwal sesi mingguan tim kepelatihan
+            Rentang Kalender: <strong>{rangeTitle}</strong>
           </p>
         </div>
 
-        {/* Legend Indicators */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-            <span className="h-3 w-3 rounded-full bg-emerald-500 inline-block shrink-0" />
-            <span className="font-semibold text-emerald-900 text-[11px]">
-              90% Bisa Dijadwalkan (Pasti)
-            </span>
-          </div>
+        {/* Week Navigation Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrevWeek}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-surface-1 hover:bg-surface-3 text-xs font-semibold text-secondary transition shadow-2xs"
+            title="Lihat Minggu Sebelumnya"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Minggu Lalu</span>
+          </button>
 
-          <div className="flex items-center gap-1.5 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-            <span className="h-3 w-3 rounded-full bg-sky-400 inline-block shrink-0" />
-            <span className="font-semibold text-sky-900 text-[11px]">
-              60% Bisa Dijadwalkan (Fleksibel)
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={handleTodayWeek}
+            className="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition shadow-2xs"
+          >
+            Minggu Ini
+          </button>
 
-          <div className="flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-            <span className="h-3 w-3 rounded-full bg-rose-500 inline-block shrink-0" />
-            <span className="font-semibold text-rose-900 text-[11px]">
-              Off Jadwal / Terkunci
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={handleNextWeek}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-surface-1 hover:bg-surface-3 text-xs font-semibold text-secondary transition shadow-2xs"
+            title="Lihat Minggu Berikutnya"
+          >
+            <span className="hidden sm:inline">Minggu Depan</span>
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* ── TIMETABLE MATRIX GRID ───────────────────────────────────── */}
       <div className="overflow-x-auto rounded-2xl border border-slate-300 bg-white shadow-sm">
-        <table className="w-full border-collapse text-xs min-w-[760px]">
+        <table className="w-full border-collapse text-xs min-w-[780px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-300 text-slate-800 font-display">
-              <th className="p-3 text-center border-r border-slate-300 w-20 font-bold">
+              <th className="p-2.5 text-center border-r border-slate-300 w-20 font-bold">
                 Time
               </th>
-              {DAYS_OF_WEEK.map((d) => (
+              {weekDays.map((d) => (
                 <th
-                  key={d.key}
-                  className="p-3 text-center border-r border-slate-300 last:border-r-0 font-bold"
+                  key={d.dateStr}
+                  className={`p-2.5 text-center border-r border-slate-300 last:border-r-0 font-bold transition ${
+                    d.isToday ? "bg-indigo-50/80 text-indigo-950" : ""
+                  }`}
                 >
-                  <div>{d.nameEn}</div>
-                  <div className="text-[10px] text-slate-500 font-normal">({d.nameId})</div>
+                  <div className="flex items-center justify-center gap-1">
+                    <span>{d.dayNameId}</span>
+                    {d.isToday && (
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-indigo-600 text-white shadow-2xs">
+                        HARI INI
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 mt-0.5">
+                    {d.formattedDate}
+                  </div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {TIME_SLOTS.map((slot) => (
+            {timeSlots.map((slot) => (
               <tr key={slot} className="hover:bg-slate-50/50 transition-colors">
                 {/* Time Column */}
                 <td className="p-2.5 text-center font-mono font-bold text-slate-700 bg-slate-50 border-r border-slate-300">
@@ -190,16 +245,18 @@ export function ScheduleWeeklyMatrixView({
                 </td>
 
                 {/* Day Columns */}
-                {DAYS_OF_WEEK.map((d) => {
-                  const matchingSessions = getSessionsForSlot(d.key, slot);
+                {weekDays.map((d) => {
+                  const matchingSessions = getSessionsForSlot(d.dateStr, slot);
 
                   return (
                     <td
-                      key={d.key}
-                      className="p-1.5 border-r border-slate-200 last:border-r-0 align-top h-14 min-h-[56px]"
+                      key={d.dateStr}
+                      className={`p-1.5 border-r border-slate-200 last:border-r-0 align-top h-14 min-h-[56px] ${
+                        d.isToday ? "bg-indigo-50/20" : ""
+                      }`}
                     >
                       {matchingSessions.length > 0 ? (
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {matchingSessions.map((s) => {
                             const isPast = new Date(s.endTime) < new Date();
                             const isAssigned = s.coachId === coaches[0]?.id;
@@ -211,20 +268,32 @@ export function ScheduleWeeklyMatrixView({
                                 onClick={() => setSelectedSession(s)}
                                 className={`w-full text-left p-2 rounded-xl transition-all shadow-xs block text-xs space-y-1 ${
                                   s.status === "COMPLETED"
-                                    ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
                                     : s.status === "CANCELLED"
                                     ? "bg-slate-200 text-slate-600 hover:bg-slate-300 line-through"
                                     : isPast
-                                    ? "bg-amber-500 text-white hover:bg-amber-600"
+                                    ? "bg-amber-600 text-white hover:bg-amber-700"
                                     : isAssigned
                                     ? "bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
                                     : "bg-sky-600 text-white hover:bg-sky-700"
                                 }`}
                               >
                                 <div className="font-bold leading-tight line-clamp-1">{s.title}</div>
+                                <div className="text-[10.5px] opacity-95 flex items-center gap-1 font-mono">
+                                  <span>⏰</span>
+                                  <span>
+                                    {new Date(s.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                                    {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                </div>
                                 {s.location && (
                                   <div className="text-[10px] opacity-90 truncate">
                                     📍 {s.location}
+                                  </div>
+                                )}
+                                {s.athletes.length > 0 && (
+                                  <div className="text-[9.5px] opacity-90 truncate">
+                                    👥 {s.athletes.length} Atlet
                                   </div>
                                 )}
                               </button>
@@ -234,9 +303,9 @@ export function ScheduleWeeklyMatrixView({
                       ) : canManagePlanning ? (
                         <button
                           type="button"
-                          onClick={() => setCreateSlotData(getSlotDate(d.key, slot))}
+                          onClick={() => setCreateSlotData(getSlotDate(d.date, slot))}
                           className="group h-full w-full rounded flex items-center justify-center text-slate-300 hover:text-indigo-600 hover:bg-indigo-50/70 transition"
-                          title={`Jadwalkan sesi ${d.nameId} pukul ${slot}`}
+                          title={`Jadwalkan sesi ${d.dayNameId} (${d.formattedDate}) pukul ${slot}`}
                         >
                           <Plus className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
@@ -251,6 +320,60 @@ export function ScheduleWeeklyMatrixView({
           </tbody>
         </table>
       </div>
+
+      {/* ── LIST SUMMARY SESI MINGGU INI ─────────────────────────────── */}
+      {sessions.length > 0 && (
+        <div className="rounded-2xl border border-border bg-white p-5 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border pb-2.5">
+            <h3 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-indigo-600" />
+              <span>Daftar Sesi Terjadwal Minggu Ini ({sessions.length})</span>
+            </h3>
+            <span className="text-xs text-muted">
+              Klik salah satu sesi untuk melihat detail atau memulai presensi
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {sessions.map((s) => {
+              const isPast = new Date(s.endTime) < new Date();
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedSession(s)}
+                  className="rounded-xl border border-border bg-surface-1 p-3 hover:border-indigo-400 hover:bg-surface-2 transition cursor-pointer space-y-2 shadow-2xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-bold text-xs text-foreground line-clamp-1">{s.title}</h4>
+                    <Badge variant="accent" className="text-[10px] shrink-0">{s.status}</Badge>
+                  </div>
+
+                  <div className="space-y-1 text-[11px] text-muted font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3 text-indigo-500 shrink-0" />
+                      <span>
+                        {new Date(s.startTime).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })},{" "}
+                        {new Date(s.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                        {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {s.location && (
+                      <div className="flex items-center gap-1.5 text-secondary">
+                        <MapPin className="h-3 w-3 text-indigo-500 shrink-0" />
+                        <span className="truncate">{s.location}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-secondary">
+                      <Users className="h-3 w-3 text-indigo-500 shrink-0" />
+                      <span>{s.athletes.length} Atlet Terdaftar</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── SESSION DETAIL MODAL ────────────────────────────────────── */}
       {selectedSession && (

@@ -42,6 +42,7 @@ export async function createScheduleSession(formData: FormData) {
     startTime: formData.get("startTime") as string,
     endTime: formData.get("endTime") as string,
     coachId: formData.get("coachId") as string,
+    executorId: (formData.get("executorId") as string) || undefined,
     athleteIds: athleteIdsRaw.map(String),
     location: (formData.get("location") as string) || undefined,
     notes: (formData.get("notes") as string) || undefined,
@@ -55,7 +56,7 @@ export async function createScheduleSession(formData: FormData) {
     };
   }
 
-  const { title, startTime, endTime, coachId, athleteIds, location, notes } =
+  const { title, startTime, endTime, coachId, executorId, athleteIds, location, notes } =
     parseResult.data;
 
   // Validate start vs end time using centralized timezone conversion (Asia/Jakarta -> UTC)
@@ -148,6 +149,7 @@ export async function createScheduleSession(formData: FormData) {
       data: {
         organizationId: ctx.organizationId,
         coachId,
+        executorId: executorId || coachId,
         trainingPlanId: trainingPlanId || null,
         title,
         startTime: start,
@@ -197,6 +199,7 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
     startTime: formData.get("startTime") as string,
     endTime: formData.get("endTime") as string,
     coachId: formData.get("coachId") as string,
+    executorId: (formData.get("executorId") as string) || undefined,
     athleteIds: athleteIdsRaw.map(String),
     location: (formData.get("location") as string) || undefined,
     notes: (formData.get("notes") as string) || undefined,
@@ -211,7 +214,7 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
     };
   }
 
-  const { title, startTime, endTime, coachId, athleteIds, location, notes, status } =
+  const { title, startTime, endTime, coachId, executorId, athleteIds, location, notes, status } =
     parseResult.data;
 
   // Validate start vs end time using centralized timezone conversion (Asia/Jakarta -> UTC)
@@ -314,6 +317,7 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
         data: {
           title,
           coachId,
+          executorId: executorId !== undefined ? (executorId || coachId) : undefined,
           trainingPlanId: effectivePlanId,
           startTime: start,
           endTime: end,
@@ -335,6 +339,108 @@ export async function updateScheduleSession(sessionId: string, formData: FormDat
   } catch (err: unknown) {
     console.error("Failed to update schedule session:", err);
     return { success: false, error: "Gagal memperbarui jadwal sesi latihan" };
+  }
+}
+
+/**
+ * Head Coach / Admin Takeover: Takes over execution authority for a session.
+ */
+export async function takeOverScheduleSessionAction(sessionId: string) {
+  const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mengambil alih sesi latihan.",
+    };
+  }
+
+  const session = await prisma.scheduleSession.findFirst({
+    where: { id: sessionId, organizationId: ctx.organizationId },
+  });
+
+  if (!session) {
+    return { success: false, error: "Jadwal tidak ditemukan atau akses ditolak." };
+  }
+
+  if (session.status === "COMPLETED" || session.status === "CANCELLED") {
+    return {
+      success: false,
+      error: "Tidak dapat mengambil alih sesi yang sudah selesai atau dibatalkan.",
+    };
+  }
+
+  try {
+    await prisma.scheduleSession.update({
+      where: { id: sessionId },
+      data: {
+        executorId: ctx.memberId,
+      },
+    });
+
+    revalidatePath("/schedule");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to take over session:", err);
+    return { success: false, error: "Gagal mengambil alih sesi latihan." };
+  }
+}
+
+/**
+ * Head Coach / Admin Reassign: Reassigns the session executor to another coach/assistant.
+ */
+export async function reassignScheduleSessionExecutorAction(
+  sessionId: string,
+  targetExecutorId: string
+) {
+  const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mengalihkan pelaksana sesi.",
+    };
+  }
+
+  const [session, targetMember] = await Promise.all([
+    prisma.scheduleSession.findFirst({
+      where: { id: sessionId, organizationId: ctx.organizationId },
+    }),
+    prisma.member.findFirst({
+      where: { id: targetExecutorId, organizationId: ctx.organizationId },
+    }),
+  ]);
+
+  if (!session) {
+    return { success: false, error: "Jadwal tidak ditemukan atau akses ditolak." };
+  }
+
+  if (!targetMember) {
+    return { success: false, error: "Pelatih tujuan tidak ditemukan di organisasi ini." };
+  }
+
+  if (session.status === "COMPLETED" || session.status === "CANCELLED") {
+    return {
+      success: false,
+      error: "Tidak dapat mengubah pelaksana untuk sesi yang sudah selesai atau dibatalkan.",
+    };
+  }
+
+  try {
+    await prisma.scheduleSession.update({
+      where: { id: sessionId },
+      data: {
+        executorId: targetExecutorId,
+      },
+    });
+
+    revalidatePath("/schedule");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to reassign session executor:", err);
+    return { success: false, error: "Gagal mengalihkan pelaksana sesi latihan." };
   }
 }
 

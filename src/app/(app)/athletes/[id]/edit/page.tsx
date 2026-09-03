@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAthleteById } from "@/features/athletes/queries";
+import { listCoachesForOrg } from "@/features/schedule/queries";
 import { AthleteForm } from "@/features/athletes/components/athlete-form";
 
 export default async function EditAthletePage({
@@ -16,10 +17,20 @@ export default async function EditAthletePage({
     redirect(`/athletes?athleteId=${id}`);
   }
 
-  const athlete = await getAthleteById(ctx.organizationId, id);
+  const [athlete, coachesRaw] = await Promise.all([
+    getAthleteById(ctx.organizationId, id),
+    listCoachesForOrg(ctx.organizationId),
+  ]);
+
   if (!athlete) {
     notFound();
   }
+
+  const coaches = coachesRaw.map((m) => ({
+    id: m.id,
+    name: m.user.name ?? "Pelatih",
+    role: m.role,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl p-7">
@@ -42,6 +53,7 @@ export default async function EditAthletePage({
 
       <div className="rounded-lg border border-border bg-surface-1 p-6">
         <AthleteForm
+          coaches={coaches}
           initialData={{
             id: athlete.id,
             fullName: athlete.fullName,
@@ -50,6 +62,7 @@ export default async function EditAthletePage({
             heightCm: athlete.heightCm ? Number(athlete.heightCm) : null,
             weightKg: athlete.weightKg ? Number(athlete.weightKg) : null,
             competitionLevel: athlete.competitionLevel,
+            assignedCoachId: athlete.assignedCoachId,
           }}
         />
       </div>

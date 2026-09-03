@@ -131,6 +131,8 @@ model Member {
   goalsCreated            AthleteGoal[]         @relation("GoalCreator")
   rescheduleRequests      RescheduleRequest[]   @relation("RescheduleRequester")
   rescheduleReviews       RescheduleRequest[]   @relation("RescheduleReviewer")
+  assignedAthletes        Athlete[]             @relation("AthleteAssignedCoach")
+  scheduleSessionsExecuted ScheduleSession[]    @relation("SessionExecutor")
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -200,12 +202,14 @@ model Athlete {
   healthNotes  String?
 
   competitionLevel String?
+  assignedCoachId  String?
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedCoach    Member?                  @relation("AthleteAssignedCoach", fields: [assignedCoachId], references: [id], onDelete: SetNull)
   injuryHistories  AthleteInjuryHistory[]
   assessments      Assessment[]
   scheduleSessions ScheduleSessionAthlete[]
@@ -499,12 +503,14 @@ model ScheduleSession {
 
   location String?
   notes    String?
+  executorId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   coach               Member                   @relation(fields: [coachId], references: [id])
+  executor            Member?                  @relation("SessionExecutor", fields: [executorId], references: [id], onDelete: SetNull)
   trainingPlan        TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
   athletes            ScheduleSessionAthlete[]
   sessionLogs         SessionLog[]

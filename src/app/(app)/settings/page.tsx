@@ -2,30 +2,33 @@ import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
 import { SettingsOrgNameForm } from "@/features/organizations/components/settings-org-name-form";
-import { Building2, SlidersHorizontal } from "lucide-react";
+import { SettingsMyProfileForm } from "@/features/organizations/components/settings-my-profile-form";
+import { Building2, SlidersHorizontal, User } from "lucide-react";
 
 import { redirect } from "next/navigation";
 import { getDefaultRouteForRole } from "@/lib/access-policy";
 
 export const metadata = {
   title: "Pengaturan Sistem | Platform Performa Olahraga",
-  description: "Konfigurasi profil akademi dan parameter item tes fisik.",
+  description: "Konfigurasi profil akademi, profil pengguna, dan parameter item tes fisik.",
 };
 
 export default async function SettingsPage() {
   const ctx = await requireOrgContext();
-  
-  if (ctx.role !== "admin") {
-    redirect(getDefaultRouteForRole(ctx.role));
-  }
 
-  const isAdmin = true;
+  const isAdmin = ctx.role === "admin";
+  const isHeadCoach = ctx.role === "head_coach";
 
-  const org = await prisma.organization.findUnique({
-    where: { id: ctx.organizationId },
-  });
+  const [org, currentUser] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: ctx.organizationId },
+    }),
+    prisma.user.findUnique({
+      where: { id: ctx.userId },
+    }),
+  ]);
 
-  if (!org) return null;
+  if (!org || !currentUser) return null;
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -35,8 +38,25 @@ export default async function SettingsPage() {
           Pengaturan Sistem &amp; Profil Akademi
         </h1>
         <p className="mt-0.5 text-sm text-muted">
-          Kelola profil nama klub / akademi dan konfigurasi acuan benchmark pengujian fisik.
+          Kelola profil pengguna Anda, nama klub / akademi, dan konfigurasi acuan benchmark pengujian fisik.
         </p>
+      </div>
+
+      {/* ── Profil Akun Saya ───────────────────────────────────────── */}
+      <div className="rounded-xl border border-border bg-surface-1 p-5 space-y-5 shadow-xs">
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <h2 className="font-display text-sm font-semibold text-foreground">
+            Profil Akun Saya
+          </h2>
+        </div>
+
+        <SettingsMyProfileForm
+          initialName={currentUser.name}
+          initialEmail={currentUser.email}
+          initialImage={currentUser.image}
+          role={ctx.role}
+        />
       </div>
 
       {/* ── Profil Organisasi ─────────────────────────────────────── */}

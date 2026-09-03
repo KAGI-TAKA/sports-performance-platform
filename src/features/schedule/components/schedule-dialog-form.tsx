@@ -47,6 +47,7 @@ export interface InitialSessionData {
   location: string | null;
   notes: string | null;
   coachId: string;
+  executorId?: string | null;
   athleteIds: string[];
   trainingPlanId?: string | null;
 }
@@ -144,6 +145,9 @@ export function ScheduleDialogForm({
   );
   const [selectedCoachId, setSelectedCoachId] = useState<string>(
     () => initialSession?.coachId ?? coaches[0]?.id ?? ""
+  );
+  const [selectedExecutorId, setSelectedExecutorId] = useState<string>(
+    () => initialSession?.executorId ?? initialSession?.coachId ?? coaches[0]?.id ?? ""
   );
   const [athleteSearch, setAthleteSearch] = useState("");
 
@@ -274,6 +278,7 @@ export function ScheduleDialogForm({
 
     selectedAthleteIds.forEach((id) => formData.append("athleteIds", id));
     formData.set("coachId", selectedCoachId);
+    formData.set("executorId", selectedExecutorId || selectedCoachId);
 
     const rawNotes = (formData.get("notes") as string) || "";
     const cleanNotes = rawNotes
@@ -386,16 +391,22 @@ export function ScheduleDialogForm({
               />
             </div>
 
-            {/* Pelatih & Status */}
+            {/* Pelatih Utama, Pelaksana Sesi & Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
                   <User className="h-3.5 w-3.5 text-muted" />
-                  Pelatih <span className="text-danger">*</span>
+                  Pelatih Utama (Primary Coach) <span className="text-danger">*</span>
                 </label>
                 <Select
                   value={selectedCoachId}
-                  onChange={(e) => setSelectedCoachId(e.target.value)}
+                  onChange={(e) => {
+                    const newCoachId = e.target.value;
+                    setSelectedCoachId(newCoachId);
+                    if (!initialSession) {
+                      setSelectedExecutorId(newCoachId);
+                    }
+                  }}
                 >
                   {coaches.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -405,8 +416,25 @@ export function ScheduleDialogForm({
                 </Select>
               </div>
 
+              <div>
+                <label className="block font-medium text-foreground mb-1 flex items-center gap-1">
+                  <User className="h-3.5 w-3.5 text-indigo-500" />
+                  Pelaksana Sesi (Executor) <span className="text-danger">*</span>
+                </label>
+                <Select
+                  value={selectedExecutorId}
+                  onChange={(e) => setSelectedExecutorId(e.target.value)}
+                >
+                  {coaches.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.id === selectedCoachId ? "(Sama dgn Pelatih Utama)" : "(Ditugaskan)"}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
               {isEditing && (
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block font-medium text-foreground mb-1">
                     Status Sesi
                   </label>

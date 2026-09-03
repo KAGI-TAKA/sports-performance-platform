@@ -24,6 +24,8 @@ export const createAthleteSchema = z.object({
   allergies: z.string().optional(),
   healthNotes: z.string().optional(),
   competitionLevel: z.string().optional(),
+  assignedCoachId: z.string().nullable().optional(),
+  photoUrl: z.string().nullable().optional(),
 });
 export type CreateAthleteInput = z.infer<typeof createAthleteSchema>;
 

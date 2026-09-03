@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import {
   Users,
   UserPlus,
@@ -28,6 +28,10 @@ import {
   Award,
   Link2,
   ExternalLink,
+  Camera,
+  Image as ImageIcon,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -54,6 +58,14 @@ import type {
 import { ROLE_LABELS, type MemberRole } from "@/lib/constants";
 import { AssistantPerformancePanel } from "@/features/assistant-performance/components/assistant-performance-panel";
 import type { AssistantPerformanceSummary } from "@/features/assistant-performance/types";
+import { processImageFile } from "@/lib/image-upload-helper";
+
+import {
+  ALL_AVATAR_PRESETS,
+  COACH_AVATARS,
+  PARENT_AVATARS,
+  ATHLETE_AVATARS,
+} from "@/lib/avatar-presets";
 
 interface UserManagementPanelProps {
   users: UserManagementItem[];
@@ -127,6 +139,7 @@ export function UserManagementPanel({
   >("assistant_coach");
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
+  const [formImage, setFormImage] = useState("");
   const [formUsername, setFormUsername] = useState("");
   const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
@@ -168,9 +181,48 @@ export function UserManagementPanel({
   const [editUser, setEditUser] = useState<UserManagementItem | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editImage, setEditImage] = useState("");
   const [editUsername, setEditUsername] = useState("");
   const [editRole, setEditRole] = useState<MemberRole>("assistant_coach");
   const [isEditLoading, setIsEditLoading] = useState(false);
+
+  // ── File Upload Refs & State ───────────────────────────────────────────────
+  const formFileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessingFormFile, setIsProcessingFormFile] = useState(false);
+  const [isProcessingEditFile, setIsProcessingEditFile] = useState(false);
+
+  const handleFormFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsProcessingFormFile(true);
+      const base64 = await processImageFile(file);
+      setFormImage(base64);
+      toast.success("Foto dari perangkat berhasil dimuat!");
+    } catch (err) {
+      toast.error((err as Error).message || "Gagal memproses file foto.");
+    } finally {
+      setIsProcessingFormFile(false);
+      if (formFileInputRef.current) formFileInputRef.current.value = "";
+    }
+  };
+
+  const handleEditFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsProcessingEditFile(true);
+      const base64 = await processImageFile(file);
+      setEditImage(base64);
+      toast.success("Foto dari perangkat berhasil dimuat!");
+    } catch (err) {
+      toast.error((err as Error).message || "Gagal memproses file foto.");
+    } finally {
+      setIsProcessingEditFile(false);
+      if (editFileInputRef.current) editFileInputRef.current.value = "";
+    }
+  };
 
   // ── Deactivation Confirmation Modal State ───────────────────────────────────
   const [deactivateUser, setDeactivateUser] = useState<UserManagementItem | null>(null);
@@ -195,6 +247,7 @@ export function UserManagementPanel({
     setTargetRole(role);
     setFormName("");
     setFormEmail("");
+    setFormImage("");
     setFormUsername("");
     setSelectedAthleteIds([]);
     const defaultAth = athletes[0]?.id ?? "";
@@ -224,6 +277,7 @@ export function UserManagementPanel({
         role: targetRole,
         name: finalName,
         email: formEmail ? formEmail.trim() : undefined,
+        image: formImage.trim() || undefined,
         username: formUsername ? formUsername.trim() : undefined,
         athleteIds: targetRole === "parent" ? selectedAthleteIds : undefined,
         athleteId: targetRole === "athlete" ? selectedAthleteId : undefined,
@@ -250,6 +304,7 @@ export function UserManagementPanel({
             memberId: res.user!.id,
             name: res.user!.name,
             email: res.user!.email,
+            image: formImage.trim() || null,
             role: res.user!.role,
             createdAt: new Date(),
             username: targetRole === "athlete" ? formUsername : undefined,
@@ -492,6 +547,7 @@ export function UserManagementPanel({
     setEditUser(user);
     setEditName(user.name);
     setEditEmail(user.email.endsWith("@athlete.internal") ? "" : user.email);
+    setEditImage(user.image || "");
     setEditUsername(user.username || "");
     setEditRole(user.role);
   };
@@ -506,6 +562,7 @@ export function UserManagementPanel({
       memberId: editUser.memberId,
       name: editName,
       email: editEmail ? editEmail : undefined,
+      image: editImage.trim() || null,
       username: editUsername ? editUsername : undefined,
       role: editRole,
     });
@@ -520,6 +577,7 @@ export function UserManagementPanel({
                 ...u,
                 name: editName,
                 email: editEmail || u.email,
+                image: editImage.trim() || null,
                 username: editUsername || u.username,
                 role: editRole,
               }
@@ -741,26 +799,36 @@ export function UserManagementPanel({
                     {/* Left Side: Identity & Details */}
                     <div className="flex items-start gap-3 min-w-0">
                       <div
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border ${
+                        className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border overflow-hidden shadow-2xs ${
                           u.role === "admin"
-                            ? "bg-violet-500/10 border-violet-500/20 text-violet-400"
+                            ? "bg-violet-500/10 border-violet-500/30 text-violet-400"
                             : u.role === "head_coach"
-                            ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                            ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
                             : u.role === "assistant_coach"
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                             : u.role === "parent"
-                            ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                            : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                            : "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
                         }`}
                       >
-                        {u.role === "admin" ? (
-                          <Shield className="h-4 w-4" />
-                        ) : isParent ? (
-                          <Users className="h-4 w-4" />
-                        ) : isAthlete ? (
-                          <UserCheck className="h-4 w-4" />
+                        {u.image ? (
+                          <img
+                            src={u.image}
+                            alt={u.name}
+                            className="h-full w-full object-cover rounded-xl"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
                         ) : (
-                          <ShieldAlert className="h-4 w-4" />
+                          <span className="font-bold text-xs">
+                            {u.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join("")
+                              .toUpperCase() || (u.role === "admin" ? "AD" : "PL")}
+                          </span>
                         )}
                       </div>
 
@@ -1073,6 +1141,100 @@ export function UserManagementPanel({
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-surface-2 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-600"
                       required
                     />
+                  </div>
+
+                  {/* Foto Profil Input & Presets */}
+                  <div className="space-y-2 p-3 rounded-xl border border-border bg-surface-2/60">
+                    <label className="text-xs font-semibold text-foreground block">
+                      Foto Profil (Opsional)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl border border-border overflow-hidden bg-surface-3 flex items-center justify-center shrink-0 shadow-2xs">
+                        {formImage ? (
+                          <img
+                            src={formImage}
+                            alt="Preview"
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <Camera className="h-5 w-5 text-muted" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            ref={formFileInputRef}
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            onChange={handleFormFileChange}
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => formFileInputRef.current?.click()}
+                            disabled={isProcessingFormFile}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-surface-1 hover:bg-surface-3 text-xs font-semibold text-foreground shadow-2xs transition disabled:opacity-50"
+                          >
+                            {isProcessingFormFile ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                            ) : (
+                              <Upload className="h-3.5 w-3.5 text-blue-500" />
+                            )}
+                            <span>Pilih File dari Komputer/HP</span>
+                          </button>
+                        </div>
+                        {formImage.startsWith("data:") ? (
+                          <div className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-400">
+                            <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                            <span className="font-medium truncate">Foto dari perangkat siap disimpan</span>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Atau tempel URL gambar (https://...)"
+                            value={formImage}
+                            onChange={(e) => setFormImage(e.target.value)}
+                            className="w-full px-2.5 py-1 text-xs rounded-lg border border-border bg-surface-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          />
+                        )}
+                        <p className="text-[10px] text-muted">
+                          Upload file foto langsung atau pilih template avatar di bawah:
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      {(targetRole === "parent"
+                        ? PARENT_AVATARS
+                        : COACH_AVATARS
+                      ).map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setFormImage(p.url)}
+                          className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded-lg border transition ${
+                            formImage === p.url
+                              ? "border-blue-500 bg-blue-500/15 text-blue-300 font-semibold"
+                              : "border-border bg-surface-1 hover:bg-surface-3 text-secondary"
+                          }`}
+                        >
+                          <img src={p.url} alt={p.label} className="h-4 w-4 rounded-md object-cover" />
+                          <span>{p.label}</span>
+                        </button>
+                      ))}
+                      {formImage && (
+                        <button
+                          type="button"
+                          onClick={() => setFormImage("")}
+                          className="text-[10.5px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-500/10 transition"
+                        >
+                          Hapus Foto
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {targetRole === "parent" && (
@@ -1562,6 +1724,102 @@ export function UserManagementPanel({
                   />
                 </div>
               )}
+
+              {/* Foto Profil Input & Presets */}
+              <div className="space-y-2 p-3 rounded-xl border border-border bg-surface-2/60">
+                <label className="text-xs font-semibold text-foreground block">
+                  Foto Profil (Avatar)
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl border border-border overflow-hidden bg-surface-3 flex items-center justify-center shrink-0 shadow-2xs">
+                    {editImage ? (
+                      <img
+                        src={editImage}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <Camera className="h-5 w-5 text-muted" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={editFileInputRef}
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleEditFileChange}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        disabled={isProcessingEditFile}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-surface-1 hover:bg-surface-3 text-xs font-semibold text-foreground shadow-2xs transition disabled:opacity-50"
+                      >
+                        {isProcessingEditFile ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5 text-blue-500" />
+                        )}
+                        <span>Pilih File dari Komputer/HP</span>
+                      </button>
+                    </div>
+                    {editImage.startsWith("data:") ? (
+                      <div className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-400">
+                        <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span className="font-medium truncate">Foto dari perangkat siap disimpan</span>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Atau tempel URL gambar (https://...)"
+                        value={editImage}
+                        onChange={(e) => setEditImage(e.target.value)}
+                        className="w-full px-2.5 py-1 text-xs rounded-lg border border-border bg-surface-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      />
+                    )}
+                    <p className="text-[10px] text-muted">
+                      Upload file foto langsung atau pilih template avatar di bawah:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {(editUser.role === "parent"
+                    ? PARENT_AVATARS
+                    : editUser.role === "athlete"
+                    ? ATHLETE_AVATARS
+                    : COACH_AVATARS
+                  ).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setEditImage(p.url)}
+                      className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded-lg border transition ${
+                        editImage === p.url
+                          ? "border-blue-500 bg-blue-500/15 text-blue-300 font-semibold"
+                          : "border-border bg-surface-1 hover:bg-surface-3 text-secondary"
+                      }`}
+                    >
+                      <img src={p.url} alt={p.label} className="h-4 w-4 rounded-md object-cover" />
+                      <span>{p.label}</span>
+                    </button>
+                  ))}
+                  {editImage && (
+                    <button
+                      type="button"
+                      onClick={() => setEditImage("")}
+                      className="text-[10.5px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-500/10 transition"
+                    >
+                      Hapus Foto
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {editUser.role === "athlete" && (
                 <div>
