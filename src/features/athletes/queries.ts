@@ -30,6 +30,7 @@ export async function listAthletes(
     ageGroup?: string;
     status?: "active" | "inactive" | "all";
     page?: number;
+    assignedCoachMemberId?: string;
   }
 ) {
   const birthRange =
@@ -54,6 +55,17 @@ export async function listAthletes(
       ? { position: opts.position as Prisma.EnumAthletePositionFilter }
       : {}),
     ...(birthRange ? { dateOfBirth: birthRange } : {}),
+    ...(opts?.assignedCoachMemberId
+      ? {
+          scheduleSessions: {
+            some: {
+              session: {
+                coachId: opts.assignedCoachMemberId,
+              },
+            },
+          },
+        }
+      : {}),
   };
 
   const [athletes, total] = await prisma.$transaction([
@@ -86,10 +98,25 @@ export async function listAthletes(
 
 export async function getAthleteById(
   organizationId: string,
-  athleteId: string
+  athleteId: string,
+  assignedCoachMemberId?: string
 ) {
   const athlete = await prisma.athlete.findFirst({
-    where: { id: athleteId, organizationId },
+    where: {
+      id: athleteId,
+      organizationId,
+      ...(assignedCoachMemberId
+        ? {
+            scheduleSessions: {
+              some: {
+                session: {
+                  coachId: assignedCoachMemberId,
+                },
+              },
+            },
+          }
+        : {}),
+    },
     include: {
       injuryHistories: { orderBy: { injuryDate: "desc" } },
       assessments: {
@@ -107,10 +134,25 @@ export async function getAthleteById(
 
 export async function getAthleteFullProfile(
   organizationId: string,
-  athleteId: string
+  athleteId: string,
+  assignedCoachMemberId?: string
 ) {
   const athlete = await prisma.athlete.findFirst({
-    where: { id: athleteId, organizationId },
+    where: {
+      id: athleteId,
+      organizationId,
+      ...(assignedCoachMemberId
+        ? {
+            scheduleSessions: {
+              some: {
+                session: {
+                  coachId: assignedCoachMemberId,
+                },
+              },
+            },
+          }
+        : {}),
+    },
     include: {
       injuryHistories: { orderBy: { injuryDate: "desc" } },
       assessments: {

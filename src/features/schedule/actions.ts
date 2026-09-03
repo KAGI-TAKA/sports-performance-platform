@@ -23,6 +23,13 @@ const VALID_TRANSITIONS: Record<ScheduleStatus, ScheduleStatus[]> = {
 export async function createScheduleSession(formData: FormData) {
   const ctx = await requireOrgContext();
 
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat membuat jadwal sesi baru.",
+    };
+  }
+
   const athleteIdsRaw = formData.getAll("athleteIds");
   const trainingPlanIdVal = formData.get("trainingPlanId") as string;
   const trainingPlanId =
@@ -166,6 +173,13 @@ export async function createScheduleSession(formData: FormData) {
 
 export async function updateScheduleSession(sessionId: string, formData: FormData) {
   const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mengubah jadwal sesi latihan.",
+    };
+  }
 
   const session = await prisma.scheduleSession.findFirst({
     where: { id: sessionId, organizationId: ctx.organizationId },
@@ -380,6 +394,13 @@ export async function updateScheduleStatus(
 
 export async function deleteScheduleSession(sessionId: string) {
   const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat menghapus jadwal sesi latihan.",
+    };
+  }
 
   const session = await prisma.scheduleSession.findFirst({
     where: { id: sessionId, organizationId: ctx.organizationId },

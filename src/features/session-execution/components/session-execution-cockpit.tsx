@@ -21,14 +21,31 @@ import { AttendanceChecklistSection } from "./attendance-checklist-section";
 import { AthleteExecutionPanel } from "./athlete-execution-panel";
 import { SessionCompletionBar } from "./session-completion-bar";
 import { SessionReadonlySummary } from "./session-readonly-summary";
+import {
+  FieldAssessmentDrawer,
+  type FieldTestItemOption,
+} from "./field-assessment-drawer";
+import { SessionReviewDialog } from "./session-review-dialog";
+import { SessionSuccessDialog } from "./session-success-dialog";
 
 interface SessionExecutionCockpitProps {
   initialData: SessionExecutionData;
+  availableTestItems?: FieldTestItemOption[];
+  userRole?: string;
 }
 
-export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpitProps) {
+export function SessionExecutionCockpit({
+  initialData,
+  availableTestItems = [],
+  userRole,
+}: SessionExecutionCockpitProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  // Review & Success Dialog states
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [assessmentCount, setAssessmentCount] = useState(0);
 
   // Local state for attendance per athlete
   const [attendanceState, setAttendanceState] = useState<
@@ -214,19 +231,50 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
     });
   };
 
-  // Complete Session Handler
-  const handleCompleteSession = () => {
+  // Calculate attendance summary for review
+  const attendanceSummary = {
+    present: initialData.athletes.filter((a) => attendanceState[a.id]?.status === "PRESENT").length,
+    late: initialData.athletes.filter((a) => attendanceState[a.id]?.status === "LATE").length,
+    excused: initialData.athletes.filter((a) => attendanceState[a.id]?.status === "EXCUSED").length,
+    absent: initialData.athletes.filter((a) => attendanceState[a.id]?.status === "ABSENT").length,
+    unmarked: initialData.athletes.filter(
+      (a) => !attendanceState[a.id] || attendanceState[a.id]?.status === "UNMARKED"
+    ).length,
+    total: initialData.athletes.length,
+  };
+
+  const durationMin = Math.round(
+    (new Date(initialData.endTime).getTime() - new Date(initialData.startTime).getTime()) / 60000
+  );
+  const durationString = `${durationMin} Menit`;
+
+  const coachFeedbackCount = Object.values(feedbackState).filter(
+    (f) => Boolean(f.coachFeedback?.trim())
+  ).length;
+
+  // Open Review Dialog before submit
+  const handleOpenReview = () => {
+    setReviewOpen(true);
+  };
+
+  // Submit confirmed from review dialog
+  const handleConfirmSubmit = () => {
     const payload = buildPayload();
     startTransition(async () => {
       const result = await completeSessionExecutionAction(payload);
       if (result.success) {
-        toast.success("Sesi latihan berhasil diselesaikan & log telah dibuat");
-        router.push("/schedule");
-        router.refresh();
+        setReviewOpen(false);
+        setSuccessOpen(true);
       } else {
         toast.error(result.error || "Gagal menyelesaikan sesi");
       }
     });
+  };
+
+  const handleNavigateHome = () => {
+    setSuccessOpen(false);
+    router.push("/schedule");
+    router.refresh();
   };
 
   return (
@@ -243,7 +291,7 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
       />
 
       {/* READ-ONLY SUMMARY IF COMPLETED/CANCELLED */}
-      {initialData.isReadOnly && <SessionReadonlySummary data={initialData} />}
+      {initialData.isReadOnly && <SessionReadonlySummary data={initialData} userRole={userRole} />}
 
       {/* ACTIVE WORKSPACE IF EDITABLE */}
       {!initialData.isReadOnly && (
@@ -263,7 +311,17 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
             isReadOnly={initialData.isReadOnly}
           />
 
-          {/* 5. PER-ATHLETE TRAINING EXECUTION PANEL */}
+          {/* 5. FIELD PHYSICAL ASSESSMENT TOOL */}
+          {availableTestItems.length > 0 && (
+            <FieldAssessmentDrawer
+              athletes={initialData.athletes}
+              availableTestItems={availableTestItems}
+              onRecordedCountChange={(cnt) => setAssessmentCount(cnt)}
+              isReadOnly={initialData.isReadOnly}
+            />
+          )}
+
+          {/* 6. PER-ATHLETE TRAINING EXECUTION PANEL */}
           <AthleteExecutionPanel
             athletes={initialData.athletes}
             trainingPlan={initialData.trainingPlan}
@@ -277,7 +335,7 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
             isReadOnly={initialData.isReadOnly}
           />
 
-          {/* 6. STICKY BOTTOM COMPLETION BAR */}
+          {/* 7. STICKY BOTTOM COMPLETION BAR */}
           <SessionCompletionBar
             athletes={initialData.athletes}
             trainingPlan={initialData.trainingPlan}
@@ -286,8 +344,29 @@ export function SessionExecutionCockpit({ initialData }: SessionExecutionCockpit
             isSavingDraft={isPending}
             isCompleting={isPending}
             onSaveDraft={handleSaveDraft}
-            onCompleteSession={handleCompleteSession}
+            onCompleteSession={handleOpenReview}
             isReadOnly={initialData.isReadOnly}
+          />
+
+          {/* 8. SESSION REVIEW MODAL */}
+          <SessionReviewDialog
+            open={reviewOpen}
+            onOpenChange={setReviewOpen}
+            sessionTitle={initialData.title}
+            durationString={durationString}
+            attendanceSummary={attendanceSummary}
+            assessmentCount={assessmentCount}
+            hasGeneralNotes={Boolean(generalNotes.trim())}
+            coachFeedbackCount={coachFeedbackCount}
+            isSubmitting={isPending}
+            onSubmit={handleConfirmSubmit}
+          />
+
+          {/* 9. SUCCESS STATE DIALOG */}
+          <SessionSuccessDialog
+            open={successOpen}
+            sessionTitle={initialData.title}
+            onNavigateHome={handleNavigateHome}
           />
         </>
       )}

@@ -10,15 +10,18 @@ import { SearchItemRow } from "./search-item-row";
 import type { CommandPaletteItem, RecentCommandItem } from "./types";
 import { cn } from "@/lib/utils";
 
+import { isRouteAllowedForRole } from "@/lib/access-policy";
+
 const RECENT_STORAGE_KEY = "kinetiq_recent_commands";
 const MAX_RECENT_ITEMS = 3;
 
 interface CommandPaletteProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  role?: string;
 }
 
-export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPaletteProps) {
+export function CommandPalette({ open: controlledOpen, onOpenChange, role }: CommandPaletteProps) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -102,12 +105,31 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
     };
   }, [isOpen]);
 
+  const isAssistant = (role || "").toLowerCase() === "assistant_coach";
+
   // Build static navigation and quick action command items
   const staticItems = useMemo<CommandPaletteItem[]>(() => {
     const items: CommandPaletteItem[] = [];
 
     // Quick Actions
     QUICK_ACTIONS.forEach((qa) => {
+      // If Assistant Coach, strictly forbid planning, athlete onboarding, and assessment management
+      if (isAssistant) {
+        if (
+          qa.id === "qa-new-athlete" ||
+          qa.id === "qa-new-plan" ||
+          qa.id === "qa-new-schedule" ||
+          qa.id === "qa-new-assessment" ||
+          qa.id === "qa-squad-assessment"
+        ) {
+          return;
+        }
+      }
+
+      if (qa.allowedRoles && !qa.allowedRoles.includes(role || "admin")) {
+        return;
+      }
+
       items.push({
         id: qa.id,
         category: "ACTION",
@@ -120,9 +142,46 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
       });
     });
 
-    // Navigation Pages
+    // If Assistant Coach, add dedicated field execution quick actions
+    if (isAssistant) {
+      items.push(
+        {
+          id: "qa-asst-today",
+          category: "ACTION",
+          categoryLabel: "Aksi Cepat",
+          title: "Agenda Sesi Hari Ini",
+          subtitle: "Lihat sesi latihan yang ditugaskan kepada Anda hari ini",
+          href: "/schedule?view=agenda",
+          keywords: ["agenda", "today", "hari ini", "jadwal", "tugas"],
+        },
+        {
+          id: "qa-asst-roster",
+          category: "ACTION",
+          categoryLabel: "Aksi Cepat",
+          title: "Roster Atlet",
+          subtitle: "Lihat profil atlet peserta dan riwayat catatan lapangan",
+          href: "/athletes",
+          keywords: ["atlet", "roster", "pemain", "atlet aktif"],
+        },
+        {
+          id: "qa-asst-logs",
+          category: "ACTION",
+          categoryLabel: "Aksi Cepat",
+          title: "Riwayat Log Sesi Lapangan",
+          subtitle: "Pantau catatan evaluasi sesi latihan yang telah disubmit",
+          href: "/session-logs",
+          keywords: ["log", "riwayat", "history", "evaluasi"],
+        }
+      );
+    }
+
+    // Navigation Pages — Strictly filter by role
     NAV_GROUPS.forEach((g) => {
       g.items.forEach((nav) => {
+        if (!isRouteAllowedForRole(role || "admin", nav.href)) {
+          return;
+        }
+
         items.push({
           id: `nav-${nav.href}`,
           category: "NAVIGATION",
@@ -137,7 +196,7 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
     });
 
     return items;
-  }, []);
+  }, [role, isAssistant]);
 
   // Filter static items on client based on current query
   const filteredStaticItems = useMemo(() => {
@@ -246,9 +305,21 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
   const flattenedList = useMemo<CommandPaletteItem[]>(() => {
     const list: CommandPaletteItem[] = [];
 
-    // When query is empty and we have recent items, show recent at top
+    // When query is empty and we have recent items, show recent at top (strictly filtered by role)
     if (!query.trim() && recentItems.length > 0) {
       recentItems.forEach((r) => {
+        if (!isRouteAllowedForRole(role || "admin", r.href)) return;
+        if (
+          isAssistant &&
+          (r.title.toLowerCase().includes("tambah atlet") ||
+            r.title.toLowerCase().includes("program latihan") ||
+            r.title.toLowerCase().includes("jadwalkan sesi") ||
+            r.title.toLowerCase().includes("assessment") ||
+            r.title.toLowerCase().includes("asesmen"))
+        ) {
+          return;
+        }
+
         list.push({
           id: `recent-${r.id}`,
           category: "RECENT",
@@ -267,11 +338,15 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
     if (serverResults.sessions.length > 0) {
       list.push(...serverResults.sessions);
     }
-    if (serverResults.trainingPlans.length > 0) {
-      list.push(...serverResults.trainingPlans);
-    }
-    if (serverResults.assessments.length > 0) {
-      list.push(...serverResults.assessments);
+
+    // Plans and assessments are strictly forbidden for Assistant Coach
+    if (!isAssistant) {
+      if (serverResults.trainingPlans.length > 0) {
+        list.push(...serverResults.trainingPlans);
+      }
+      if (serverResults.assessments.length > 0) {
+        list.push(...serverResults.assessments);
+      }
     }
 
     // Filtered Static Items (Quick Actions & Navigation)

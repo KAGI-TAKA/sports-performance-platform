@@ -51,6 +51,7 @@ export const ROLE_ALLOWED_ROUTES: Record<string, string[]> = {
     "/users",
     "/benchmarks",
     "/settings",
+    "/profile",
   ],
   head_coach: [
     "/dashboard",
@@ -63,6 +64,7 @@ export const ROLE_ALLOWED_ROUTES: Record<string, string[]> = {
     "/compare",
     "/reports",
     "/portal",
+    "/profile",
   ],
   coach: [
     "/dashboard",
@@ -75,18 +77,22 @@ export const ROLE_ALLOWED_ROUTES: Record<string, string[]> = {
     "/compare",
     "/reports",
     "/portal",
+    "/profile",
   ],
   assistant_coach: [
     "/schedule",
     "/session-logs",
     "/athletes",
     "/portal",
+    "/profile",
   ],
   parent: [
     "/portal",
+    "/profile",
   ],
   athlete: [
     "/portal",
+    "/profile",
   ],
 };
 

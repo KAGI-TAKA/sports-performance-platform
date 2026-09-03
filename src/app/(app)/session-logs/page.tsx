@@ -19,17 +19,33 @@ export default async function SessionLogsPage({
   const { athleteId = "ALL" } = await searchParams;
   const ctx = await requireOrgContext();
 
+  const isAssistant = ctx.role === "assistant_coach";
+
   const [logs, athletesRaw, scheduleSessionsRaw] = await Promise.all([
-    listSessionLogs(ctx.organizationId, { athleteId }),
+    listSessionLogs(ctx.organizationId, {
+      athleteId,
+      createdById: isAssistant ? ctx.memberId : undefined,
+    }),
     listActiveAthletesForSessionLogs(ctx.organizationId),
-    listScheduleSessions(ctx.organizationId),
+    listScheduleSessions(ctx.organizationId, {
+      coachId: isAssistant ? ctx.memberId : undefined,
+    }),
   ]);
 
-  const athletes = athletesRaw.map((a) => ({
-    id: a.id,
-    fullName: a.fullName,
-    jerseyNumber: a.jerseyNumber,
-  }));
+  // For Assistant Coach: filter athletes dropdown to those associated with assistant's sessions/logs
+  const relevantAthleteIds = new Set<string>();
+  if (isAssistant) {
+    scheduleSessionsRaw.forEach((s) => s.athletes.forEach((a) => relevantAthleteIds.add(a.athlete.id)));
+    logs.forEach((l) => relevantAthleteIds.add(l.athlete.id));
+  }
+
+  const athletes = athletesRaw
+    .filter((a) => !isAssistant || relevantAthleteIds.has(a.id))
+    .map((a) => ({
+      id: a.id,
+      fullName: a.fullName,
+      jerseyNumber: a.jerseyNumber,
+    }));
 
   const scheduleSessions = scheduleSessionsRaw.map((s) => {
     let defaultActivities = "";

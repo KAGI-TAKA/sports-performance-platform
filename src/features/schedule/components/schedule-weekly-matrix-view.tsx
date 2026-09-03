@@ -30,6 +30,7 @@ interface ScheduleWeeklyMatrixViewProps {
   sessions: ScheduleSessionItem[];
   coaches: CoachOption[];
   athletes: AthleteOption[];
+  userRole?: string;
 }
 
 const TIME_SLOTS = [
@@ -60,7 +61,9 @@ export function ScheduleWeeklyMatrixView({
   sessions,
   coaches,
   athletes,
+  userRole = "head_coach",
 }: ScheduleWeeklyMatrixViewProps) {
+  const canManagePlanning = userRole === "admin" || userRole === "head_coach";
   const [selectedSession, setSelectedSession] = useState<ScheduleSessionItem | null>(null);
   const [editingSession, setEditingSession] = useState<ScheduleSessionItem | null>(null);
   const [cloneSession, setCloneSession] = useState<{ id: string; status: ScheduleStatus } | null>(null);
@@ -127,10 +130,10 @@ export function ScheduleWeeklyMatrixView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-border shadow-xs">
         <div>
           <h2 className="font-display text-lg font-bold text-foreground tracking-tight">
-            Zulficoach Weekly Coaching Timetable
+            Peta Jadwal Mingguan (Weekly Timetable)
           </h2>
           <p className="text-xs text-muted mt-0.5">
-            Peta ketersediaan slot &amp; jadwal sesi mingguan Coach Zulfi
+            Peta ketersediaan slot &amp; jadwal sesi mingguan tim kepelatihan
           </p>
         </div>
 
@@ -198,22 +201,29 @@ export function ScheduleWeeklyMatrixView({
                       {matchingSessions.length > 0 ? (
                         <div className="space-y-1">
                           {matchingSessions.map((s) => {
-                            const colorClass = getSlotColorClass(s);
-                            const athleteNames =
-                              s.athletes.length > 0
-                                ? s.athletes.map((item) => item.athlete.fullName.split(" ")[0]).join(" & ")
-                                : s.title;
+                            const isPast = new Date(s.endTime) < new Date();
+                            const isAssigned = s.coachId === coaches[0]?.id;
 
                             return (
                               <button
                                 key={s.id}
                                 type="button"
                                 onClick={() => setSelectedSession(s)}
-                                className={`w-full text-left p-1.5 rounded-lg border text-[11px] leading-tight shadow-2xs transition-transform active:scale-95 ${colorClass}`}
+                                className={`w-full text-left p-2 rounded-xl transition-all shadow-xs block text-xs space-y-1 ${
+                                  s.status === "COMPLETED"
+                                    ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                                    : s.status === "CANCELLED"
+                                    ? "bg-slate-200 text-slate-600 hover:bg-slate-300 line-through"
+                                    : isPast
+                                    ? "bg-amber-500 text-white hover:bg-amber-600"
+                                    : isAssigned
+                                    ? "bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
+                                    : "bg-sky-600 text-white hover:bg-sky-700"
+                                }`}
                               >
-                                <div className="font-bold truncate">{s.title || athleteNames}</div>
+                                <div className="font-bold leading-tight line-clamp-1">{s.title}</div>
                                 {s.location && (
-                                  <div className="text-[9.5px] opacity-85 truncate">
+                                  <div className="text-[10px] opacity-90 truncate">
                                     📍 {s.location}
                                   </div>
                                 )}
@@ -221,7 +231,7 @@ export function ScheduleWeeklyMatrixView({
                             );
                           })}
                         </div>
-                      ) : (
+                      ) : canManagePlanning ? (
                         <button
                           type="button"
                           onClick={() => setCreateSlotData(getSlotDate(d.key, slot))}
@@ -230,6 +240,8 @@ export function ScheduleWeeklyMatrixView({
                         >
                           <Plus className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
+                      ) : (
+                        <div className="h-full w-full" />
                       )}
                     </td>
                   );

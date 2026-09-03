@@ -34,10 +34,13 @@ import {
   Eye,
   Copy,
   RotateCcw,
+  CalendarX,
+  Send,
 } from "lucide-react";
 import { formatDateHeader, formatTimeRange, toLocalDateStr, getStartOfDay } from "../utils";
 import { AttendanceSessionDialog } from "@/features/attendance/components/attendance-session-dialog";
 import { CloneScheduleDialog } from "./clone-schedule-dialog";
+import { RescheduleRequestDialog } from "@/features/reschedule-requests/components/reschedule-request-dialog";
 
 export interface ScheduleSessionItem {
   id: string;
@@ -64,6 +67,12 @@ export interface ScheduleSessionItem {
       photoUrl: string | null;
     };
   }[];
+  rescheduleRequests?: {
+    id: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    reason: string;
+    requestedByMemberId: string;
+  }[];
 }
 
 interface ScheduleAgendaViewProps {
@@ -73,6 +82,7 @@ interface ScheduleAgendaViewProps {
   currentDateFilter?: string;
   currentCoachFilter?: string;
   currentStatusFilter?: string;
+  userRole?: string;
 }
 
 export function ScheduleAgendaView({
@@ -82,9 +92,14 @@ export function ScheduleAgendaView({
   currentDateFilter,
   currentCoachFilter,
   currentStatusFilter,
+  userRole = "head_coach",
 }: ScheduleAgendaViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const canManagePlanning = userRole === "admin" || userRole === "head_coach";
+  const isAssistantCoach = userRole === "assistant_coach";
+  const todayDateStr = toLocalDateStr(new Date());
 
   // Edit Modal State
   const [editingSession, setEditingSession] = useState<ScheduleSessionItem | null>(null);
@@ -94,6 +109,17 @@ export function ScheduleAgendaView({
 
   // Attendance Modal State
   const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
+
+  // Reschedule Request Modal State
+  const [rescheduleSession, setRescheduleSession] = useState<{
+    id: string;
+    title: string;
+    date: string;
+    existingRequest?: {
+      status: "PENDING" | "APPROVED" | "REJECTED";
+      reason: string;
+    } | null;
+  } | null>(null);
 
   // Client Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -328,14 +354,26 @@ export function ScheduleAgendaView({
       {filteredSessions.length === 0 ? (
         <EmptyState
           icon={CalendarIcon}
-          title="Tidak Ada Sesi Latihan"
+          title={
+            isAssistantCoach && selectedDate === todayIso
+              ? "TIDAK ADA SESI HARI INI"
+              : isAssistantCoach
+              ? "Tidak Ada Sesi Terjadwal"
+              : "Tidak Ada Sesi Latihan"
+          }
           description={
-            selectedDate
+            isAssistantCoach && selectedDate === todayIso
+              ? "Tidak ada sesi latihan yang ditugaskan kepada Anda hari ini."
+              : isAssistantCoach
+              ? "Tidak ada sesi latihan yang ditugaskan kepada Anda pada periode ini."
+              : selectedDate
               ? `Belum ada sesi latihan terjadwal untuk tanggal ${formatDateHeader(selectedDate)}.`
               : "Belum ada sesi latihan yang cocok dengan kriteria filter."
           }
           action={
-            <ScheduleDialogForm coaches={coaches} athletes={athletes} />
+            canManagePlanning ? (
+              <ScheduleDialogForm coaches={coaches} athletes={athletes} />
+            ) : undefined
           }
           className="bg-surface-1 py-12"
         />
@@ -429,76 +467,179 @@ export function ScheduleAgendaView({
                         </div>
 
                         {/* Operational Actions Footer */}
-                        <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-1 text-xs mt-3">
-                          {/* Quick Status Buttons */}
-                          <div className="flex items-center gap-1">
-                            {session.status !== "COMPLETED" && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleStatusChange(session.id, "COMPLETED")}
-                                className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-success bg-success-bg hover:bg-success/20 transition-colors"
-                                title="Tandai Selesai"
-                              >
-                                <CheckCircle2 className="h-3 w-3" />
-                                Selesai
-                              </button>
-                            )}
+                        <div className="pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs mt-3">
+                          {/* Quick Status Management Buttons - Admin & Head Coach Only */}
+                          {canManagePlanning && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {session.status !== "COMPLETED" && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleStatusChange(session.id, "COMPLETED")}
+                                  className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-success bg-success-bg hover:bg-success/20 transition-colors"
+                                  title="Tandai Selesai"
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Selesai
+                                </button>
+                              )}
 
-                            {session.status !== "CANCELLED" && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleStatusChange(session.id, "CANCELLED")}
-                                className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-secondary bg-surface-2 hover:bg-surface-3 transition-colors"
-                                title="Tandai Dibatalkan"
-                              >
-                                <XCircle className="h-3 w-3" />
-                                Batal
-                              </button>
-                            )}
+                              {session.status !== "CANCELLED" && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleStatusChange(session.id, "CANCELLED")}
+                                  className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-secondary bg-surface-2 hover:bg-surface-3 transition-colors"
+                                  title="Tandai Dibatalkan"
+                                >
+                                  <XCircle className="h-3 w-3" />
+                                  Batal
+                                </button>
+                              )}
 
-                            {session.status !== "NO_SHOW" && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleStatusChange(session.id, "NO_SHOW")}
-                                className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-danger bg-danger-bg hover:bg-danger/20 transition-colors"
-                                title="Tandai Tidak Hadir"
-                              >
-                                <AlertCircle className="h-3 w-3" />
-                                Absen
-                              </button>
-                            )}
-                          </div>
+                              {session.status !== "NO_SHOW" && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleStatusChange(session.id, "NO_SHOW")}
+                                  className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-semibold text-danger bg-danger-bg hover:bg-danger/20 transition-colors"
+                                  title="Tandai Tidak Hadir"
+                                >
+                                  <AlertCircle className="h-3 w-3" />
+                                  Absen
+                                </button>
+                              )}
+                            </div>
+                          )}
 
                           {/* Primary Execution CTA & Action Links */}
-                          <div className="flex items-center gap-1.5">
-                            {session.status === "SCHEDULED" ? (
+                          <div className="flex items-center gap-1.5 flex-wrap ml-auto">
+                            <Link
+                              href={`/schedule/${session.id}`}
+                              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-muted hover:text-foreground hover:bg-surface-2 border border-border/60 transition-colors"
+                              title="Lihat Detail Sesi & Atlet"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Detail</span>
+                            </Link>
+
+                            {session.status === "SCHEDULED" ? (() => {
+                              const sessionDateStr = toLocalDateStr(session.startTime);
+                              const isOverdue = sessionDateStr < todayDateStr;
+                              const isToday = sessionDateStr === todayDateStr;
+                              const isFuture = sessionDateStr > todayDateStr;
+
+                              if (isOverdue && isAssistantCoach) {
+                                const pendingReq = session.rescheduleRequests?.find((r) => r.status === "PENDING");
+                                const rejectedReq = session.rescheduleRequests?.find((r) => r.status === "REJECTED");
+
+                                if (pendingReq) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setRescheduleSession({
+                                        id: session.id,
+                                        title: session.title,
+                                        date: new Date(session.startTime).toLocaleDateString("id-ID", {
+                                          weekday: "long", day: "numeric", month: "long", year: "numeric",
+                                          timeZone: "Asia/Jakarta",
+                                        }),
+                                        existingRequest: pendingReq,
+                                      })}
+                                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 transition-colors"
+                                      title="Permintaan reschedule sedang menunggu peninjauan Head Coach"
+                                    >
+                                      <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                      <span>⏳ Menunggu Reschedule</span>
+                                    </button>
+                                  );
+                                } else if (rejectedReq) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setRescheduleSession({
+                                        id: session.id,
+                                        title: session.title,
+                                        date: new Date(session.startTime).toLocaleDateString("id-ID", {
+                                          weekday: "long", day: "numeric", month: "long", year: "numeric",
+                                          timeZone: "Asia/Jakarta",
+                                        }),
+                                        existingRequest: rejectedReq,
+                                      })}
+                                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+                                      title="Permintaan sebelumnya ditolak, klik untuk meminta ulang"
+                                    >
+                                      <RotateCcw className="h-3.5 w-3.5" />
+                                      <span>Minta Ulang Reschedule</span>
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => setRescheduleSession({
+                                      id: session.id,
+                                      title: session.title,
+                                      date: new Date(session.startTime).toLocaleDateString("id-ID", {
+                                        weekday: "long", day: "numeric", month: "long", year: "numeric",
+                                        timeZone: "Asia/Jakarta",
+                                      }),
+                                      existingRequest: null,
+                                    })}
+                                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+                                    title="Minta Head Coach untuk menjadwalkan ulang sesi ini"
+                                  >
+                                    <Send className="h-3.5 w-3.5" />
+                                    <span>Minta Reschedule</span>
+                                  </button>
+                                );
+                              } else if (isToday || (isFuture && !isAssistantCoach)) {
+                                // TODAY or FUTURE (admin/coach): Show execute button
+                                return (
+                                  <Link
+                                    href={`/schedule/${session.id}/execute`}
+                                    className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[11.5px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs active:scale-95"
+                                    title="Buka Workspace Eksekusi Sesi di Lapangan"
+                                  >
+                                    <PlayCircle className="h-3.5 w-3.5" />
+                                    <span>Mulai Sesi</span>
+                                  </Link>
+                                );
+                              } else if (isFuture && isAssistantCoach) {
+                                // FUTURE for assistant coach: detail only
+                                return null;
+                              } else {
+                                // Overdue for admin/coach: still allow execute
+                                return (
+                                  <Link
+                                    href={`/schedule/${session.id}/execute`}
+                                    className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[11.5px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs active:scale-95"
+                                    title="Buka Workspace Eksekusi Sesi di Lapangan"
+                                  >
+                                    <PlayCircle className="h-3.5 w-3.5" />
+                                    <span>Mulai Sesi</span>
+                                  </Link>
+                                );
+                              }
+                            })() : session.status === "COMPLETED" ? (
                               <Link
                                 href={`/schedule/${session.id}/execute`}
-                                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-2xs"
-                                title="Buka Workspace Eksekusi Sesi di Lapangan"
-                              >
-                                <PlayCircle className="h-3.5 w-3.5" />
-                                <span>Eksekusi</span>
-                              </Link>
-                            ) : session.status === "COMPLETED" ? (
-                              <Link
-                                href={`/schedule/${session.id}/execute`}
-                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10.5px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 transition-colors"
+                                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 transition-colors"
                                 title="Lihat Hasil Eksekusi & Presensi Sesi"
                               >
-                                <Eye className="h-3 w-3" />
+                                <Eye className="h-3.5 w-3.5" />
                                 <span>Hasil</span>
                               </Link>
                             ) : null}
 
-                            <button
-                              onClick={() => setAttendanceSessionId(session.id)}
-                              className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
-                              title="Buka Presensi Sesi Cepat"
-                            >
-                              <UserCheck className="h-3.5 w-3.5" />
-                              Presensi
-                            </button>
+                            {(session.status !== "COMPLETED" || canManagePlanning) && (
+                              <button
+                                onClick={() => setAttendanceSessionId(session.id)}
+                                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
+                                title="Buka Presensi Sesi Cepat"
+                              >
+                                <UserCheck className="h-3.5 w-3.5" />
+                                Presensi
+                              </button>
+                            )}
 
                             {session.status === "COMPLETED" && (
                               <Link
@@ -510,42 +651,46 @@ export function ScheduleAgendaView({
                               </Link>
                             )}
 
-                            {/* Clone / Reschedule Action */}
-                            {session.status === "CANCELLED" || session.status === "NO_SHOW" ? (
-                              <button
-                                onClick={() => setCloneSession({ id: session.id, status: session.status })}
-                                className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                                title="Jadwalkan Ulang Sesi Ini"
-                              >
-                                <RotateCcw className="h-3 w-3" />
-                                Jadwalkan Ulang
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setCloneSession({ id: session.id, status: session.status })}
-                                className="p-1 rounded text-secondary hover:text-indigo-600 hover:bg-surface-2 transition-colors"
-                                title="Duplikasi Sesi"
-                              >
-                                <Copy className="h-3.5 w-3.5" />
-                              </button>
+                            {/* Planning Actions (Clone, Edit, Delete) - Head Coach & Admin Only */}
+                            {canManagePlanning && (
+                              <>
+                                {session.status === "CANCELLED" || session.status === "NO_SHOW" ? (
+                                  <button
+                                    onClick={() => setCloneSession({ id: session.id, status: session.status })}
+                                    className="flex items-center gap-1 rounded px-2 py-1 text-[10.5px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                                    title="Jadwalkan Ulang Sesi Ini"
+                                  >
+                                    <RotateCcw className="h-3 w-3" />
+                                    Jadwalkan Ulang
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => setCloneSession({ id: session.id, status: session.status })}
+                                    className="p-1 rounded text-secondary hover:text-indigo-600 hover:bg-surface-2 transition-colors"
+                                    title="Duplikasi Sesi"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => setEditingSession(session)}
+                                  className="p-1 rounded text-secondary hover:text-foreground hover:bg-surface-2 transition-colors"
+                                  title="Edit Sesi"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleDelete(session.id, session.title)}
+                                  className="p-1 rounded text-muted hover:text-danger hover:bg-danger-bg transition-colors"
+                                  title="Hapus Sesi"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </>
                             )}
-
-                            <button
-                              onClick={() => setEditingSession(session)}
-                              className="p-1 rounded text-secondary hover:text-foreground hover:bg-surface-2 transition-colors"
-                              title="Edit Sesi"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-
-                            <button
-                              disabled={isPending}
-                              onClick={() => handleDelete(session.id, session.title)}
-                              className="p-1 rounded text-muted hover:text-danger hover:bg-danger-bg transition-colors"
-                              title="Hapus Sesi"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
                           </div>
                         </div>
                       </CardContent>
@@ -582,6 +727,18 @@ export function ScheduleAgendaView({
           router.refresh();
         }}
       />
+
+      {/* Reschedule Request Dialog — Assistant Coach only */}
+      {rescheduleSession && (
+        <RescheduleRequestDialog
+          sessionId={rescheduleSession.id}
+          sessionTitle={rescheduleSession.title}
+          sessionDate={rescheduleSession.date}
+          existingRequest={rescheduleSession.existingRequest}
+          onClose={() => setRescheduleSession(null)}
+        />
+      )}
     </div>
   );
 }
+

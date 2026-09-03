@@ -9,11 +9,13 @@ import { CloneScheduleDialog } from "@/features/schedule/components/clone-schedu
 
 interface SessionReadonlySummaryProps {
   data: SessionExecutionData;
+  userRole?: string;
 }
 
-export function SessionReadonlySummary({ data }: SessionReadonlySummaryProps) {
+export function SessionReadonlySummary({ data, userRole }: SessionReadonlySummaryProps) {
   const router = useRouter();
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const canManagePlanning = userRole !== "assistant_coach";
   const isCompleted = data.status === "COMPLETED";
 
   return (
@@ -155,24 +157,26 @@ export function SessionReadonlySummary({ data }: SessionReadonlySummaryProps) {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setCloneDialogOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition min-h-[44px] shadow-2xs"
-            title={data.status === "CANCELLED" || data.status === "NO_SHOW" ? "Jadwalkan Ulang Sesi Ini" : "Duplikasi Sesi Ini"}
-          >
-            {data.status === "CANCELLED" || data.status === "NO_SHOW" ? (
-              <>
-                <RotateCcw className="h-4 w-4" />
-                Jadwalkan Ulang Sesi
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Duplikasi Sesi
-              </>
-            )}
-          </button>
+          {canManagePlanning && (
+            <button
+              type="button"
+              onClick={() => setCloneDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition min-h-[44px] shadow-2xs"
+              title={data.status === "CANCELLED" || data.status === "NO_SHOW" ? "Jadwalkan Ulang Sesi Ini" : "Duplikasi Sesi Ini"}
+            >
+              {data.status === "CANCELLED" || data.status === "NO_SHOW" ? (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  Jadwalkan Ulang Sesi
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Duplikasi Sesi
+                </>
+              )}
+            </button>
+          )}
 
           <Link
             href="/session-logs"

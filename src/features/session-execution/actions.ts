@@ -11,6 +11,7 @@ import {
   validateSessionCompletionPreconditions,
 } from "./engine";
 import { resolveCheckInTime } from "@/features/attendance/engine";
+import { toLocalDateStr } from "@/features/schedule/utils";
 
 /**
  * Saves draft execution progress (attendances + draft notes) without completing the session.
@@ -128,6 +129,18 @@ export async function completeSessionExecutionAction(
   const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.coachId);
   if (!hasAuthority) {
     return { success: false, error: "Anda tidak memiliki wewenang untuk menyelesaikan sesi ini." };
+  }
+
+  // Assistant Coach cannot complete future sessions
+  if (ctx.role === "assistant_coach") {
+    const todayDateStr = toLocalDateStr(new Date());
+    const sessionDateStr = toLocalDateStr(session.startTime);
+    if (sessionDateStr > todayDateStr) {
+      return {
+        success: false,
+        error: "Sesi belum dapat diselesaikan karena dijadwalkan pada tanggal mendatang.",
+      };
+    }
   }
 
   const eligibility = isSessionEligibleForExecution(session.status);

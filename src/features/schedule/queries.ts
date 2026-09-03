@@ -79,6 +79,14 @@ export async function listScheduleSessions(
           },
         },
       },
+      rescheduleRequests: {
+        select: {
+          id: true,
+          status: true,
+          reason: true,
+          requestedByMemberId: true,
+        },
+      },
     },
     orderBy: { startTime: "asc" },
   });

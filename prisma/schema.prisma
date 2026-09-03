@@ -105,6 +105,7 @@ model Organization {
   attendances      Attendance[]
   parentFeedbacks  ParentFeedback[]
   goals            AthleteGoal[]
+  rescheduleRequests RescheduleRequest[]
 
   @@map("organization")
 }
@@ -114,19 +115,22 @@ model Member {
   organizationId String
   userId         String
   role           String   @default("assistant_coach")
+  phone          String?
   createdAt      DateTime @default(now())
 
-  organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization            Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   assessmentsCreated      Assessment[]
   reportsGenerated        Report[]
   scheduleSessionsCoached ScheduleSession[]
   sessionLogsCreated      SessionLog[]
   portalAccessesCreated   PortalAccess[]
   coachGuidances          CoachGuidance[]
-  attendancesMarked       Attendance[]      @relation("AttendanceMarker")
-  feedbacksReceived       ParentFeedback[]  @relation("CoachEvaluated")
-  goalsCreated            AthleteGoal[]     @relation("GoalCreator")
+  attendancesMarked       Attendance[]          @relation("AttendanceMarker")
+  feedbacksReceived       ParentFeedback[]      @relation("CoachEvaluated")
+  goalsCreated            AthleteGoal[]         @relation("GoalCreator")
+  rescheduleRequests      RescheduleRequest[]   @relation("RescheduleRequester")
+  rescheduleReviews       RescheduleRequest[]   @relation("RescheduleReviewer")
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -499,13 +503,14 @@ model ScheduleSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  coach          Member                   @relation(fields: [coachId], references: [id])
-  trainingPlan   TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
-  athletes       ScheduleSessionAthlete[]
-  sessionLogs    SessionLog[]
-  attendances    Attendance[]
-  parentFeedbacks ParentFeedback[]
+  organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coach               Member                   @relation(fields: [coachId], references: [id])
+  trainingPlan        TrainingPlan?            @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
+  athletes            ScheduleSessionAthlete[]
+  sessionLogs         SessionLog[]
+  attendances         Attendance[]
+  parentFeedbacks     ParentFeedback[]
+  rescheduleRequests  RescheduleRequest[]
 
   @@index([organizationId, startTime])
   @@index([trainingPlanId])
@@ -779,4 +784,42 @@ model AthleteGoal {
   @@index([organizationId, athleteId])
   @@index([athleteId, testItemId, status])
   @@map("athlete_goal")
+}
+
+// ============================================================
+// RESCHEDULE REQUESTS (Assistant Coach → Head Coach)
+// ============================================================
+
+enum RescheduleRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RescheduleRequest {
+  id                    String                  @id @default(cuid())
+  organizationId        String
+  scheduleSessionId     String
+  requestedByMemberId   String
+
+  reason                String                  @db.Text
+  status                RescheduleRequestStatus @default(PENDING)
+
+  // Head Coach review
+  reviewedByMemberId    String?
+  reviewNote            String?                 @db.Text
+  reviewedAt            DateTime?
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scheduleSession ScheduleSession @relation(fields: [scheduleSessionId], references: [id], onDelete: Cascade)
+  requestedBy     Member          @relation("RescheduleRequester", fields: [requestedByMemberId], references: [id], onDelete: Restrict)
+  reviewedBy      Member?         @relation("RescheduleReviewer", fields: [reviewedByMemberId], references: [id], onDelete: SetNull)
+
+  @@unique([scheduleSessionId, requestedByMemberId])
+  @@index([organizationId, status])
+  @@index([scheduleSessionId])
+  @@map("reschedule_request")
 }

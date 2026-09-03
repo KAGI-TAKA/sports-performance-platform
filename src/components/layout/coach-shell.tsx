@@ -10,6 +10,7 @@ import { NavigationProgressBar } from "./navigation-progress";
 interface CoachShellProps {
   userName?: string;
   userEmail?: string;
+  userImage?: string | null;
   orgName?: string;
   role?: string;
   children: React.ReactNode;
@@ -18,6 +19,7 @@ interface CoachShellProps {
 export function CoachShell({
   userName,
   userEmail,
+  userImage,
   orgName,
   role,
   children,
@@ -50,36 +52,19 @@ export function CoachShell({
     });
   };
 
-  // Handle escape key and body scroll lock for mobile drawer
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileOpen(false);
-      }
-    };
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [mobileOpen]);
-
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* Instant Navigation Feedback Indicator (EXP-06) */}
+    <div className="flex h-screen overflow-hidden bg-surface-base text-foreground font-sans antialiased">
+      {/* Navigation Progress Indicator */}
       <NavigationProgressBar />
 
-      {/* Global Command Palette */}
+      {/* Global Command Palette (Ctrl+K) */}
       <CommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
       />
 
-      {/* Desktop Sidebar (3-State) */}
-      <div className="hidden lg:block h-screen sticky top-0 shrink-0">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex shrink-0">
         <AppSidebar
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
@@ -113,6 +98,7 @@ export function CoachShell({
         <AppHeader
           userName={userName}
           userEmail={userEmail}
+          userImage={userImage}
           orgName={orgName}
           role={role}
           collapsed={collapsed}

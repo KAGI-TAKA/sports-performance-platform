@@ -9,6 +9,7 @@ export async function listSessionLogs(
     startDate?: Date;
     endDate?: Date;
     search?: string;
+    createdById?: string;
   }
 ) {
   const where: Prisma.SessionLogWhereInput = {
@@ -19,6 +20,13 @@ export async function listSessionLogs(
     where.athleteId = opts.athleteId;
   }
 
+  if (opts?.createdById) {
+    where.OR = [
+      { createdByMemberId: opts.createdById },
+      { scheduleSession: { coachId: opts.createdById } },
+    ];
+  }
+
   if (opts?.startDate || opts?.endDate) {
     where.sessionDate = {};
     if (opts.startDate) where.sessionDate.gte = opts.startDate;
@@ -26,9 +34,14 @@ export async function listSessionLogs(
   }
 
   if (opts?.search) {
-    where.OR = [
-      { activitiesDone: { contains: opts.search, mode: "insensitive" } },
-      { coachFeedback: { contains: opts.search, mode: "insensitive" } },
+    where.AND = [
+      ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+      {
+        OR: [
+          { activitiesDone: { contains: opts.search, mode: "insensitive" } },
+          { coachFeedback: { contains: opts.search, mode: "insensitive" } },
+        ],
+      },
     ];
   }
 

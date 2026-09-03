@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   ClipboardCheck,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isRouteAllowedForRole } from "@/lib/access-policy";
@@ -22,6 +23,7 @@ const ALL_MOBILE_NAV_ITEMS = [
   { href: "/athletes", label: "Atlet", icon: Users },
   { href: "/assessments", label: "Assessment", icon: ClipboardList },
   { href: "/session-logs", label: "Sesi", icon: ClipboardCheck },
+  { href: "/profile", label: "Profil", icon: UserCircle },
 ];
 
 export function MobileBottomNav({ role }: MobileBottomNavProps) {
@@ -30,6 +32,11 @@ export function MobileBottomNav({ role }: MobileBottomNavProps) {
   const visibleItems = ALL_MOBILE_NAV_ITEMS.filter((item) => {
     return isRouteAllowedForRole(role || "admin", item.href);
   });
+
+  // Hide bottom nav during Live Field Execution to enter immersive full-screen field mode
+  if (pathname.includes("/execute")) {
+    return null;
+  }
 
   if (visibleItems.length === 0) return null;
 

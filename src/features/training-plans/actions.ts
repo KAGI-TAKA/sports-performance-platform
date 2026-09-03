@@ -8,8 +8,17 @@ import {
   createTrainingExerciseSchema,
 } from "./schema";
 
+function assertPlannerRole(role?: string | null) {
+  if (role !== "admin" && role !== "head_coach") {
+    throw new Error("Akses ditolak: Hanya Admin dan Head Coach yang dapat mengelola program latihan.");
+  }
+}
+
 export async function createTrainingPlan(formData: FormData) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat membuat program latihan." };
+  }
 
   const athleteIdVal = formData.get("athleteId") as string;
   const rawData = {
@@ -81,6 +90,9 @@ export async function createTrainingPlan(formData: FormData) {
 
 export async function updateTrainingPlan(planId: string, formData: FormData) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat mengubah program latihan." };
+  }
 
   const existingPlan = await prisma.trainingPlan.findFirst({
     where: { id: planId, organizationId: ctx.organizationId },
@@ -117,7 +129,7 @@ export async function updateTrainingPlan(planId: string, formData: FormData) {
     };
   }
 
-  // Verifikasi active status jika atlet diubah
+  // Verifikasi active status jika ditargetkan ke atlet spesifik
   if (athleteId) {
     const athleteCheck = await prisma.athlete.findFirst({
       where: {
@@ -160,6 +172,9 @@ export async function updateTrainingPlan(planId: string, formData: FormData) {
 
 export async function deleteTrainingPlan(planId: string) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat menghapus program latihan." };
+  }
 
   const existingPlan = await prisma.trainingPlan.findFirst({
     where: { id: planId, organizationId: ctx.organizationId },
@@ -185,6 +200,9 @@ export async function deleteTrainingPlan(planId: string) {
 
 export async function addExerciseToPlan(planId: string, formData: FormData) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat menambahkan gerakan latihan." };
+  }
 
   const plan = await prisma.trainingPlan.findFirst({
     where: { id: planId, organizationId: ctx.organizationId },
@@ -255,6 +273,9 @@ export async function addExerciseToPlan(planId: string, formData: FormData) {
 
 export async function deleteExercise(exerciseId: string, planId: string) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat menghapus gerakan latihan." };
+  }
 
   const exercise = await prisma.trainingExercise.findFirst({
     where: { id: exerciseId, trainingPlan: { organizationId: ctx.organizationId } },
@@ -279,6 +300,9 @@ export async function deleteExercise(exerciseId: string, planId: string) {
 
 export async function prescribeTemplateToAthlete(templateId: string, formData: FormData) {
   const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return { success: false, error: "Hanya Admin dan Head Coach yang dapat meresepkan template program." };
+  }
 
   const athleteId = formData.get("athleteId") as string;
   const customTitle = formData.get("title") as string;

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAthleteById } from "@/features/athletes/queries";
@@ -11,6 +11,10 @@ export default async function EditAthletePage({
 }) {
   const { id } = await params;
   const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    redirect(`/athletes?athleteId=${id}`);
+  }
 
   const athlete = await getAthleteById(ctx.organizationId, id);
   if (!athlete) {

@@ -75,48 +75,52 @@ export async function searchCommandPaletteAction(
         take: 4,
       }),
 
-      // 3. Search Training Plans (Max 3)
-      prisma.trainingPlan.findMany({
-        where: {
-          organizationId: ctx.organizationId,
-          title: { contains: query, mode: "insensitive" },
-        },
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          _count: {
-            select: { exercises: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 3,
-      }),
-
-      // 4. Search Completed Assessments by Athlete Name (Max 3)
-      prisma.assessment.findMany({
-        where: {
-          organizationId: ctx.organizationId,
-          status: "COMPLETED",
-          athlete: {
-            fullName: { contains: query, mode: "insensitive" },
-          },
-        },
-        select: {
-          id: true,
-          assessmentDate: true,
-          overallScore: true,
-          overallGrade: true,
-          athlete: {
+      // 3. Search Training Plans (Max 3) — Forbidden for Assistant Coach
+      isAssistant
+        ? Promise.resolve([])
+        : prisma.trainingPlan.findMany({
+            where: {
+              organizationId: ctx.organizationId,
+              title: { contains: query, mode: "insensitive" },
+            },
             select: {
               id: true,
-              fullName: true,
+              title: true,
+              status: true,
+              _count: {
+                select: { exercises: true },
+              },
             },
-          },
-        },
-        orderBy: { assessmentDate: "desc" },
-        take: 3,
-      }),
+            orderBy: { createdAt: "desc" },
+            take: 3,
+          }),
+
+      // 4. Search Completed Assessments — Forbidden for Assistant Coach
+      isAssistant
+        ? Promise.resolve([])
+        : prisma.assessment.findMany({
+            where: {
+              organizationId: ctx.organizationId,
+              status: "COMPLETED",
+              athlete: {
+                fullName: { contains: query, mode: "insensitive" },
+              },
+            },
+            select: {
+              id: true,
+              assessmentDate: true,
+              overallScore: true,
+              overallGrade: true,
+              athlete: {
+                select: {
+                  id: true,
+                  fullName: true,
+                },
+              },
+            },
+            orderBy: { assessmentDate: "desc" },
+            take: 3,
+          }),
     ]);
 
     const result: CommandPaletteSearchResult = {

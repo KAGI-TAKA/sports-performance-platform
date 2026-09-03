@@ -34,6 +34,8 @@ interface AthleteProfilePageProps {
 export default async function AthleteProfilePage({ params }: AthleteProfilePageProps) {
   const { id } = await params;
   const ctx = await requireOrgContext();
+  const isAssistant = ctx.role === "assistant_coach";
+  const assignedCoachMemberId = isAssistant ? ctx.memberId : undefined;
 
   const [
     athlete,
@@ -42,7 +44,7 @@ export default async function AthleteProfilePage({ params }: AthleteProfilePageP
     goals,
     activeTestItems,
   ] = await Promise.all([
-    getAthleteFullProfile(ctx.organizationId, id),
+    getAthleteFullProfile(ctx.organizationId, id, assignedCoachMemberId),
     listPortalAccessesForAthlete(id),
     getAthletePerformanceOverview(id),
     getAthleteGoals(id),

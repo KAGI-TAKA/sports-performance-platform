@@ -31,6 +31,9 @@ export default async function AthletesPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const ctx = await requireOrgContext();
 
+  const isAssistant = ctx.role === "assistant_coach";
+  const assignedCoachMemberId = isAssistant ? ctx.memberId : undefined;
+
   let athletes: Awaited<ReturnType<typeof listAthletes>>["athletes"] = [];
   let total = 0;
   let selectedAthlete: Awaited<ReturnType<typeof getAthleteById>> = null;
@@ -43,8 +46,9 @@ export default async function AthletesPage({
         ageGroup,
         status: status ?? "active",
         page,
+        assignedCoachMemberId,
       }),
-      getAthleteById(ctx.organizationId, athleteId),
+      getAthleteById(ctx.organizationId, athleteId, assignedCoachMemberId),
     ]);
     athletes = listResult.athletes;
     total = listResult.total;
@@ -56,11 +60,12 @@ export default async function AthletesPage({
       ageGroup,
       status: status ?? "active",
       page,
+      assignedCoachMemberId,
     });
     athletes = listResult.athletes;
     total = listResult.total;
     if (athletes[0]) {
-      selectedAthlete = await getAthleteById(ctx.organizationId, athletes[0].id);
+      selectedAthlete = await getAthleteById(ctx.organizationId, athletes[0].id, assignedCoachMemberId);
     }
   }
 
@@ -94,14 +99,16 @@ export default async function AthletesPage({
 
         <div className="flex items-center gap-2">
           <ExportCSVButton endpoint="/api/export/athletes" label="Export CSV" />
-          <Link
-            href="/athletes/new"
-            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
-            style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
-          >
-            <UserPlus className="h-4 w-4" />
-            Tambah Atlet
-          </Link>
+          {(ctx.role === "admin" || ctx.role === "head_coach") && (
+            <Link
+              href="/athletes/new"
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
+              style={{ background: "linear-gradient(135deg, hsl(230 85% 58%), hsl(250 80% 65%))" }}
+            >
+              <UserPlus className="h-4 w-4" />
+              Tambah Atlet
+            </Link>
+          )}
         </div>
       </div>
 

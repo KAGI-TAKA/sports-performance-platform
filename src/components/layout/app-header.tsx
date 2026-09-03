@@ -19,6 +19,7 @@ import { getBreadcrumbTitle } from "@/lib/navigation";
 interface AppHeaderProps {
   userName?: string;
   userEmail?: string;
+  userImage?: string | null;
   orgName?: string;
   role?: string;
   collapsed?: boolean;
@@ -29,6 +30,7 @@ interface AppHeaderProps {
 
 export function AppHeader({
   userName,
+  userImage,
   orgName,
   role,
   collapsed = false,
@@ -39,14 +41,12 @@ export function AppHeader({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Build readable breadcrumbs from pathname using centralized resolver
-  const segments = pathname.split("/").filter(Boolean);
-  const crumbs = segments
-    .map((seg) => {
-      if (/^[0-9a-f-]{20,}$/i.test(seg) || /^[c-z0-9]{24,}$/i.test(seg)) return null;
-      return getBreadcrumbTitle(seg);
-    })
-    .filter(Boolean) as string[];
+  // Compute breadcrumb segments
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const crumbs = pathSegments.map((segment, index) => {
+    const fullPath = "/" + pathSegments.slice(0, index + 1).join("/");
+    return getBreadcrumbTitle(fullPath);
+  });
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -65,8 +65,10 @@ export function AppHeader({
   const isAssistant = (role || "").toLowerCase() === "assistant_coach";
   const roleLabel = isAssistant ? "Assistant Coach" : "Owner / Head Coach";
 
-  // Contextual Primary Action
+  // Contextual Primary Action — strictly hidden for Assistant Coach
   const getContextualAction = () => {
+    if (isAssistant) return null;
+
     if (pathname === "/athletes") {
       return (
         <Link
@@ -183,7 +185,12 @@ export function AppHeader({
             </div>
           </div>
 
-          <Avatar fallback={initials} size="sm" alt={userName ?? "Coach Zulfi"} />
+          <Avatar
+            src={userImage}
+            fallback={initials}
+            size="sm"
+            alt={userName ?? "Coach Zulfi"}
+          />
 
           <button
             onClick={handleSignOut}

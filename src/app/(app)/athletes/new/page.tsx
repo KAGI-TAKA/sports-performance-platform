@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireOrgContext } from "@/lib/auth-context";
 import { AthleteForm } from "@/features/athletes/components/athlete-form";
 
 export default async function NewAthletePage() {
-  await requireOrgContext();
+  const ctx = await requireOrgContext();
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    redirect("/athletes");
+  }
 
   return (
     <div className="mx-auto max-w-2xl p-7">

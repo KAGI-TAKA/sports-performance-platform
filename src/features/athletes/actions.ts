@@ -12,6 +12,13 @@ import { createAthleteSchema, updateAthleteSchema, createInjurySchema } from "./
 export async function createAthlete(input: unknown) {
   const ctx = await requireOrgContext();
 
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mendaftarkan atlet baru.",
+    };
+  }
+
   const parseResult = createAthleteSchema.safeParse(input);
   if (!parseResult.success) {
     return {
@@ -78,6 +85,13 @@ export async function createAthlete(input: unknown) {
 
 export async function updateAthlete(input: unknown) {
   const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mengubah profil master atlet.",
+    };
+  }
 
   const parseResult = updateAthleteSchema.safeParse(input);
   if (!parseResult.success) {
@@ -175,6 +189,13 @@ export async function deleteAthlete(athleteId: string) {
 export async function addAthleteInjury(input: unknown) {
   const ctx = await requireOrgContext();
 
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat mencatat riwayat cedera atlet.",
+    };
+  }
+
   const parseResult = createInjurySchema.safeParse(input);
   if (!parseResult.success) {
     return {
@@ -209,6 +230,13 @@ export async function addAthleteInjury(input: unknown) {
 
 export async function deleteAthleteInjury(injuryId: string) {
   const ctx = await requireOrgContext();
+
+  if (ctx.role !== "admin" && ctx.role !== "head_coach") {
+    return {
+      success: false,
+      error: "Hanya Admin dan Head Coach yang dapat menghapus riwayat cedera atlet.",
+    };
+  }
 
   const injury = await prisma.athleteInjuryHistory.findFirst({
     where: {
