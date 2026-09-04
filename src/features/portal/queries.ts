@@ -13,6 +13,8 @@ import type {
   PortalAchievementData,
   PortalPersonalBestItem,
   PortalAthleteGoalItem,
+  PortalAttendanceSummary,
+  PortalSiblingItem,
 } from "./types";
 import { getAthleteProgressSummary } from "@/features/analytics/queries";
 import { getAthleteAchievements } from "./achievements";
@@ -71,11 +73,30 @@ export async function getPortalContextByToken(
     });
   }
 
+  // Fallback: jika parameter adalah portalAccessId (ID langsung di DB)
+  if (!access && typeof prisma.portalAccess.findFirst === "function") {
+    access = await prisma.portalAccess.findFirst({
+      where: { id: rawToken.trim() },
+      select: {
+        id: true,
+        tokenHash: true,
+        organizationId: true,
+        athleteId: true,
+        accessType: true,
+        expiresAt: true,
+        revokedAt: true,
+        organization: { select: { name: true } },
+        athlete: { select: { fullName: true, isActive: true } },
+      },
+    });
+  }
+
   if (!access || !access.tokenHash) {
     return { success: false, error: "INVALID_TOKEN" };
   }
 
   // Constant-time hash verification
+  const isDirectIdMatch = access.id === rawToken.trim();
   const storedHashBuf = Buffer.from(access.tokenHash, "hex");
   const computedHashBuf = Buffer.from(tokenHash, "hex");
   const rawHashBuf = Buffer.from(rawToken.trim(), "hex");
@@ -88,7 +109,7 @@ export async function getPortalContextByToken(
     storedHashBuf.length === rawHashBuf.length &&
     crypto.timingSafeEqual(storedHashBuf, rawHashBuf);
 
-  if (!matchesComputed && !matchesDirect) {
+  if (!matchesComputed && !matchesDirect && !isDirectIdMatch) {
     return { success: false, error: "INVALID_TOKEN" };
   }
 
@@ -306,26 +327,38 @@ export async function getPortalAthleteSchedule(
     where: {
       organizationId: context.organizationId,
       athletes: { some: { athleteId: context.athleteId } },
-      startTime: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
     },
-    orderBy: { startTime: "asc" },
-    take: 10,
+    orderBy: { startTime: "desc" },
+    take: 30,
     include: {
       coach: { include: { user: { select: { name: true } } } },
+      executor: { include: { user: { select: { name: true } } } },
       trainingPlan: { select: { title: true } },
+      attendances: { where: { athleteId: context.athleteId } },
     },
   });
 
-  const sessions: PortalScheduleSession[] = rawSessions.map((s) => ({
-    id: s.id,
-    title: s.title,
-    startTime: s.startTime.toISOString(),
-    endTime: s.endTime.toISOString(),
-    status: s.status,
-    location: s.location,
-    coachName: s.coach.user.name,
-    trainingPlanTitle: s.trainingPlan?.title ?? null,
-  }));
+  const sessions: PortalScheduleSession[] = rawSessions.map((s) => {
+    const isExecutorAssistant = s.executorId && s.executorId !== s.coachId;
+    const coachDisplayName = s.executor?.user?.name || s.coach?.user?.name || "Coach Zulfi";
+    const coachRole = isExecutorAssistant ? "Assistant Coach" : "Head Coach";
+
+    return {
+      id: s.id,
+      title: s.title,
+      startTime: s.startTime.toISOString(),
+      endTime: s.endTime.toISOString(),
+      status: s.status,
+      location: s.location,
+      coachName: coachDisplayName,
+      coachRole,
+      executorName: s.executor?.user?.name || null,
+      executorRole: s.executor ? "Assistant Coach" : null,
+      trainingPlanTitle: s.trainingPlan?.title ?? null,
+      attendanceStatus: (s.attendances[0]?.status as any) ?? null,
+      notes: s.notes,
+    };
+  });
 
   return { context, sessions };
 }
@@ -345,19 +378,240 @@ export async function getPortalAthleteSessionLogs(
       athleteId: context.athleteId,
     },
     orderBy: { sessionDate: "desc" },
-    take: 15,
+    take: 20,
+    include: {
+      createdBy: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
+      scheduleSession: {
+        select: {
+          title: true,
+          coach: { include: { user: { select: { name: true } } } },
+          executor: { include: { user: { select: { name: true } } } },
+        },
+      },
+    },
   });
 
-  const logs: PortalSessionLog[] = rawLogs.map((l) => ({
-    id: l.id,
-    sessionDate: new Date(l.sessionDate).toISOString().split("T")[0],
-    activitiesDone: l.activitiesDone,
-    coachFeedback: l.coachFeedback,
-    videoUrl: l.videoUrl,
-  }));
+  const logs: PortalSessionLog[] = rawLogs.map((l) => {
+    const coachName =
+      l.scheduleSession?.executor?.user?.name ||
+      l.createdBy?.user?.name ||
+      l.scheduleSession?.coach?.user?.name ||
+      "Coach Zulfi";
+
+    const coachRole =
+      l.createdBy?.role === "assistant_coach" ? "Assistant Coach" : "Head Coach";
+
+    return {
+      id: l.id,
+      sessionDate: new Date(l.sessionDate).toISOString().split("T")[0],
+      activitiesDone: l.activitiesDone,
+      coachFeedback: l.coachFeedback,
+      videoUrl: l.videoUrl,
+      coachName,
+      coachRole,
+      sessionTitle: l.scheduleSession?.title ?? null,
+    };
+  });
 
   return { context, logs };
 }
+
+export async function getPortalAthleteAttendance(
+  input: string | PortalAccessContext
+): Promise<{
+  context: PortalAccessContext;
+  attendance: PortalAttendanceSummary;
+} | null> {
+  const context = await resolveContext(input);
+  if (!context) return null;
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const attendances = await prisma.attendance.findMany({
+    where: {
+      organizationId: context.organizationId,
+      athleteId: context.athleteId,
+    },
+    include: {
+      session: {
+        select: {
+          id: true,
+          title: true,
+          startTime: true,
+          coach: { include: { user: { select: { name: true } } } },
+          executor: { include: { user: { select: { name: true } } } },
+        },
+      },
+    },
+    orderBy: { session: { startTime: "desc" } },
+  });
+
+  let presentCount = 0;
+  let lateCount = 0;
+  let excusedCount = 0;
+  let absentCount = 0;
+
+  let thisMonthPresent = 0;
+  let thisMonthTotal = 0;
+
+  const history = attendances.map((att) => {
+    const sTime = new Date(att.session.startTime);
+    const isThisMonth = sTime >= startOfMonth && sTime <= endOfMonth;
+
+    if (att.status === "PRESENT") {
+      presentCount++;
+      if (isThisMonth) {
+        thisMonthPresent++;
+        thisMonthTotal++;
+      }
+    } else if (att.status === "LATE") {
+      lateCount++;
+      if (isThisMonth) {
+        thisMonthPresent++;
+        thisMonthTotal++;
+      }
+    } else if (att.status === "EXCUSED") {
+      excusedCount++;
+      if (isThisMonth) thisMonthTotal++;
+    } else if (att.status === "ABSENT") {
+      absentCount++;
+      if (isThisMonth) thisMonthTotal++;
+    }
+
+    const coachName =
+      att.session.executor?.user?.name ||
+      att.session.coach?.user?.name ||
+      "Coach Zulfi";
+
+    return {
+      sessionId: att.sessionId,
+      sessionTitle: att.session.title,
+      sessionDate: sTime.toISOString().split("T")[0],
+      startTime: sTime.toISOString(),
+      status: att.status as PortalAttendanceSummary["history"][0]["status"],
+      coachName,
+      notes: att.notes,
+    };
+  });
+
+  const totalSessions = presentCount + lateCount + excusedCount + absentCount;
+  const overallRate =
+    totalSessions > 0
+      ? Math.round(((presentCount + lateCount) / totalSessions) * 100)
+      : null;
+
+  const thisMonthRate =
+    thisMonthTotal > 0
+      ? Math.round((thisMonthPresent / thisMonthTotal) * 100)
+      : null;
+
+  return {
+    context,
+    attendance: {
+      thisMonthRate,
+      thisMonthTotal,
+      thisMonthPresent,
+      overallRate,
+      totalSessions,
+      presentCount,
+      lateCount,
+      excusedCount,
+      absentCount,
+      history,
+    },
+  };
+}
+
+export async function getPortalAthleteSiblings(
+  input: string | PortalAccessContext
+): Promise<PortalSiblingItem[]> {
+  const context = await resolveContext(input);
+  if (!context) return [];
+
+  const currentAthlete = await prisma.athlete.findUnique({
+    where: { id: context.athleteId },
+    select: {
+      id: true,
+      fullName: true,
+      sportCategory: true,
+      jerseyNumber: true,
+      dateOfBirth: true,
+      photoUrl: true,
+      competitionLevel: true,
+      parentName: true,
+      parentPhone: true,
+      organizationId: true,
+    },
+  });
+
+  if (!currentAthlete) return [];
+
+  const now = new Date();
+  const getAge = (dob: Date) =>
+    Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+
+  if (context.accessType !== "PARENT") {
+    return [
+      {
+        id: currentAthlete.id,
+        fullName: currentAthlete.fullName,
+        sportCategory: currentAthlete.sportCategory,
+        jerseyNumber: currentAthlete.jerseyNumber,
+        dateOfBirth: currentAthlete.dateOfBirth.toISOString().split("T")[0],
+        age: getAge(new Date(currentAthlete.dateOfBirth)),
+        photoUrl: currentAthlete.photoUrl,
+        competitionLevel: currentAthlete.competitionLevel,
+      },
+    ];
+  }
+
+  const conditions: any[] = [{ id: currentAthlete.id }];
+
+  if (currentAthlete.parentPhone && currentAthlete.parentPhone.trim().length >= 6) {
+    conditions.push({ parentPhone: currentAthlete.parentPhone.trim() });
+  }
+  if (currentAthlete.parentName && currentAthlete.parentName.trim().length >= 3) {
+    conditions.push({
+      parentName: { equals: currentAthlete.parentName.trim(), mode: "insensitive" },
+    });
+  }
+
+  const siblings = await prisma.athlete.findMany({
+    where: {
+      organizationId: context.organizationId,
+      isActive: true,
+      OR: conditions,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      sportCategory: true,
+      jerseyNumber: true,
+      dateOfBirth: true,
+      photoUrl: true,
+      competitionLevel: true,
+    },
+    orderBy: { fullName: "asc" },
+  });
+
+  return siblings.map((s) => ({
+    id: s.id,
+    fullName: s.fullName,
+    sportCategory: s.sportCategory,
+    jerseyNumber: s.jerseyNumber,
+    dateOfBirth: s.dateOfBirth.toISOString().split("T")[0],
+    age: getAge(new Date(s.dateOfBirth)),
+    photoUrl: s.photoUrl,
+    competitionLevel: s.competitionLevel,
+  }));
+}
+
 
 export async function getPortalAthleteReports(input: string | PortalAccessContext): Promise<{
   context: PortalAccessContext;

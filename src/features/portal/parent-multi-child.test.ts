@@ -167,4 +167,16 @@ describe("Phase 4B-04: Parent Multi-Child Portal & Strict IDOR Security", () => 
       expect(res.error).toContain("UNAUTHORIZED_OR_NOT_FOUND");
     });
   });
+
+  describe("Token-Based Child Switching", () => {
+    it("should reject token-based child switching if token is invalid or expired", async () => {
+      vi.mocked(prisma.portalAccess.findUnique).mockResolvedValue(null);
+
+      const { getPortalChildDataByToken } = await import("./parent-queries");
+      const res = await getPortalChildDataByToken("invalid-token", "child-2");
+      expect(res.success).toBe(false);
+      expect(res.error).toContain("Link portal tidak valid");
+    });
+  });
 });
+

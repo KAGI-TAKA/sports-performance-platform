@@ -15,8 +15,11 @@ import type {
   PortalAchievementData,
   PortalPersonalBestItem,
   PortalAthleteGoalItem,
+  PortalAttendanceSummary,
+  PortalSiblingItem,
 } from "./types";
 import {
+  getPortalContextByToken,
   getPortalAthleteProfile,
   getPortalAthleteProgress,
   getPortalAthleteTrainingPlan,
@@ -27,6 +30,8 @@ import {
   getPortalAthleteGuidances,
   getPortalAthletePerformanceOverview,
   getPortalAthleteGoals,
+  getPortalAthleteAttendance,
+  getPortalAthleteSiblings,
 } from "./queries";
 import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/queries";
 
@@ -342,6 +347,8 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
     feedbackSessions: any[];
     personalBests: PortalPersonalBestItem[];
     portalGoals: PortalAthleteGoalItem[];
+    attendance: PortalAttendanceSummary | null;
+    siblings: PortalSiblingItem[];
   };
 }> {
   const ctx = await requireOrgContext();
@@ -399,6 +406,8 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
     guidanceData,
     performanceData,
     portalGoals,
+    attendanceData,
+    siblings,
   ] = await Promise.all([
     getPortalAthleteProfile(portalContext),
     getPortalAthleteProgress(portalContext),
@@ -409,6 +418,8 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
     getPortalAthleteGuidances(portalContext),
     getPortalAthletePerformanceOverview(portalContext),
     getPortalAthleteGoals(portalContext),
+    getPortalAthleteAttendance(portalContext),
+    getPortalAthleteSiblings(portalContext),
   ]);
 
   if (!profileData || !progressData) {
@@ -454,6 +465,133 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
       },
       personalBests: performanceData.personalBests,
       portalGoals,
+      attendance: attendanceData?.attendance ?? null,
+      siblings,
     },
   };
 }
+
+/**
+ * Token-safe multi-child portal data retrieval.
+ * Allows a parent viewing a portal via rawToken to switch context to an authorized sibling child.
+ */
+export async function getPortalChildDataByToken(
+  rawToken: string,
+  targetAthleteId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+  payload?: any;
+}> {
+  const auth = await getPortalContextByToken(rawToken);
+  if (!auth.success) {
+    return { success: false, error: "Link portal tidak valid atau telah kedaluwarsa." };
+  }
+
+  if (auth.context.accessType !== "PARENT") {
+    return { success: false, error: "Akses pergantian anak hanya diizinkan untuk akun Orang Tua." };
+  }
+
+  // Verify targetAthleteId belongs to the same parent in the same organization
+  const siblings = await getPortalAthleteSiblings(auth.context);
+  const isAuthorizedSibling = siblings.some((s) => s.id === targetAthleteId);
+
+  if (!isAuthorizedSibling) {
+    return {
+      success: false,
+      error: "UNAUTHORIZED_CHILD: Atlet yang dipilih tidak terhubung dengan akun Orang Tua Anda.",
+    };
+  }
+
+  const targetAthlete = await prisma.athlete.findFirst({
+    where: {
+      id: targetAthleteId,
+      organizationId: auth.context.organizationId,
+      isActive: true,
+    },
+  });
+
+  if (!targetAthlete) {
+    return { success: false, error: "Data atlet tidak ditemukan atau tidak aktif." };
+  }
+
+  const portalContext: PortalAccessContext = {
+    portalAccessId: auth.context.portalAccessId,
+    organizationId: auth.context.organizationId,
+    organizationName: auth.context.organizationName,
+    athleteId: targetAthlete.id,
+    athleteName: targetAthlete.fullName,
+    accessType: "PARENT",
+    expiresAt: auth.context.expiresAt,
+  };
+
+  const [
+    profileData,
+    progressData,
+    planData,
+    scheduleData,
+    logsData,
+    reportsData,
+    guidanceData,
+    performanceData,
+    portalGoals,
+    attendanceData,
+  ] = await Promise.all([
+    getPortalAthleteProfile(portalContext),
+    getPortalAthleteProgress(portalContext),
+    getPortalAthleteTrainingPlan(portalContext),
+    getPortalAthleteSchedule(portalContext),
+    getPortalAthleteSessionLogs(portalContext),
+    getPortalAthleteReports(portalContext),
+    getPortalAthleteGuidances(portalContext),
+    getPortalAthletePerformanceOverview(portalContext),
+    getPortalAthleteGoals(portalContext),
+    getPortalAthleteAttendance(portalContext),
+  ]);
+
+  if (!profileData || !progressData) {
+    return { success: false, error: "Gagal memuat profil atlet terpilih." };
+  }
+
+  const [achievementsData, feedbackData] = await Promise.all([
+    getPortalAthleteAchievements(
+      portalContext,
+      progressData.trends,
+      reportsData?.reports
+    ),
+    getEligibleParentFeedbackSessions(rawToken),
+  ]);
+
+  return {
+    success: true,
+    payload: {
+      context: portalContext,
+      profile: profileData.profile,
+      snapshot: profileData.latestSnapshot,
+      progress: {
+        overallScore: progressData.overallScore,
+        overallGrade: progressData.overallGrade,
+        trends: progressData.trends,
+        totalAssessments: progressData.totalAssessments,
+      },
+      trainingPlan: planData?.plan ?? null,
+      schedule: scheduleData?.sessions ?? [],
+      sessionLogs: logsData?.logs ?? [],
+      reports: reportsData?.reports ?? [],
+      guidances: guidanceData?.guidances ?? [],
+      feedbackSessions: feedbackData.sessions ?? [],
+      achievements: achievementsData?.achievements ?? {
+        starRating: 0,
+        starLabel: "Belum Ada Evaluasi",
+        totalAssessments: 0,
+        completedSessions: 0,
+        badges: [],
+      },
+      personalBests: performanceData.personalBests,
+      portalGoals,
+      attendance: attendanceData?.attendance ?? null,
+      siblings,
+    },
+  };
+}
+

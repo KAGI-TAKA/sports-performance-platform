@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { SessionExecutionData } from "./types";
 import { canMemberExecuteSession, isSessionEligibleForExecution } from "./engine";
@@ -93,7 +93,7 @@ export async function getSessionExecutionData(
   const canExecute = canMemberExecuteSession(
     currentMemberRole,
     currentMemberId,
-    session.coachId
+    session.executorId || session.coachId
   );
 
   const eligibility = isSessionEligibleForExecution(session.status);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Users, User, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Users } from "lucide-react";
 import { PortalView } from "./portal-view";
 import type { ParentChildItem } from "../parent-queries";
 
@@ -46,14 +46,16 @@ export function ParentMultiChildPortal({
 
   if (children.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-surface-1 p-8 text-center shadow-lg space-y-3">
-          <Users className="h-10 w-10 text-muted mx-auto mb-2" />
-          <h1 className="font-display text-lg font-bold text-foreground">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b1329] flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111c38] p-8 text-center shadow-lg space-y-3">
+          <div className="h-12 w-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-2">
+            <Users className="h-6 w-6" />
+          </div>
+          <h1 className="font-display text-lg font-bold text-slate-900 dark:text-white">
             Belum Ada Profil Atlet Terhubung
           </h1>
-          <p className="text-xs text-muted leading-relaxed">
-            Akun orang tua atas nama <strong className="text-foreground">{parentName}</strong> belum memiliki atlet yang terhubung secara resmi dalam akademi ini. Silakan hubungi pelatih Anda.
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Akun orang tua atas nama <strong className="text-slate-900 dark:text-white">{parentName}</strong> belum memiliki atlet yang terhubung secara resmi dalam akademi ini. Silakan hubungi pelatih Anda.
           </p>
         </div>
       </div>
@@ -61,57 +63,11 @@ export function ParentMultiChildPortal({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* ── PARENT MULTI-CHILD SWITCHER TOPBAR ─────────────────────── */}
-      <div className="sticky top-0 z-40 border-b border-border bg-surface-1/95 backdrop-blur-md px-4 sm:px-6 py-3">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
-              <Users className="h-4 w-4" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-foreground tracking-tight block">
-                Portal Orang Tua • {parentName}
-              </span>
-              <span className="text-[10px] text-muted block">
-                Pilih profil anak untuk melihat data perkembangan fisik &amp; presensi
-              </span>
-            </div>
-          </div>
-
-          {/* Child Switcher Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {children.map((child) => {
-              const isSelected = child.id === selectedChildId;
-              return (
-                <button
-                  key={child.id}
-                  onClick={() => handleSelectChild(child.id)}
-                  disabled={loadingChild}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap border ${
-                    isSelected
-                      ? "bg-brand text-brand-foreground border-brand shadow-xs"
-                      : "bg-surface-2/60 text-secondary border-border hover:bg-surface-2 hover:text-foreground"
-                  }`}
-                >
-                  <User className="h-3.5 w-3.5" />
-                  <span>{child.fullName}</span>
-                  {child.sportCategory && (
-                    <span className={`text-[10px] ${isSelected ? "text-brand-foreground/80" : "text-muted"}`}>
-                      ({child.sportCategory})
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── CHILD PORTAL VIEW ────────────────────────────────────────── */}
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b1329]">
       {loadingChild ? (
-        <div className="py-20 text-center text-xs text-muted animate-pulse">
-          Memuat data perkembangan atlet...
+        <div className="py-24 text-center text-xs text-slate-500 animate-pulse flex flex-col items-center justify-center gap-2 min-h-screen">
+          <div className="h-8 w-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <span>Memuat data perkembangan atlet...</span>
         </div>
       ) : portalData ? (
         <PortalView
@@ -128,9 +84,13 @@ export function ParentMultiChildPortal({
           feedbackSessions={portalData.feedbackSessions}
           personalBests={portalData.personalBests}
           portalGoals={portalData.portalGoals}
+          attendance={portalData.attendance}
+          siblings={portalData.siblings || children}
+          onSelectSibling={handleSelectChild}
+          loadingSibling={loadingChild}
         />
       ) : (
-        <div className="py-20 text-center text-xs text-muted">
+        <div className="py-20 text-center text-xs text-slate-500">
           Gagal memuat data atlet yang dipilih.
         </div>
       )}

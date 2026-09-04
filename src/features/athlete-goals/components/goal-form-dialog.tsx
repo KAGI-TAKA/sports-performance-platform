@@ -208,9 +208,9 @@ export function GoalFormDialog({
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent onClose={() => setIsOpen(false)} className="sm:max-w-[480px] p-5 sm:p-6 overflow-y-auto max-h-[90vh]">
           <form onSubmit={handleSubmit}>
-            <DialogHeader>
+            <DialogHeader className="pr-8">
               <DialogTitle className="text-base flex items-center gap-2">
                 <Target className="h-4 w-4 text-accent" />
                 {existingGoal ? "Ubah Target Performa" : "Buat Target Performa Atlet"}

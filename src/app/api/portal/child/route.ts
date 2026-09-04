@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { getParentChildPortalData } from "@/features/portal/parent-queries";
+import {
+  getParentChildPortalData,
+  getPortalChildDataByToken,
+} from "@/features/portal/parent-queries";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const athleteId = searchParams.get("athleteId");
+  const token = searchParams.get("token");
 
   if (!athleteId) {
     return NextResponse.json(
@@ -12,7 +16,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const result = await getParentChildPortalData(athleteId);
+  let result;
+  if (token) {
+    result = await getPortalChildDataByToken(token, athleteId);
+  } else {
+    result = await getParentChildPortalData(athleteId);
+  }
 
   if (!result.success) {
     return NextResponse.json(
@@ -23,3 +32,4 @@ export async function GET(request: Request) {
 
   return NextResponse.json(result);
 }
+

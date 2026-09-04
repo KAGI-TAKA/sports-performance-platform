@@ -74,7 +74,7 @@ export function PrescribeTemplateDialog({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent onClose={() => setIsOpen(false)} className="max-w-md">
-          <DialogHeader>
+          <DialogHeader className="pr-8">
             <div className="flex items-center gap-2">
               <Copy className="h-4 w-4 text-accent" />
               <DialogTitle className="text-base font-bold">

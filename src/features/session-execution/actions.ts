@@ -36,7 +36,7 @@ export async function saveSessionExecutionDraftAction(
   }
 
   // Verify RBAC
-  const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.coachId);
+  const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.executorId || session.coachId);
   if (!hasAuthority) {
     return { success: false, error: "Anda tidak memiliki wewenang untuk mencatat sesi ini." };
   }
@@ -126,7 +126,7 @@ export async function completeSessionExecutionAction(
   }
 
   // Verify RBAC
-  const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.coachId);
+  const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.executorId || session.coachId);
   if (!hasAuthority) {
     return { success: false, error: "Anda tidak memiliki wewenang untuk menyelesaikan sesi ini." };
   }
@@ -300,7 +300,7 @@ export async function batchMarkAllPresentAction(sessionId: string): Promise<{
     }
 
     // Verify RBAC
-    const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.coachId);
+    const hasAuthority = canMemberExecuteSession(ctx.role, ctx.memberId, session.executorId || session.coachId);
     if (!hasAuthority) {
       return { success: false, error: "Anda tidak memiliki wewenang untuk mencatat sesi ini." };
     }

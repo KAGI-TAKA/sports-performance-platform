@@ -33,7 +33,6 @@ export async function GET(
         where: {
           id: assessmentId,
           organizationId: context.organizationId,
-          athleteId: context.athleteId,
           status: "COMPLETED",
         },
         include: {

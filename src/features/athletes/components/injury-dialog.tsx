@@ -91,13 +91,13 @@ export function InjuryDialog({
           className="gap-1 text-xs"
         >
           <ShieldAlert className="h-3.5 w-3.5 text-danger" />
-          + Catat Cedera
+          <span>Catat Cedera</span>
         </Button>
       ) : null}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent onClose={() => setIsOpen(false)} className="max-w-md">
-          <DialogHeader>
+          <DialogHeader className="pr-8">
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-danger" />
               <DialogTitle className="text-base font-bold">

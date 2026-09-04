@@ -73,57 +73,57 @@ export function AthleteProfileTabs({
   return (
     <div className="space-y-4">
       {/* Segmented Tab Navigation */}
-      <div className="flex border-b border-border gap-2 select-none overflow-x-auto">
+      <div className="flex border-b border-border gap-1 sm:gap-2 select-none overflow-x-auto pb-0.5 scrollbar-thin px-0.5">
         <button
           type="button"
           onClick={() => setActiveTab("assessments")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 whitespace-nowrap ${
             activeTab === "assessments"
               ? "border-accent text-accent"
               : "border-transparent text-muted hover:text-foreground"
           }`}
         >
           <Activity className="h-4 w-4" />
-          <span>Rapor & Grafik Fisik ({athlete.assessments.length})</span>
+          <span>Rapor &amp; Grafik Fisik ({athlete.assessments.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("goals")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 whitespace-nowrap ${
             activeTab === "goals"
               ? "border-accent text-accent"
               : "border-transparent text-muted hover:text-foreground"
           }`}
         >
           <Target className="h-4 w-4" />
-          <span>Target & Rekor ({activeGoalsCount})</span>
+          <span>Target &amp; Rekor ({activeGoalsCount})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("training")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 whitespace-nowrap ${
             activeTab === "training"
               ? "border-accent text-accent"
               : "border-transparent text-muted hover:text-foreground"
           }`}
         >
           <Dumbbell className="h-4 w-4" />
-          <span>Program Latihan & Sesi ({athlete.sessionLogs.length})</span>
+          <span>Program Latihan &amp; Sesi ({athlete.sessionLogs.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("info")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors shrink-0 whitespace-nowrap ${
             activeTab === "info"
               ? "border-accent text-accent"
               : "border-transparent text-muted hover:text-foreground"
           }`}
         >
           <User className="h-4 w-4" />
-          <span>Biodata, Medis & Portal</span>
+          <span>Biodata, Medis &amp; Portal</span>
         </button>
       </div>
 
@@ -409,11 +409,11 @@ export function AthleteProfileTabs({
                   description="Buat program latihan khusus untuk membimbing sesi latihan mandiri atlet."
                   action={
                     <Link
-                      href="/training-plans/new"
+                      href={`/training-plans/new?athleteId=${athlete.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent/90 transition shadow-2xs"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      + Buat Program Latihan
+                      <span>Buat Program Latihan</span>
                     </Link>
                   }
                   className="py-6"

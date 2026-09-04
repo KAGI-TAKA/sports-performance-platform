@@ -195,7 +195,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
     id: "qa-new-plan",
     title: "Susun Program Latihan",
     subtitle: "Buat silabus latihan atau template kurikulum",
-    href: "/training-plans",
+    href: "/training-plans/new",
     icon: Dumbbell,
     keywords: ["buat program", "training plan", "kurikulum", "drill", "menu latihan", "plan"],
   },
@@ -238,6 +238,8 @@ export const BREADCRUMB_MAP: Record<string, string> = {
   benchmarks: "Master Benchmark",
   settings: "Pengaturan Sistem",
   users: "Manajemen Pengguna",
+  profile: "Profil Akun",
+  portal: "Portal Publik",
   new: "Baru",
   edit: "Ubah",
   execute: "Eksekusi Lapangan",
@@ -245,9 +247,24 @@ export const BREADCRUMB_MAP: Record<string, string> = {
   exercises: "Library Latihan",
 };
 
-export function getBreadcrumbTitle(segment: string): string {
-  if (BREADCRUMB_MAP[segment]) {
-    return BREADCRUMB_MAP[segment];
+export function getBreadcrumbTitle(segment: string, parentSegment?: string): string {
+  // Strip leading/trailing slashes
+  const clean = segment.replace(/^\/+|\/+$/g, "");
+  
+  // If exact match in dictionary
+  if (BREADCRUMB_MAP[clean]) {
+    return BREADCRUMB_MAP[clean];
   }
+
+  // Check if it is a CUID (e.g. cmt4wckoc0012hkdkooz3xv7j) or UUID
+  if (/^c[a-z0-9]{20,}$/i.test(clean) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
+    if (parentSegment === "schedule") return "Detail Sesi";
+    if (parentSegment === "athletes") return "Detail Atlet";
+    if (parentSegment === "assessments") return "Detail Asesmen";
+    if (parentSegment === "training-plans") return "Detail Program";
+    if (parentSegment === "session-logs") return "Detail Log Sesi";
+    return "Detail";
+  }
+
   return segment;
 }

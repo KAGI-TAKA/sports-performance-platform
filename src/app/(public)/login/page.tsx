@@ -76,7 +76,7 @@ function LoginForm() {
       }
 
       setIsLoading(false);
-      setFormError("Email/Username atau password tidak sesuai");
+      setFormError(portalRes.error || "Email/Username atau password tidak sesuai");
     } catch {
       setIsLoading(false);
       setFormError("Terjadi kendala saat memproses login. Silakan coba kembali.");

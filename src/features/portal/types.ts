@@ -76,7 +76,12 @@ export interface PortalScheduleSession {
   status: string;
   location: string | null;
   coachName: string;
+  coachRole?: string | null;
+  executorName?: string | null;
+  executorRole?: string | null;
   trainingPlanTitle: string | null;
+  attendanceStatus?: "PRESENT" | "LATE" | "EXCUSED" | "ABSENT" | "RESCHEDULED" | "UNMARKED" | null;
+  notes?: string | null;
 }
 
 export interface PortalSessionLog {
@@ -85,6 +90,43 @@ export interface PortalSessionLog {
   activitiesDone: string;
   coachFeedback: string | null;
   videoUrl: string | null;
+  coachName?: string | null;
+  coachRole?: string | null;
+  sessionTitle?: string | null;
+}
+
+export interface PortalAttendanceHistoryItem {
+  sessionId: string;
+  sessionTitle: string;
+  sessionDate: string;
+  startTime: string;
+  status: "PRESENT" | "LATE" | "EXCUSED" | "ABSENT" | "RESCHEDULED" | "UNMARKED";
+  coachName: string;
+  notes: string | null;
+}
+
+export interface PortalAttendanceSummary {
+  thisMonthRate: number | null; // e.g. 92%
+  thisMonthTotal: number;
+  thisMonthPresent: number;
+  overallRate: number | null;
+  totalSessions: number;
+  presentCount: number;
+  lateCount: number;
+  excusedCount: number;
+  absentCount: number;
+  history: PortalAttendanceHistoryItem[];
+}
+
+export interface PortalSiblingItem {
+  id: string;
+  fullName: string;
+  sportCategory: string | null;
+  jerseyNumber: number | null;
+  dateOfBirth: string;
+  age: number;
+  photoUrl: string | null;
+  competitionLevel: string | null;
 }
 
 export interface PortalReportItem {
@@ -157,3 +199,4 @@ export interface PortalAthleteGoalItem {
    *  Used to resolve PDF link if available in portal reports. */
   achievedAssessmentId: string | null;
 }
+

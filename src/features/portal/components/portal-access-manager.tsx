@@ -152,15 +152,15 @@ export function PortalAccessManager({
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent onClose={() => setIsOpen(false)} className="max-w-lg">
-          <DialogHeader>
+        <DialogContent onClose={() => setIsOpen(false)} className="max-w-lg p-5 sm:p-6 overflow-y-auto max-h-[85vh]">
+          <DialogHeader className="pr-8">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-accent" />
+              <ShieldCheck className="h-5 w-5 text-accent shrink-0" />
               <DialogTitle className="text-base font-bold">
                 Kelola Akses Portal Atlet &amp; Orang Tua
               </DialogTitle>
             </div>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-xs text-muted mt-0.5 leading-relaxed">
               Dual-option access: Gunakan Link Instan (WA) atau Username &amp; Password untuk {athleteName}.
             </p>
           </DialogHeader>

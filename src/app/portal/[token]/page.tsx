@@ -10,6 +10,8 @@ import {
   getPortalAthleteGuidances,
   getPortalAthletePerformanceOverview,
   getPortalAthleteGoals,
+  getPortalAthleteAttendance,
+  getPortalAthleteSiblings,
 } from "@/features/portal/queries";
 import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/queries";
 import { PortalView } from "@/features/portal/components/portal-view";
@@ -51,16 +53,16 @@ export default async function PortalPage({ params }: PortalPageProps) {
     }
 
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-white p-8 text-center shadow-lg space-y-3">
+      <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-white dark:bg-slate-900 p-8 text-center shadow-lg space-y-3">
           <div className="flex justify-center">{icon}</div>
-          <h1 className="font-display text-lg font-bold text-slate-900 tracking-tight">
+          <h1 className="font-display text-lg font-bold text-slate-900 dark:text-white tracking-tight">
             {title}
           </h1>
-          <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm mx-auto">
             {message}
           </p>
-          <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 font-mono">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-mono">
             Coach Zulfi Athletic Performance (@zulficoach)
           </div>
         </div>
@@ -78,6 +80,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
     guidanceData,
     performanceData,
     portalGoals,
+    attendanceData,
+    siblingsData,
   ] = await Promise.all([
     getPortalAthleteProfile(auth.context),
     getPortalAthleteProgress(auth.context),
@@ -88,6 +92,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
     getPortalAthleteGuidances(auth.context),
     getPortalAthletePerformanceOverview(auth.context),
     getPortalAthleteGoals(auth.context),
+    getPortalAthleteAttendance(auth.context),
+    getPortalAthleteSiblings(auth.context),
   ]);
 
   const [achievementsData, feedbackData] = await Promise.all([
@@ -103,13 +109,13 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
   if (!profileData || !progressData) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-white p-8 text-center shadow-lg space-y-2">
+      <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-white dark:bg-slate-900 p-8 text-center shadow-lg space-y-2">
           <ShieldAlert className="h-10 w-10 text-rose-500 mx-auto mb-2" />
-          <h1 className="font-display text-lg font-bold text-slate-900">
+          <h1 className="font-display text-lg font-bold text-slate-900 dark:text-white">
             Data Atlet Tidak Ditemukan
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Data atlet tidak dapat dimuat. Pastikan atlet aktif dalam organisasi Anda.
           </p>
         </div>
@@ -144,6 +150,9 @@ export default async function PortalPage({ params }: PortalPageProps) {
       }}
       personalBests={performanceData.personalBests}
       portalGoals={portalGoals}
+      attendance={attendanceData?.attendance ?? null}
+      siblings={siblingsData ?? []}
     />
   );
 }
+

@@ -44,8 +44,12 @@ export function AppHeader({
   // Compute breadcrumb segments
   const pathSegments = pathname.split("/").filter(Boolean);
   const crumbs = pathSegments.map((segment, index) => {
+    const parentSegment = index > 0 ? pathSegments[index - 1] : undefined;
     const fullPath = "/" + pathSegments.slice(0, index + 1).join("/");
-    return getBreadcrumbTitle(fullPath);
+    return {
+      title: getBreadcrumbTitle(segment, parentSegment),
+      href: fullPath,
+    };
   });
 
   async function handleSignOut() {
@@ -124,19 +128,24 @@ export function AppHeader({
 
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs text-muted">
-          <span className="font-medium text-secondary">Coach Zulfi Hub</span>
+          <Link href="/dashboard" className="font-medium text-secondary hover:text-foreground transition-colors">
+            Coach Zulfi Hub
+          </Link>
           {crumbs.map((crumb, i) => (
             <span key={i} className="flex items-center gap-1.5">
               <ChevronRight className="h-3 w-3 text-muted/60" />
-              <span
-                className={
-                  i === crumbs.length - 1
-                    ? "text-foreground font-semibold"
-                    : "text-secondary"
-                }
-              >
-                {crumb}
-              </span>
+              {i === crumbs.length - 1 ? (
+                <span className="text-foreground font-semibold">
+                  {crumb.title}
+                </span>
+              ) : (
+                <Link
+                  href={crumb.href}
+                  className="text-secondary hover:text-foreground transition-colors"
+                >
+                  {crumb.title}
+                </Link>
+              )}
             </span>
           ))}
         </nav>

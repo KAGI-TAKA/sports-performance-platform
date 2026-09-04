@@ -270,16 +270,29 @@ export async function loginWithPortalCredentials(usernameInput: string, password
 
   const access = await prisma.portalAccess.findFirst({
     where: {
-      username: usernameClean,
+      username: {
+        equals: usernameClean,
+        mode: "insensitive",
+      },
       revokedAt: null,
       expiresAt: { gte: new Date() },
+    },
+    include: {
+      athlete: { select: { isActive: true, fullName: true } },
     },
   });
 
   if (!access) {
     return {
       success: false,
-      error: "Username atau password portal salah, kadaluwarsa, atau telah dicabut",
+      error: "Username atau password portal salah, kedaluwarsa, atau telah dicabut",
+    };
+  }
+
+  if (!access.athlete?.isActive) {
+    return {
+      success: false,
+      error: `Profil atlet (${access.athlete?.fullName ?? "Atlet"}) sedang dinonaktifkan oleh pelatih.`,
     };
   }
 
@@ -293,7 +306,7 @@ export async function loginWithPortalCredentials(usernameInput: string, password
   if (!isValid) {
     return {
       success: false,
-      error: "Username atau password portal salah",
+      error: "Username atau password portal tidak sesuai",
     };
   }
 
@@ -331,3 +344,21 @@ export async function listPortalAccessesForAthlete(athleteId: string) {
     isActive: a.revokedAt == null && new Date() <= new Date(a.expiresAt),
   }));
 }
+
+export async function updatePortalAthleteAvatar(athleteId: string, photoUrl: string) {
+  if (!athleteId || !photoUrl) {
+    return { success: false, error: "Data foto tidak valid" };
+  }
+  try {
+    await prisma.athlete.update({
+      where: { id: athleteId },
+      data: { photoUrl },
+    });
+    revalidatePath("/portal");
+    return { success: true };
+  } catch (err) {
+    console.error("Gagal update avatar atlet:", err);
+    return { success: false, error: "Gagal menyimpan foto profil" };
+  }
+}
+

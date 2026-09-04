@@ -38,6 +38,8 @@ vi.mock("./queries", () => ({
   }),
   getPortalAthletePerformanceOverview: vi.fn().mockResolvedValue({ personalBests: [] }),
   getPortalAthleteGoals: vi.fn().mockResolvedValue([]),
+  getPortalAthleteAttendance: vi.fn().mockResolvedValue({ attendance: null }),
+  getPortalAthleteSiblings: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/features/parent-feedback/queries", () => ({
