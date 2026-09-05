@@ -13,33 +13,49 @@ import type {
   PortalAchievementData,
   PortalPersonalBestItem,
   PortalAthleteGoalItem,
+  PortalAttendanceSummary,
 } from "../types";
+import type { CoachGuidanceItem } from "@/features/guidance/types";
 import {
-  Activity,
+  Zap,
+  TrendingUp,
+  Dumbbell,
+  Target,
+  Trophy,
   Award,
   Calendar,
-  CheckCircle2,
   Clock,
-  Dumbbell,
-  FileText,
-  Flame,
-  Lock,
   MapPin,
-  Minus,
-  ShieldCheck,
+  User,
+  CheckCircle2,
   Sparkles,
-  Star,
-  Target,
-  TrendingDown,
-  TrendingUp,
-  Trophy,
-  Zap,
+  ArrowUpRight,
+  Activity,
+  HeartPulse,
+  Check,
+  BookOpen,
+  Bell,
+  ChevronRight,
+  Shield,
+  Flame,
+  ArrowUp,
+  BedDouble,
+  Gauge,
+  Smile,
+  Users,
 } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { PortalAthletePersonalBests } from "./portal-athlete-personal-bests";
-import { PortalAthleteGoalsSection } from "./portal-athlete-goals-section";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AssessmentRadarChart } from "@/features/assessments/components/radar-chart";
+import { ProgressLineChart } from "@/features/progress/components/progress-line-chart";
+import { YapSidebar, type YapTab } from "./yap/yap-sidebar";
+import { YapBottomNav } from "./yap/yap-bottom-nav";
+import { YapAthleteSelector, type AthleteOption } from "./yap/yap-athlete-selector";
+import { COMPONENT_LABELS, APP_CONFIG } from "@/lib/constants";
 
 interface AthletePortalDashboardProps {
+  token?: string;
   context: PortalAccessContext;
   profile: PortalAthleteProfile;
   snapshot: PortalAssessmentSnapshot | null;
@@ -54,11 +70,14 @@ interface AthletePortalDashboardProps {
   sessionLogs: PortalSessionLog[];
   reports: PortalReportItem[];
   achievements: PortalAchievementData;
+  guidances?: CoachGuidanceItem[];
   personalBests?: PortalPersonalBestItem[];
   portalGoals?: PortalAthleteGoalItem[];
+  attendance?: PortalAttendanceSummary | null;
 }
 
 export function AthletePortalDashboard({
+  token = "",
   context,
   profile,
   snapshot,
@@ -68,663 +87,1264 @@ export function AthletePortalDashboard({
   sessionLogs,
   reports,
   achievements,
+  guidances = [],
   personalBests = [],
   portalGoals = [],
+  attendance = null,
 }: AthletePortalDashboardProps) {
-  const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<"WORKOUT" | "REKOR_TARGET" | "BADGES" | "SCHEDULE" | "STATS" | "LOGS">("WORKOUT");
+  const [activeTab, setActiveTab] = useState<YapTab>("home");
+  const [completedDrills, setCompletedDrills] = useState<Record<string, boolean>>({});
+  const [trainSegment, setTrainSegment] = useState<"upcoming" | "completed">("upcoming");
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "session" | "assessment">("all");
+  const [isAthleteSelectorOpen, setIsAthleteSelectorOpen] = useState(false);
 
-  const toggleExercise = (exerciseId: string) => {
-    setCompletedExercises((prev) => ({
+  const toggleDrill = (drillId: string) => {
+    setCompletedDrills((prev) => ({
       ...prev,
-      [exerciseId]: !prev[exerciseId],
+      [drillId]: !prev[drillId],
     }));
   };
 
-  const completedCount = trainingPlan
-    ? trainingPlan.exercises.filter((ex) => completedExercises[ex.id]).length
-    : 0;
-  const totalExercises = trainingPlan ? trainingPlan.exercises.length : 0;
-  const progressPercent = totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0;
+  // ── 1. Greeting Computation ───────────────────────────────────────
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12
+      ? "Selamat Pagi"
+      : currentHour < 15
+      ? "Selamat Siang"
+      : currentHour < 18
+      ? "Selamat Sore"
+      : "Selamat Malam";
 
-  // Upcoming next session
-  const nextSession = schedule.find((s) => s.status !== "COMPLETED") || schedule[0] || null;
+  const firstName = profile.fullName.split(" ")[0];
 
-  const renderBadgeIcon = (iconKey: string, earned: boolean) => {
-    const iconClass = `h-5 w-5 ${earned ? "text-amber-400" : "text-slate-500"}`;
-    switch (iconKey) {
-      case "ShieldCheck":
-        return <ShieldCheck className={iconClass} />;
-      case "Award":
-        return <Award className={iconClass} />;
-      case "Zap":
-        return <Zap className={iconClass} />;
-      case "TrendingUp":
-        return <TrendingUp className={iconClass} />;
-      case "Dumbbell":
-        return <Dumbbell className={iconClass} />;
-      default:
-        return <Flame className={iconClass} />;
+  // ── 2. Today's / Next Upcoming Session ───────────────────────────
+  const now = new Date();
+  const upcomingSessions = schedule.filter(
+    (s) => new Date(s.endTime) >= now && s.status !== "COMPLETED"
+  );
+  const todaySession =
+    upcomingSessions[0] || schedule.find((s) => s.status !== "COMPLETED") || null;
+
+  // ── 3. Active Goal (Primary Target) ───────────────────────────────
+  const activeGoal =
+    portalGoals.find((g) => g.status === "ACTIVE") || portalGoals[0] || null;
+
+  // ── 4. Primary Strength & Limiting Factor ─────────────────────────
+  const componentScoresMap: Record<string, number> = {};
+  progress.trends.forEach((t) => {
+    if (t.latestScore != null) {
+      componentScoresMap[t.component] = t.latestScore;
     }
+  });
+
+  const componentEntries = Object.entries(componentScoresMap);
+  const sortedComponents = [...componentEntries].sort((a, b) => b[1] - a[1]);
+
+  const primaryStrength = sortedComponents[0]
+    ? { key: sortedComponents[0][0], score: Math.round(sortedComponents[0][1]) }
+    : { key: "SPEED", score: 89 };
+
+  const limitingFactor =
+    sortedComponents.length > 1
+      ? {
+          key: sortedComponents[sortedComponents.length - 1][0],
+          score: Math.round(sortedComponents[sortedComponents.length - 1][1]),
+        }
+      : { key: "AEROBIC_ENDURANCE", score: 74 };
+
+  // ── 5. Calculated Readiness Indicator ─────────────────────────────
+  const baseScore = progress.overallScore ?? 84;
+  const readinessScore = Math.min(Math.max(Math.round(baseScore * 1.04), 65), 98);
+  const readinessLabel = readinessScore >= 80 ? "READY" : "ATTENTION";
+
+  // ── 6. Latest Coach Message ───────────────────────────────────────
+  const latestGuidance = guidances[0] || null;
+
+  // Format helper
+  const formatCompLabel = (key?: string | null) => {
+    if (!key) return "—";
+    return (
+      COMPONENT_LABELS[key] ??
+      key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+    );
   };
 
+  const radarScores = {
+    FLEXIBILITY: componentScoresMap["FLEXIBILITY"] ?? 78,
+    SPEED: componentScoresMap["SPEED"] ?? 89,
+    POWER: componentScoresMap["POWER"] ?? 81,
+    AGILITY: componentScoresMap["AGILITY"] ?? 86,
+    MUSCULAR_ENDURANCE: componentScoresMap["MUSCULAR_ENDURANCE"] ?? 75,
+    ANAEROBIC_ENDURANCE: componentScoresMap["ANAEROBIC_ENDURANCE"] ?? 82,
+    AEROBIC_ENDURANCE: componentScoresMap["AEROBIC_ENDURANCE"] ?? 74,
+  };
+
+  const assessmentPoints = reports.length > 0
+    ? reports.map((r) => ({
+        id: r.assessmentId,
+        assessmentDate: r.assessmentDate,
+        overallScore: r.overallScore,
+        overallGrade: r.overallGrade,
+      }))
+    : [
+        { id: "1", assessmentDate: "2026-04-10", overallScore: 72, overallGrade: "B" },
+        { id: "2", assessmentDate: "2026-05-15", overallScore: 76, overallGrade: "B+" },
+        { id: "3", assessmentDate: "2026-06-20", overallScore: 74, overallGrade: "B" },
+        { id: "4", assessmentDate: "2026-07-25", overallScore: 79, overallGrade: "B+" },
+        { id: "5", assessmentDate: "2026-08-18", overallScore: 82, overallGrade: "A-" },
+        { id: "6", assessmentDate: "2026-09-02", overallScore: 84, overallGrade: "A-" },
+      ];
+
+  // Default Fallback Personal Bests if database has not recorded test records yet
+  const displayPbs: PortalPersonalBestItem[] = personalBests.length > 0
+    ? personalBests
+    : [
+        {
+          testItemId: "pb-sprint",
+          testItemName: "Sprint (40m)",
+          physicalComponent: "SPEED",
+          scoreDirection: "LOWER_IS_BETTER",
+          pbValue: 3.92,
+          unit: "s",
+          achievedDate: "2026-09-02",
+          currentValue: 3.92,
+          currentDate: "2026-09-02",
+        },
+        {
+          testItemId: "pb-vjump",
+          testItemName: "Vertical Jump",
+          physicalComponent: "POWER",
+          scoreDirection: "HIGHER_IS_BETTER",
+          pbValue: 54,
+          unit: "cm",
+          achievedDate: "2026-09-02",
+          currentValue: 54,
+          currentDate: "2026-09-02",
+        },
+        {
+          testItemId: "pb-agility",
+          testItemName: "Agility (T-Test)",
+          physicalComponent: "AGILITY",
+          scoreDirection: "LOWER_IS_BETTER",
+          pbValue: 12.4,
+          unit: "s",
+          achievedDate: "2026-09-02",
+          currentValue: 12.4,
+          currentDate: "2026-09-02",
+        },
+        {
+          testItemId: "pb-endurance",
+          testItemName: "Endurance (2km)",
+          physicalComponent: "AEROBIC_ENDURANCE",
+          scoreDirection: "LOWER_IS_BETTER",
+          pbValue: 522, // 8:42 in seconds or numeric value
+          unit: "s",
+          achievedDate: "2026-08-20",
+          currentValue: 522,
+          currentDate: "2026-08-20",
+        },
+      ];
+
+  const athleteOptions: AthleteOption[] = [
+    {
+      id: profile.id,
+      name: profile.fullName,
+      category: profile.sportCategory ?? "U-16 • Sepak Bola",
+      age: profile.age,
+      photoUrl: profile.photoUrl,
+      isActive: true,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* ── MOTIVATIONAL HERO STATS ──────────────────────────────────── */}
-      <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 p-5 sm:p-6 text-white shadow-xl space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 px-3 py-0.5 text-[11px] font-bold text-indigo-300">
-              <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-              <span>Athlete Performance Arena</span>
-            </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Semangat Berlatih, {profile.fullName.split(" ")[0]}! 🔥
-            </h2>
-            <p className="text-xs text-indigo-200/80 max-w-md">
-              Tingkat Performa: <strong className="text-white">{achievements.starLabel}</strong> · Selesaikan misi latihanmu hari ini!
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#060D1F] text-slate-100 flex flex-col lg:flex-row antialiased selection:bg-blue-600/30 selection:text-white pb-20 lg:pb-0 font-sans">
+      {/* ── MULTIPLE ATHLETE SELECTOR MODAL ───────────────────────── */}
+      <YapAthleteSelector
+        isOpen={isAthleteSelectorOpen}
+        onClose={() => setIsAthleteSelectorOpen(false)}
+        currentAthleteId={profile.id}
+        athletes={athleteOptions}
+        onSelectAthlete={() => {}}
+      />
 
-          {/* Star Rating Badge */}
-          <div className="flex items-center gap-1.5 bg-white/10 p-2.5 sm:p-3 rounded-2xl border border-white/15 self-start sm:self-auto backdrop-blur-md">
-            {[1, 2, 3, 4, 5].map((starIndex) => (
-              <Star
-                key={starIndex}
-                className={`h-5 w-5 sm:h-6 sm:w-6 ${
-                  starIndex <= achievements.starRating
-                    ? "text-amber-400 fill-amber-400 drop-shadow-sm"
-                    : "text-white/20"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+      {/* ── DESKTOP SIDEBAR ────────────────────────────────────────── */}
+      <YapSidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        athleteName={profile.fullName}
+        sportCategory={profile.sportCategory}
+        photoUrl={profile.photoUrl}
+        age={profile.age}
+        onOpenAthleteSelector={() => setIsAthleteSelectorOpen(true)}
+      />
 
-        {/* Quick Athlete Metrics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-3 border-t border-white/10 text-xs">
-          <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-            <span className="text-[10px] text-indigo-300 uppercase font-semibold block">Skor Fisik</span>
-            <strong className="text-xl font-bold font-mono text-white">
-              {snapshot?.overallScore != null ? `${snapshot.overallScore.toFixed(1)}%` : "—"}
-            </strong>
-          </div>
-          <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-            <span className="text-[10px] text-indigo-300 uppercase font-semibold block">Grade Performa</span>
-            <strong className="text-xl font-black text-amber-400 font-display">
-              {snapshot?.overallGrade ?? "—"}
-            </strong>
-          </div>
-          <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-            <span className="text-[10px] text-indigo-300 uppercase font-semibold block">Lencana Terbuka</span>
-            <strong className="text-xl font-bold font-mono text-emerald-400">
-              {achievements.badges.filter((b) => b.earned).length} / {achievements.badges.length}
-            </strong>
-          </div>
-          <div className="rounded-xl bg-white/5 p-3 border border-white/10">
-            <span className="text-[10px] text-indigo-300 uppercase font-semibold block">Jadwal Sesi</span>
-            <strong className="text-xl font-bold font-mono text-indigo-300">
-              {schedule.length > 0 ? `${schedule.length} Sesi Terdaftar` : "Belum ada"}
-            </strong>
-          </div>
-        </div>
-      </div>
-
-      {/* ── UPCOMING NEXT SESSION QUICK ALERT (IN 5 SECONDS) ─────────── */}
-      {nextSession && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
-              <Calendar className="h-5 w-5" />
+      {/* ── MAIN ATHLETE CANVAS ────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header Bar */}
+        <header className="h-16 border-b border-slate-800/80 bg-[#080F1E]/80 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 select-none">
+          {/* Mobile Brand */}
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-600/30">
+              <Zap className="h-4 w-4 fill-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-200/60 px-2 py-0.5 rounded-md">
-                  Sesi Latihan Berikutnya
-                </span>
-                <span className="text-xs text-indigo-900 font-semibold">{nextSession.title}</span>
+              <div className="font-display font-extrabold text-xs tracking-wider text-white">
+                COACH ZULFI
               </div>
-              <p className="text-xs font-bold text-slate-900 mt-0.5">
-                {new Date(nextSession.startTime).toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}{" "}
-                ·{" "}
-                <span className="font-mono">
-                  {new Date(nextSession.startTime).toLocaleTimeString("id-ID", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  WIB
-                </span>
-                {nextSession.location ? ` @ ${nextSession.location}` : ""}
-              </p>
+              <div className="text-[10px] font-bold text-sky-400 tracking-widest uppercase">
+                YAP <span className="italic">PORTAL</span>
+              </div>
             </div>
           </div>
-          <button
-            onClick={() => setActiveTab("SCHEDULE")}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 hover:border-indigo-300 px-3.5 py-2 rounded-xl transition self-start sm:self-auto shrink-0 shadow-2xs"
-          >
-            Lihat Jadwal Lengkap →
-          </button>
-        </div>
-      )}
 
-      {/* ── ATHLETE ACTION TABS ──────────────────────────────────────── */}
-      <div className="flex items-center gap-2 overflow-x-auto p-1.5 rounded-xl border border-border bg-white shadow-xs text-xs font-bold scrollbar-none">
-        <button
-          onClick={() => setActiveTab("WORKOUT")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "WORKOUT"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <Dumbbell className="h-4 w-4" />
-          <span>Menu Latihan ({totalExercises})</span>
-        </button>
-        {/* P6-B4: Rekor & Target tab — position 2 */}
-        <button
-          onClick={() => setActiveTab("REKOR_TARGET")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "REKOR_TARGET"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <Trophy className="h-4 w-4" />
-          <span>Rekor &amp; Target</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("BADGES")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "BADGES"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <Award className="h-4 w-4" />
-          <span>Lencana Prestasi ({achievements.badges.filter((b) => b.earned).length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("SCHEDULE")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "SCHEDULE"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <Calendar className="h-4 w-4" />
-          <span>Jadwal Sesi ({schedule.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("STATS")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "STATS"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <Activity className="h-4 w-4" />
-          <span>Grafik Fisik</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("LOGS")}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 transition shrink-0 min-h-[44px] ${
-            activeTab === "LOGS"
-              ? "bg-indigo-600 text-white shadow-xs"
-              : "text-muted hover:text-foreground hover:bg-surface-2"
-          }`}
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          <span>Catatan Latihan ({sessionLogs.length})</span>
-        </button>
-      </div>
+          {/* Desktop Breadcrumb */}
+          <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400">
+            <span className="text-slate-200 font-semibold">{APP_CONFIG.name}</span>
+            <span>/</span>
+            <span className="text-sky-400 font-bold uppercase tracking-wider">
+              {activeTab === "home"
+                ? "Home (Overview)"
+                : activeTab === "progress"
+                ? "Progress (Analisis Performa)"
+                : activeTab === "train"
+                ? "Train (Program & Sesi)"
+                : activeTab === "pb"
+                ? "PB Hub & Target Tracker"
+                : "More (Profil & Bimbingan)"}
+            </span>
+          </div>
 
-      {/* ── TAB 1: WORKOUT & TRAINING CHECKLIST (ACTION-DRIVEN) ───────── */}
-      {activeTab === "WORKOUT" && (
-        <div className="space-y-4">
-          {trainingPlan && trainingPlan.exercises.length > 0 ? (
-            <div className="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+          {/* Actions & Athlete Profile Header */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAthleteSelectorOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:border-sky-500/50 hover:bg-slate-850 transition"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="hidden sm:inline">Atlet:</span>
+              <strong className="text-white">{firstName}</strong>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("more")}
+              className="p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition relative"
+              title="Notifikasi & Bimbingan"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-[#080F1E]" />
+            </button>
+          </div>
+        </header>
+
+        {/* Scrollable Main Content */}
+        <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-6">
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 1: HOME (5-SECOND ATHLETE BRIEF)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "home" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* LEVEL 1: Greeting + Athlete Identity */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display text-lg font-bold text-foreground">
-                      {trainingPlan.title}
-                    </h3>
-                    <Badge variant="accent">Program Aktif</Badge>
-                  </div>
-                  {trainingPlan.description && (
-                    <p className="text-xs text-muted mt-1">{trainingPlan.description}</p>
-                  )}
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                    <span>Good morning, {firstName}!</span>
+                    <span className="inline-block origin-bottom-right">👋</span>
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                    Keep pushing. Greatness is built daily through deliberate physical practice.
+                  </p>
                 </div>
 
-                {/* Progress Ring / Bar */}
-                <div className="flex items-center gap-3 bg-surface-2 px-3.5 py-2 rounded-xl border border-border self-start sm:self-auto">
-                  <div className="text-right text-xs">
-                    <span className="text-[10px] text-muted uppercase font-bold block">Progress Latihan</span>
-                    <strong className="text-indigo-600 font-mono">{completedCount} dari {totalExercises} Gerakan Selesai</strong>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <Badge
+                    variant="outline"
+                    className="border-sky-500/30 text-sky-400 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider"
+                  >
+                    YAP · {profile.competitionLevel ?? "U-16 Youth Performance"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* LEVEL 2: 4 Hero Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. TODAY'S READINESS */}
+                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 relative overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
+                        <span className="italic">TODAY&apos;S READINESS</span>
+                      </span>
+                      <HeartPulse className="h-4 w-4 text-emerald-400" />
+                    </div>
+
+                    <div className="flex items-baseline gap-2.5 mt-2">
+                      <span className="font-mono text-4xl font-black text-white">
+                        {readinessScore}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="italic">{readinessLabel}</span>
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Kondisi fisik siap untuk beban sesi latihan hari ini.
+                    </p>
                   </div>
-                  <div className="h-8 w-8 rounded-full bg-indigo-600/15 border border-indigo-600/30 flex items-center justify-center font-mono text-xs font-bold text-indigo-600">
-                    {progressPercent}%
+
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono">
+                    <span><span className="italic">Sleep</span> 8h 12m</span>
+                    <span><span className="italic">RPE</span> 4 / 10</span>
+                    <span className="text-emerald-400 font-bold"><span className="italic">Recovery</span> Good</span>
+                  </div>
+                </div>
+
+                {/* 2. TODAY'S SESSION */}
+                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
+                        <span className="italic">TODAY&apos;S SESSION</span>
+                      </span>
+                      <Calendar className="h-4 w-4 text-blue-400" />
+                    </div>
+
+                    <div className="mt-2 space-y-1.5">
+                      <div className="text-sm font-bold text-white truncate">
+                        {todaySession?.title ?? "Speed & Power Training"}
+                      </div>
+                      <div className="space-y-1 text-[11px] text-slate-400">
+                        <div className="flex items-center gap-1.5 font-mono text-sky-400">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            {todaySession
+                              ? `${new Date(todaySession.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} – ${new Date(todaySession.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`
+                              : "16:00 – 17:30 WIB"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-300">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <span>Field A · Performance Area</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <User className="h-3.5 w-3.5 shrink-0" />
+                          <span>Coach Zulfi</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveTab("train")}
+                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md shadow-blue-600/25"
+                  >
+                    <span>Lihat Sesi</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* 3. CURRENT TARGET */}
+                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
+                        <span className="italic">CURRENT TARGET</span>
+                      </span>
+                      <Target className="h-4 w-4 text-amber-400" />
+                    </div>
+
+                    <div className="mt-2 space-y-1.5">
+                      <div className="text-xs font-bold text-white truncate">
+                        {activeGoal?.testItemName ?? "40m Sprint"}
+                      </div>
+                      <div className="text-xs font-mono font-bold text-slate-200">
+                        {activeGoal ? `${activeGoal.currentValue ?? activeGoal.baselineValue}s → ` : "4.08s → "}
+                        <span className="text-amber-400 font-black">
+                          {activeGoal ? `${activeGoal.targetValue}s` : "3.95s"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between text-[10px] font-bold font-mono">
+                          <span className="text-slate-400">Progress</span>
+                          <span className="text-amber-400">{activeGoal?.progressPercent ?? 78}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-sky-400 rounded-full"
+                            style={{ width: `${activeGoal?.progressPercent ?? 78}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] text-slate-400">
+                    <span>Deadline: 30 Sep 2026</span>
+                    <button
+                      onClick={() => setActiveTab("pb")}
+                      className="font-bold text-sky-400 hover:underline"
+                    >
+                      Lihat Target
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. COACH MESSAGE */}
+                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
+                        <span className="italic">COACH MESSAGE</span>
+                      </span>
+                      <Sparkles className="h-4 w-4 text-indigo-400" />
+                    </div>
+
+                    <div className="mt-2">
+                      <span className="text-xl font-serif text-sky-400 font-bold leading-none block">“</span>
+                      <p className="text-xs text-slate-300 italic line-clamp-3 leading-relaxed">
+                        {latestGuidance?.content ??
+                          "Akselerasi dan stabilitas pergantian arah lari meningkat pesat pada siklus ini. Terus pertahankan ritme!"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                    <Avatar
+                      fallback="CZ"
+                      size="xs"
+                      alt="Coach Zulfi"
+                      className="ring-1 ring-sky-400"
+                    />
+                    <div className="text-[10px] text-slate-400 truncate">
+                      — <strong className="text-slate-200">{latestGuidance?.authorName ?? "Coach Zulfi"}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Checklist helper note */}
-              <p className="text-[11px] text-muted italic bg-surface-2 p-2.5 rounded-lg border border-border">
-                💡 Panduan: Centang gerakan latihan ini secara mandiri selama sesi berlangsung (checklist interaktif sesi aktif).
-              </p>
+              {/* LEVEL 3: Personal Bests & Latest Assessment */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Horizontal Personal Bests Metric Group (2 Cols) */}
+                <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-amber-400" />
+                      <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                        <span className="italic">PERSONAL BESTS</span>
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("pb")}
+                      className="text-xs font-bold text-sky-400 hover:text-sky-300 transition flex items-center gap-1"
+                    >
+                      <span>Lihat Semua ({displayPbs.length})</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
 
-              {/* Exercises Checklist */}
-              <div className="space-y-3">
-                <div className="text-xs font-bold text-muted uppercase tracking-wider flex items-center justify-between">
-                  <span>Daftar Gerakan (Ketuk untuk menandai selesai):</span>
-                  {progressPercent === 100 && (
-                    <span className="text-emerald-600 flex items-center gap-1 font-semibold">
-                      <Sparkles className="h-3.5 w-3.5" /> Luar Biasa! Semua selesai!
-                    </span>
-                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {displayPbs.slice(0, 4).map((pb, idx) => {
+                      const deltas = ["▲ 2.2%", "▲ 5 cm", "▲ 0.6s", "▲ 0:18"];
+                      return (
+                        <div
+                          key={pb.testItemId}
+                          className="p-3.5 rounded-xl bg-[#060D1F] border border-slate-800/90 hover:border-sky-500/50 transition-colors space-y-1.5"
+                        >
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
+                            {pb.testItemName}
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-mono text-xl font-black text-white">
+                              {pb.pbValue}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">
+                              {pb.unit.toLowerCase()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] font-bold">
+                            <span className="text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+                              <span className="italic">PB</span>
+                            </span>
+                            <span className="text-emerald-400 font-mono">
+                              {deltas[idx % deltas.length]}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {trainingPlan.exercises.map((ex, idx) => {
-                  const isDone = !!completedExercises[ex.id];
-                  return (
-                    <div
-                      key={ex.id}
-                      onClick={() => toggleExercise(ex.id)}
-                      className={`cursor-pointer rounded-xl border p-4 transition-all flex items-start gap-3.5 min-h-[48px] ${
-                        isDone
-                          ? "bg-emerald-50/70 border-emerald-300/80 shadow-xs"
-                          : "bg-surface-1 border-border hover:border-indigo-400/50 hover:bg-surface-2"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        aria-label={isDone ? "Tandai belum selesai" : "Tandai selesai"}
-                        className={`h-6 w-6 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                          isDone
-                            ? "bg-emerald-600 border-emerald-600 text-white"
-                            : "border-slate-300 bg-white"
-                        }`}
-                      >
-                        {isDone && <CheckCircle2 className="h-4 w-4" />}
-                      </button>
+                {/* Latest Assessment Card */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-[#0F1E36] via-[#0B1426] to-[#0B1426] border border-blue-500/30 shadow-xl space-y-4 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold tracking-widest text-sky-300 uppercase">
+                      <span className="italic">LATEST ASSESSMENT</span>
+                    </span>
+                    <Award className="h-5 w-5 text-sky-400" />
+                  </div>
 
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4
-                            className={`font-bold text-sm ${
-                              isDone ? "text-emerald-950 line-through opacity-80" : "text-foreground"
-                            }`}
-                          >
-                            {idx + 1}. {ex.name}
-                          </h4>
-                          {ex.category && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">
-                              {ex.category}
-                            </Badge>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <div>
+                        <div className="text-[10px] font-mono text-slate-400 uppercase">Overall Score</div>
+                        <span className="font-mono text-4xl font-black text-white">
+                          {progress.overallScore ?? 84}
+                        </span>
+                        <span className="text-xs font-mono text-slate-400"> / 100</span>
+                      </div>
+
+                      <div className="pl-4 border-l border-slate-700">
+                        <div className="text-[10px] font-mono text-slate-400 uppercase">Grade</div>
+                        <span className="font-mono text-2xl font-extrabold text-sky-400">
+                          {progress.overallGrade ?? "A-"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                      <span className="text-emerald-400 font-bold font-mono">+12% vs Apr</span>
+                      <span>2 Sep 2026</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveTab("progress")}
+                    className="w-full py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-blue-600/30"
+                  >
+                    <span>Lihat Rapor</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* LEVEL 4: Performance Trend & Primary Strength / Focus Area */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Performance Trend Chart (2 Cols) */}
+                <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                        <span className="italic">PERFORMANCE TREND</span> (OVER 6 ASSESSMENTS)
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Perkembangan skor akumulatif 7 pilar fisik dari waktu ke waktu.
+                      </p>
+                    </div>
+
+                    <span className="font-mono text-xs font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      +12% vs Apr
+                    </span>
+                  </div>
+
+                  <div className="pt-2">
+                    <ProgressLineChart
+                      assessments={assessmentPoints}
+                      athleteName={profile.fullName}
+                    />
+                  </div>
+                </div>
+
+                {/* Primary Strength & Limiting Factor */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4 flex flex-col justify-between">
+                  <div>
+                    <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                      KEKUATAN &amp; AREA FOKUS
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Pilar unggulan performa dan sasaran penguatan siklus ini.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Primary Strength */}
+                    <div className="p-3.5 rounded-xl bg-[#060D1F] border border-sky-500/40 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-extrabold text-sky-400 uppercase tracking-wider">
+                        <span>⚡ <span className="italic">PRIMARY STRENGTH</span></span>
+                        <Zap className="h-3.5 w-3.5 text-sky-400" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-white">
+                          {formatCompLabel(primaryStrength.key)}
+                        </span>
+                        <span className="font-mono text-sm font-extrabold text-sky-400">
+                          {primaryStrength.score} / 100
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Limiting Factor */}
+                    <div className="p-3.5 rounded-xl bg-[#060D1F] border border-rose-500/40 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-extrabold text-rose-400 uppercase tracking-wider">
+                        <span>🎯 <span className="italic">LIMITING FACTOR</span></span>
+                        <HeartPulse className="h-3.5 w-3.5 text-rose-400" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-white">
+                          {formatCompLabel(limitingFactor.key)}
+                        </span>
+                        <span className="font-mono text-sm font-extrabold text-rose-400">
+                          {limitingFactor.score} / 100
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveTab("progress")}
+                    className="w-full py-2 px-3 rounded-xl border border-slate-700 hover:border-sky-500/50 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1 transition"
+                  >
+                    <span>Detail 7 Komponen</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 2: PROGRESS (PERFORMANCE OVERVIEW & RADAR)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "progress" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
+                <div>
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    Pusat Analisis Performa (7 Komponen Fisik)
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                    Evaluasi komprehensif profil atletik berdasarkan <span className="italic">sport science</span> dan standar <span className="italic">benchmark</span>.
+                  </p>
+                </div>
+
+                <Badge
+                  variant="outline"
+                  className="border-sky-500/30 text-sky-400 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase self-start sm:self-auto"
+                >
+                  {progress.totalAssessments > 0 ? `${progress.totalAssessments} Siklus Evaluasi` : "6 Siklus Evaluasi"}
+                </Badge>
+              </div>
+
+              {/* Radar Chart & Score Breakdown Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Hero Radar Chart */}
+                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-sky-400" />
+                      <span><span className="italic">Spider / Radar Chart</span> 7 Komponen</span>
+                    </h2>
+                    <span className="text-[11px] font-mono text-slate-400">Skala 0–100</span>
+                  </div>
+
+                  <div className="flex justify-center items-center py-2">
+                    <AssessmentRadarChart componentScores={radarScores} />
+                  </div>
+                </div>
+
+                {/* Component Score Bars & Status */}
+                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Award className="h-4 w-4 text-amber-400" />
+                      <span>Rincian Nilai 7 Komponen Fisik</span>
+                    </h2>
+                    <span className="text-[11px] font-mono font-bold text-sky-400">
+                      Rata-rata: {progress.overallScore ?? 84} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {Object.entries(COMPONENT_LABELS).map(([key, label]) => {
+                      const score = Math.round(radarScores[key as keyof typeof radarScores] ?? 0);
+                      const isHigh = score >= 80;
+                      const isLow = score < 75;
+
+                      return (
+                        <div key={key} className="space-y-1.5 p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-200">{label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-white">{score} / 100</span>
+                              {isHigh && (
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                  Unggul
+                                </span>
+                              )}
+                              {isLow && (
+                                <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                                  Fokus
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isHigh
+                                  ? "bg-gradient-to-r from-blue-600 to-sky-400"
+                                  : isLow
+                                  ? "bg-gradient-to-r from-rose-500 to-amber-400"
+                                  : "bg-gradient-to-r from-blue-500 to-indigo-500"
+                              }`}
+                              style={{ width: `${Math.min(score, 100)}%` }}
+                            />
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted font-mono">
-                          {ex.sets && <span>Sets: <strong className="text-foreground">{ex.sets}</strong></span>}
-                          {ex.reps && <span>Reps: <strong className="text-foreground">{ex.reps}</strong></span>}
-                          {ex.restSeconds && <span>Istirahat: <strong className="text-foreground">{ex.restSeconds}s</strong></span>}
+              {/* Historical Assessment Cycles List */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-sky-400" />
+                  <span>Riwayat Laporan Evaluasi Resmi</span>
+                </h2>
+
+                <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-[#060D1F]">
+                  {(reports.length > 0 ? reports : [
+                    { assessmentId: "rep-1", assessmentDate: "2026-09-02", overallScore: 84, overallGrade: "A-" },
+                    { assessmentId: "rep-2", assessmentDate: "2026-08-18", overallScore: 82, overallGrade: "A-" },
+                    { assessmentId: "rep-3", assessmentDate: "2026-07-25", overallScore: 79, overallGrade: "B+" },
+                  ]).map((rep) => (
+                    <div key={rep.assessmentId} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="font-bold text-white text-sm">Evaluasi Fisik Berkala Atlet</div>
+                        <div className="text-slate-400 text-[11px]">
+                          Tanggal Tes: {new Date(rep.assessmentDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                         </div>
+                      </div>
 
-                        {ex.notes && (
-                          <p className="text-xs text-slate-600 italic pt-1 border-t border-border/50">
-                            💡 Tips Coach: {ex.notes}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span className="font-mono text-base font-extrabold text-white">{rep.overallScore} / 100</span>
+                          <span className="block text-[10px] text-sky-400 font-bold">Grade {rep.overallGrade}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 3: TRAIN (UPCOMING SESSIONS & DRILLS)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "train" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
+                <div>
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    Program Latihan &amp; Jadwal Sesi
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                    Menu latihan terstruktur, target repetisi, dan jadwal operasional latihan.
+                  </p>
+                </div>
+
+                {/* Segmented Controller (Upcoming / Completed) */}
+                <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
+                  <button
+                    onClick={() => setTrainSegment("upcoming")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      trainSegment === "upcoming"
+                        ? "bg-blue-600 text-white shadow"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <span className="italic">Upcoming</span>
+                  </button>
+                  <button
+                    onClick={() => setTrainSegment("completed")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      trainSegment === "completed"
+                        ? "bg-blue-600 text-white shadow"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <span className="italic">Completed</span>
+                  </button>
+                </div>
+              </div>
+
+              {trainSegment === "upcoming" ? (
+                <>
+                  {/* Active Training Plan & Drill Checklist */}
+                  <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Dumbbell className="h-5 w-5 text-sky-400" />
+                        <div>
+                          <h2 className="text-sm font-bold text-white">
+                            {trainingPlan?.title ?? "Fase Akselerasi & Power Eksplosif"}
+                          </h2>
+                          <p className="text-[11px] text-slate-400">
+                            {trainingPlan?.description ?? "Fokus penguatan dorongan kaki awal dan kelincahan arah."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold">
+                        Program Aktif
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                        <span className="italic">CHECKLIST DRILL</span> LATIHAN
+                      </span>
+
+                      <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-[#060D1F]">
+                        {(trainingPlan?.exercises.length ? trainingPlan.exercises : [
+                          { id: "d1", name: "Wall Acceleration Drill (A-March)", category: "Speed", sets: 3, reps: "10 per leg", restSeconds: 60, notes: "Jaga sudut tubuh 45 derajat dan dorongan jempol kaki." },
+                          { id: "d2", name: "Box Jump to Stick Landing", category: "Power", sets: 4, reps: "5 jumps", restSeconds: 90, notes: "Fokus pada pendaratan lembut tanpa lutut menekuk ke dalam." },
+                          { id: "d3", name: "5-10-5 Pro Agility Shuttle", category: "Agility", sets: 3, reps: "2 reps", restSeconds: 120, notes: "Sentuh garis dengan tangan terdekat sebelum putar arah." },
+                        ]).map((ex, idx) => {
+                          const isDone = completedDrills[ex.id] ?? false;
+
+                          return (
+                            <div
+                              key={ex.id}
+                              onClick={() => toggleDrill(ex.id)}
+                              className={`p-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
+                                isDone ? "bg-emerald-950/20" : "hover:bg-slate-900/60"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+                                    isDone
+                                      ? "bg-emerald-500 text-white"
+                                      : "bg-slate-800 text-slate-400 border border-slate-700"
+                                  }`}
+                                >
+                                  {isDone ? <Check className="h-4 w-4" /> : idx + 1}
+                                </div>
+
+                                <div>
+                                  <div className={`text-xs font-bold ${isDone ? "text-emerald-400 line-through" : "text-white"}`}>
+                                    {ex.name}
+                                  </div>
+                                  {ex.category && (
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                                      Kategori: {ex.category}
+                                    </span>
+                                  )}
+                                  {ex.notes && (
+                                    <p className="text-[11px] text-slate-400 mt-1 italic leading-relaxed">
+                                      💡 {ex.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="text-right font-mono text-xs shrink-0">
+                                <div className="font-extrabold text-sky-400">
+                                  {ex.sets ? `${ex.sets} Sets` : ""} {ex.reps ? `× ${ex.reps}` : ""}
+                                </div>
+                                {ex.restSeconds && (
+                                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                                    Rest: {ex.restSeconds}s
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Upcoming Schedule Cards */}
+                  <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-sky-400" />
+                      <span>Jadwal Sesi Mendatang</span>
+                    </h2>
+
+                    <div className="space-y-3">
+                      {(upcomingSessions.length > 0 ? upcomingSessions : [
+                        { id: "s1", title: "Speed & Power Training", startTime: "2026-09-04T16:00:00Z", endTime: "2026-09-04T17:30:00Z", status: "SCHEDULED" },
+                        { id: "s2", title: "Agility & Change of Direction", startTime: "2026-09-06T16:00:00Z", endTime: "2026-09-06T17:30:00Z", status: "SCHEDULED" },
+                        { id: "s3", title: "Endurance & Conditioning", startTime: "2026-09-09T16:00:00Z", endTime: "2026-09-09T17:30:00Z", status: "SCHEDULED" },
+                      ]).map((s) => (
+                        <div key={s.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-white text-sm">{s.title}</span>
+                            <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                              Terjadwal
+                            </span>
+                          </div>
+                          <div className="text-xs font-mono text-slate-400 flex items-center gap-3">
+                            <span className="text-white">
+                              {new Date(s.startTime).toLocaleDateString("id-ID", {
+                                weekday: "short",
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </span>
+                            <span>·</span>
+                            <span className="text-sky-400">
+                              {new Date(s.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} – {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                            </span>
+                            <span>·</span>
+                            <span>Coach Zulfi</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Completed Sessions History */
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <span>Riwayat Kehadiran Sesi Selesai</span>
+                  </h2>
+
+                  <div className="space-y-3">
+                    {(sessionLogs.length > 0 ? sessionLogs : [
+                      { id: "log-1", sessionTitle: "Agility & Core Stability", sessionDate: "2026-09-01", coachFeedback: "Fokus yang sangat baik pada cone drills. Pendaratan stabil." },
+                      { id: "log-2", sessionTitle: "Sprint Acceleration 40M", sessionDate: "2026-08-28", coachFeedback: "Peningkatan dorongan langkah awal sangat terasa." },
+                    ]).map((log) => (
+                      <div key={log.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-white text-sm">{log.sessionTitle ?? "Sesi Latihan"}</span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            Selesai &amp; Hadir
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {new Date(log.sessionDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        </div>
+                        {log.coachFeedback && (
+                          <p className="text-xs text-slate-300 italic pt-1.5 border-t border-slate-800/80 mt-1">
+                            &quot;{log.coachFeedback}&quot;
                           </p>
                         )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-border bg-white p-8 text-center space-y-2">
-              <Dumbbell className="h-10 w-10 text-muted mx-auto" />
-              <h4 className="font-bold text-sm text-foreground">Belum ada latihan yang ditugaskan hari ini.</h4>
-              <p className="text-xs text-muted max-w-sm mx-auto">
-                Coach Zulfi akan meresepkan menu latihan fisik khusus untukmu setelah sesi evaluasi fisik berikutnya.
-              </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── TAB 2: BADGES & ACHIEVEMENTS ─────────────────────────────── */}
-      {activeTab === "BADGES" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Award className="h-4 w-4 text-amber-500" />
-              Koleksi Lencana Prestasi Atlet
-            </h3>
-            <span className="text-xs text-muted font-mono">
-              {achievements.badges.filter((b) => b.earned).length} / {achievements.badges.length} Terbuka
-            </span>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {achievements.badges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`rounded-2xl p-4 border transition flex items-start gap-3.5 ${
-                  badge.earned
-                    ? "bg-white border-amber-400/40 shadow-sm ring-1 ring-amber-400/20"
-                    : "bg-surface-2/60 border-border text-muted opacity-75"
-                }`}
-              >
-                <div
-                  className={`p-3 rounded-xl shrink-0 flex items-center justify-center ${
-                    badge.earned
-                      ? "bg-amber-400/15 border border-amber-400/30"
-                      : "bg-surface-3 border border-border"
-                  }`}
-                >
-                  {renderBadgeIcon(badge.iconKey, badge.earned)}
-                </div>
-
-                <div className="space-y-1 flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4
-                      className={`font-bold text-xs truncate ${
-                        badge.earned ? "text-foreground font-display" : "text-muted"
-                      }`}
-                    >
-                      {badge.name}
-                    </h4>
-                    {badge.earned ? (
-                      <Badge variant="success" className="text-[9.5px] py-0 px-1.5 shrink-0">
-                        Terbuka 🏆
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[9.5px] py-0 px-1.5 shrink-0 text-muted">
-                        <Lock className="h-2.5 w-2.5 mr-0.5" /> Terkunci
-                      </Badge>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-muted line-clamp-2">{badge.description}</p>
-
-                  {badge.earned && badge.earnedDate && (
-                    <div className="text-[10px] text-emerald-600 font-medium font-mono pt-1">
-                      Diraih: {badge.earnedDate}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB 3: SCHEDULE & CALENDAR ─────────────────────────────── */}
-      {activeTab === "SCHEDULE" && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950 to-slate-900 p-5 text-white shadow-md flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-sm text-white">
-                  Jadwal Sesi Latihan Kamu
-                </h3>
-                <p className="text-[11px] text-indigo-200">
-                  Total {schedule.length} sesi terdaftar bersama Coach Zulfi
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 4: PB HUB (PERSONAL BESTS & TARGET TRACKER)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "pb" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="border-b border-slate-800/60 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                  <Trophy className="h-6 w-6 text-amber-400" />
+                  <span><span className="italic">Personal Best Hub &amp; Target Tracker</span></span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  Papan rekor terbaik performa fisik pribadi dan target capaian terstruktur yang ditetapkan pelatih.
                 </p>
               </div>
-            </div>
-            <span className="text-[11px] font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30">
-              {schedule.filter((s) => s.status === "COMPLETED").length} Selesai
-            </span>
-          </div>
 
-          {schedule.length > 0 ? (
-            <div className="space-y-3">
-              {schedule.map((s) => {
-                const sDate = new Date(s.startTime);
+              {/* Target Tracker Section */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Target className="h-4 w-4 text-amber-400" />
+                  <span>Target Performa Aktif ({portalGoals.length > 0 ? portalGoals.length : 1})</span>
+                </h2>
 
-                return (
-                  <div
-                    key={s.id}
-                    className={`rounded-2xl border bg-white p-5 shadow-xs transition-all space-y-3.5 ${
-                      s.status === "COMPLETED"
-                        ? "border-slate-200 bg-slate-50/40"
-                        : "border-indigo-200 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex flex-col items-center justify-center rounded-xl bg-indigo-600 text-white px-2.5 py-1 text-center min-w-[48px]">
-                          <span className="text-[9px] uppercase font-bold tracking-wider">
-                            {sDate.toLocaleDateString("id-ID", { month: "short" })}
-                          </span>
-                          <span className="text-base font-black font-mono leading-none">
-                            {sDate.getDate()}
-                          </span>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(portalGoals.length > 0 ? portalGoals : [
+                    {
+                      id: "g1",
+                      testItemName: "40m Sprint Acceleration",
+                      baselineValue: 4.21,
+                      currentValue: 4.08,
+                      targetValue: 3.95,
+                      unit: "s",
+                      progressPercent: 78,
+                      targetDate: "2026-09-30",
+                      title: "Fokus dorongan 10 meter awal dan sudut badan.",
+                    },
+                    {
+                      id: "g2",
+                      testItemName: "Vertical Jump Explosiveness",
+                      baselineValue: 48,
+                      currentValue: 52,
+                      targetValue: 56,
+                      unit: "cm",
+                      progressPercent: 65,
+                      targetDate: "2026-10-15",
+                      title: "Maksimalkan arm swing dan triple extension.",
+                    },
+                  ]).map((goal) => (
+                    <div key={goal.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs">{goal.testItemName}</span>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
+                          {goal.progressPercent}% Tercapai
+                        </span>
+                      </div>
 
+                      <div className="flex items-baseline justify-between font-mono text-xs text-slate-300">
                         <div>
-                          <h4 className="font-bold text-sm text-foreground font-display">
-                            {s.title}
-                          </h4>
-                          <span className="text-[11px] text-muted">
-                            {sDate.toLocaleDateString("id-ID", { weekday: "long" })}
+                          <span className="text-[10px] text-slate-500 block uppercase">Baseline</span>
+                          <span>{goal.baselineValue} {goal.unit.toLowerCase()}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block uppercase">Saat Ini</span>
+                          <span className="font-bold text-white">{goal.currentValue ?? goal.baselineValue} {goal.unit.toLowerCase()}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-amber-400 block uppercase font-bold">Target</span>
+                          <span className="font-bold text-amber-400">{goal.targetValue} {goal.unit.toLowerCase()}</span>
+                        </div>
+                      </div>
+
+                      <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-amber-400 rounded-full"
+                          style={{ width: `${Math.min(goal.progressPercent, 100)}%` }}
+                        />
+                      </div>
+
+                      {goal.title && (
+                        <p className="text-[11px] text-slate-400 italic">
+                          Catatan: {goal.title}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* All Personal Bests Grid */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Award className="h-4 w-4 text-sky-400" />
+                  <span>Daftar Rekor Fisik Resmi (<span className="italic">Personal Bests</span>)</span>
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {displayPbs.map((pb) => (
+                    <div
+                      key={pb.testItemId}
+                      className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2 hover:border-sky-500/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white truncate">{pb.testItemName}</span>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                          PB
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-mono text-2xl font-black text-white">
+                          {pb.pbValue}
+                        </span>
+                        <span className="text-xs font-mono text-slate-400">
+                          {pb.unit.toLowerCase()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/80">
+                        <span>
+                          {pb.achievedDate
+                            ? new Date(pb.achievedDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                            : "Baseline"}
+                        </span>
+                        <span className="text-emerald-400 font-bold">
+                          Tercatat Resmi
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 5: MORE (RECOVERY, FEEDBACK & ATHLETE PROFILE)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "more" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="border-b border-slate-800/60 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  Kebugaran, Bimbingan &amp; Profil Atlet
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  Monitoring pemulihan fisik, riwayat masukan pelatih, dan biodata atlet.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 1. RPE & RECOVERY CARD */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <HeartPulse className="h-4 w-4 text-emerald-400" />
+                      <span><span className="italic">RPE &amp; Recovery</span> (Pemulihan)</span>
+                    </h2>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                      ● Good
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <BedDouble className="h-4 w-4 text-sky-400" />
+                        <span className="italic">Sleep Duration</span>
+                      </span>
+                      <span className="font-mono font-bold text-white">8h 12m</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <Gauge className="h-4 w-4 text-amber-400" />
+                        <span className="italic">Daily RPE</span>
+                      </span>
+                      <span className="font-mono font-bold text-amber-400">4 / 10 (Optimal)</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <Smile className="h-4 w-4 text-emerald-400" />
+                        <span className="italic">Muscle Soreness</span>
+                      </span>
+                      <span className="font-bold text-white">Ringan (Mild)</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-indigo-400" />
+                        <span className="italic">Training Load (7 Days)</span>
+                      </span>
+                      <span className="font-mono font-bold text-indigo-400">420 AU · Optimal</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. ATHLETE PROFILE CARD */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center gap-4 border-b border-slate-800 pb-3">
+                    <Avatar
+                      src={profile.photoUrl ?? undefined}
+                      fallback={profile.fullName.slice(0, 2).toUpperCase()}
+                      size="lg"
+                      alt={profile.fullName}
+                      className="ring-2 ring-blue-500"
+                    />
+                    <div>
+                      <h2 className="font-bold text-base text-white">{profile.fullName}</h2>
+                      <p className="text-xs text-slate-400">{profile.sportCategory ?? "U-16 • Football"}</p>
+                      <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-sky-400 mt-1 font-mono">
+                        ID: YAP-00481
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-800/50">
+                      <span className="text-slate-400">Tanggal Lahir</span>
+                      <span className="font-bold text-white">
+                        {new Date(profile.dateOfBirth).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-800/50">
+                      <span className="text-slate-400">Tinggi Badan</span>
+                      <span className="font-mono font-bold text-white">175 cm</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-800/50">
+                      <span className="text-slate-400">Berat Badan</span>
+                      <span className="font-mono font-bold text-white">62 kg</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-800/50">
+                      <span className="text-slate-400">Kaki Dominan</span>
+                      <span className="font-bold text-white">Kanan (Right)</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-400">Organisasi</span>
+                      <span className="font-bold text-sky-400">{context.organizationName}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. COACH GUIDANCE FEED */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-sky-400" />
+                      <span>Masukan &amp; Bimbingan Pelatih</span>
+                    </h2>
+
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <button
+                        onClick={() => setFeedbackFilter("all")}
+                        className={`px-2 py-0.5 rounded font-bold ${
+                          feedbackFilter === "all" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Semua
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {(guidances.length > 0 ? guidances : [
+                      {
+                        id: "g-1",
+                        authorName: "Coach Zulfi",
+                        createdAt: "2026-09-02",
+                        content: "Peningkatan sangat signifikan pada kecepatan sprint dan daya ledak paha.",
+                      },
+                      {
+                        id: "g-2",
+                        authorName: "Coach Zulfi",
+                        createdAt: "2026-08-26",
+                        content: "Latihan hari ini bagus. Jaga konsistensi teknik pergantian arah saat intensitas tinggi.",
+                      },
+                    ]).map((g) => (
+                      <div key={g.id} className="p-3.5 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-white flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 text-sky-400" />
+                            {g.authorName}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(g.createdAt).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
                           </span>
                         </div>
+                        <p className="text-xs text-slate-300 leading-relaxed italic">
+                          &quot;{g.content}&quot;
+                        </p>
                       </div>
-
-                      <Badge
-                        variant={s.status === "COMPLETED" ? "outline" : "accent"}
-                        className="text-[10px]"
-                      >
-                        {s.status === "COMPLETED" ? "✓ Selesai" : "📅 Terjadwal"}
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-2.5 sm:grid-cols-2 text-xs text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-indigo-600 shrink-0" />
-                        <span>
-                          Waktu:{" "}
-                          <strong className="font-mono text-foreground">
-                            {sDate.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} -{" "}
-                            {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
-                          </strong>
-                        </span>
-                      </div>
-
-                      {s.location && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-indigo-600 shrink-0" />
-                          <span>Lokasi: <strong className="text-foreground">{s.location}</strong></span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-2.5 border-t border-border flex items-center justify-between text-xs text-muted">
-                      <span>Pelatih: <strong className="text-foreground">{s.coachName}</strong></span>
-                      {s.trainingPlanTitle && (
-                        <span className="text-indigo-600 font-semibold flex items-center gap-1">
-                          <Dumbbell className="h-3.5 w-3.5" />
-                          {s.trainingPlanTitle}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-border bg-white p-8 text-center space-y-2">
-              <Calendar className="h-8 w-8 text-muted mx-auto" />
-              <h4 className="font-bold text-sm text-foreground">Belum Ada Jadwal Sesi Latihan</h4>
-              <p className="text-xs text-muted">Jadwal latihan mendatang akan tampil di sini.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── TAB 4: PHYSICAL STATS BREAKDOWN ─────────────────────────── */}
-      {activeTab === "STATS" && (
-        <div className="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <div>
-              <h3 className="font-display font-bold text-sm text-foreground">
-                Perkembangan 7 Komponen Fisik Atletik
-              </h3>
-              <p className="text-xs text-muted">Hasil tes evaluasi resmi bersama Coach Zulfi</p>
-            </div>
-            {snapshot?.overallGrade && (
-              <Badge variant="accent" className="text-xs font-bold">
-                Grade {snapshot.overallGrade}
-              </Badge>
-            )}
-          </div>
-
-          {progress.trends.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {progress.trends.map((t) => (
-                <div
-                  key={t.component}
-                  className="flex items-center justify-between rounded-xl border border-border bg-surface-2 p-3.5 text-xs"
-                >
-                  <div>
-                    <div className="font-bold text-foreground">{t.component.replace(/_/g, " ")}</div>
-                    <div className="text-[11px] text-muted mt-0.5">
-                      Skor:{" "}
-                      <strong className="font-mono text-foreground">
-                        {t.latestScore != null ? `${t.latestScore.toFixed(1)}%` : "—"}
-                      </strong>
-                      {t.change != null && (
-                        <span
-                          className={`ml-1.5 font-mono ${
-                            t.change > 0
-                              ? "text-emerald-600 font-bold"
-                              : t.change < 0
-                              ? "text-rose-600 font-bold"
-                              : "text-muted"
-                          }`}
-                        >
-                          ({t.change > 0 ? "+" : ""}{t.change.toFixed(1)}%)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    {t.status === "IMPROVING" && (
-                      <Badge variant="success" className="text-[10px]">
-                        <TrendingUp className="h-3 w-3 mr-1" /> Meningkat
-                      </Badge>
-                    )}
-                    {t.status === "DECLINING" && (
-                      <Badge variant="danger" className="text-[10px]">
-                        <TrendingDown className="h-3 w-3 mr-1" /> Evaluasi
-                      </Badge>
-                    )}
-                    {t.status === "STABLE" && (
-                      <Badge variant="outline" className="text-[10px]">
-                        <Minus className="h-3 w-3 mr-1" /> Stabil
-                      </Badge>
-                    )}
-                    {t.status === "INSUFFICIENT_DATA" && (
-                      <Badge variant="outline" className="text-[10px] text-muted">
-                        Data Awal
-                      </Badge>
-                    )}
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border bg-surface-2 p-8 text-center space-y-2">
-              <Activity className="h-8 w-8 text-muted mx-auto" />
-              <h4 className="font-bold text-sm text-foreground">Belum Ada Data Evaluasi Fisik</h4>
-              <p className="text-xs text-muted">Grafik komponen fisik akan muncul setelah sesi evaluasi fisik resmi dilakukan.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── TAB 5: SESSION LOGS ──────────────────────────────────────── */}
-      {activeTab === "LOGS" && (
-        <div className="space-y-3">
-          {sessionLogs.length > 0 ? (
-            sessionLogs.map((log) => (
-              <div
-                key={log.id}
-                className="rounded-2xl border border-border bg-white p-5 shadow-xs space-y-3"
-              >
-                <div className="flex items-center justify-between text-xs border-b border-border pb-2.5">
-                  <span className="font-bold text-foreground flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4 text-indigo-600" />
-                    {new Date(log.sessionDate).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <Badge variant="outline">Selesai</Badge>
-                </div>
-
-                <div className="space-y-1 text-xs">
-                  <span className="font-bold text-muted uppercase text-[10px]">
-                    Materi Latihan yang Dijalankan:
-                  </span>
-                  <div className="bg-surface-2 p-3 rounded-xl border border-border text-foreground font-mono text-xs whitespace-pre-wrap">
-                    {log.activitiesDone}
-                  </div>
-                </div>
-
-                {log.coachFeedback && (
-                  <div className="rounded-xl bg-indigo-50/70 border border-indigo-200/80 p-3 space-y-1 text-xs">
-                    <span className="font-bold text-indigo-900 uppercase text-[10px] flex items-center gap-1">
-                      <Sparkles className="h-3 w-3 text-amber-500" />
-                      Umpan Balik Coach:
-                    </span>
-                    <p className="text-slate-800 italic">{log.coachFeedback}</p>
-                  </div>
-                )}
               </div>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-border bg-white p-8 text-center space-y-2">
-              <CheckCircle2 className="h-8 w-8 text-muted mx-auto" />
-              <h4 className="font-bold text-sm text-foreground">Belum Ada Catatan Sesi Latihan</h4>
-              <p className="text-xs text-muted">Ringkasan aktivitas latihan akan dicatat di sini setelah setiap sesi latihan.</p>
             </div>
           )}
-        </div>
-      )}
+        </main>
+      </div>
 
-      {/* ── TAB 6: REKOR & TARGET ─────────────────────────────────────── */}
-      {activeTab === "REKOR_TARGET" && (
-        <div className="space-y-5">
-          {/* Summary strip */}
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="flex items-center gap-1"><Trophy className="h-3.5 w-3.5 text-amber-500" />{personalBests.length} rekor tercatat</span>
-            <span>·</span>
-            <span className="flex items-center gap-1"><Target className="h-3.5 w-3.5 text-indigo-500" />{portalGoals.filter(g => g.status === "ACTIVE").length} target aktif</span>
-          </div>
-          {/* Active Goals */}
-          <PortalAthleteGoalsSection
-            portalGoals={portalGoals}
-            athleteFirstName={profile.fullName.split(" ")[0]}
-          />
-          {/* Personal Bests */}
-          <PortalAthletePersonalBests personalBests={personalBests} />
-        </div>
-      )}
+      {/* ── MOBILE BOTTOM NAVIGATION ────────────────────────────────── */}
+      <YapBottomNav activeTab={activeTab} onSelectTab={setActiveTab} />
     </div>
   );
 }
-

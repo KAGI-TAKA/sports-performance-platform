@@ -51,7 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Command Center",
         icon: LayoutDashboard,
         keywords: ["beranda", "dashboard", "kpi", "ringkasan", "ikhtisar", "agenda", "jadwal hari ini"],
-        description: "Pusat komando pembinaan fisik terstruktur dan agenda harian",
+        description: "Pusat komando (*Command Center*) pembinaan fisik terstruktur dan agenda harian",
       },
       {
         href: "/schedule",
@@ -59,14 +59,14 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Calendar,
         step: "04",
         keywords: ["jadwal", "kalender", "timetable", "sesi", "latihan", "agenda", "waktu", "eksekusi"],
-        description: "04. DEVELOP — Manajemen kalender sesi latihan mingguan dan timetable",
+        description: "04. DEVELOP — Manajemen kalender sesi latihan mingguan dan jadwal (*timetable*)",
       },
       {
         href: "/athletes",
         label: "Direktori Atlet",
         icon: Users,
         keywords: ["atlet", "pemain", "murid", "roster", "direktori", "profil fisik", "antropometri", "mfd"],
-        description: "Daftar atlet aktif, profil dual-pathway (MFD / Performance)",
+        description: "Daftar atlet aktif, profil jalur ganda (*dual-pathway*: MFD / *Performance*)",
       },
     ],
   },
@@ -79,7 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ClipboardList,
         step: "01",
         keywords: ["asesmen", "assessment", "tes fisik", "evaluasi", "radar chart", "skor", "grade", "komponen"],
-        description: "01. ASSESS — Pengujian profil awal gerak & kapasitas fisik atlet",
+        description: "01. ASSESS — Pengujian profil awal gerak & asesmen (*assessment*) kapasitas fisik atlet",
       },
       {
         href: "/training-plans",
@@ -87,7 +87,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Dumbbell,
         step: "03",
         keywords: ["program", "training plan", "drill", "gerakan", "kurikulum", "latihan", "sets", "reps"],
-        description: "03. PLAN — Penyusunan kurikulum latihan dan library gerakan",
+        description: "03. PLAN — Penyusunan kurikulum rencana latihan (*training plan*) dan pustaka (*library*) gerakan",
       },
       {
         href: "/session-logs",
@@ -95,7 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ClipboardCheck,
         step: "05",
         keywords: ["catatan", "log", "session log", "presensi", "kehadiran", "evaluasi harian", "video", "monitor"],
-        description: "05. MONITOR — Rekap pelaksanaan sesi harian, presensi, dan catatan video",
+        description: "05. MONITOR — Rekap pelaksanaan catatan sesi (*session log*) harian, presensi, dan evaluasi video",
       },
     ],
   },
@@ -108,14 +108,14 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: TrendingUp,
         step: "02",
         keywords: ["progres", "progress", "analisis", "tren", "perkembangan", "grafik", "riwayat", "identifikasi"],
-        description: "02. IDENTIFY — Pantau tren perkembangan skor fisik dan personal best",
+        description: "02. IDENTIFY — Pantau tren perkembangan skor fisik dan rekor pribadi (*personal best*)",
       },
       {
         href: "/compare",
         label: "Komparasi Atlet",
         icon: GitCompare,
         keywords: ["komparasi", "compare", "bandingkan", "head to head", "perbandingan atlet", "radar"],
-        description: "Perbandingan performa fisik head-to-head antar atlet",
+        description: "Perbandingan performa fisik secara langsung (*head-to-head*) antar-atlet",
       },
       {
         href: "/reports",
@@ -123,7 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileText,
         step: "06",
         keywords: ["laporan", "reports", "ekspor", "export", "pdf", "csv", "whatsapp", "wa", "reassess"],
-        description: "06. REASSESS — Unduh laporan resmi PDF/CSV dan ringkasan orang tua",
+        description: "06. REASSESS — Unduh laporan resmi format PDF/CSV dan ringkasan orang tua",
       },
     ],
   },
@@ -146,14 +146,14 @@ export const NAV_GROUPS: NavGroup[] = [
           "atlet",
           "aktivasi",
         ],
-        description: "Kelola akun, akses, peran, dan hubungan pengguna akademi",
+        description: "Kelola akun, akses, peran (*role*), dan hubungan pengguna akademi",
       },
       {
         href: "/benchmarks",
         label: "Master Benchmark",
         icon: SlidersHorizontal,
         keywords: ["benchmark", "standar", "ambang batas", "grade a", "grade b", "norma fisik"],
-        description: "Konfigurasi ambang batas nilai A/B/C/D per item tes fisik",
+        description: "Konfigurasi standar tolok ukur (*benchmark*) nilai A/B/C/D per item tes fisik",
       },
       {
         href: "/settings",
@@ -178,7 +178,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   {
     id: "qa-new-assessment",
     title: "Buat Assessment Baru",
-    subtitle: "Input evaluasi fisik atlet (Progress / Benchmark)",
+    subtitle: "Input evaluasi fisik atlet (Progres / *Benchmark*)",
     href: "/assessments/new",
     icon: PlusCircle,
     keywords: ["buat asesmen", "tes baru", "new assessment", "input tes fisik", "skor fisik"],
@@ -186,7 +186,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   {
     id: "qa-squad-assessment",
     title: "Asesmen Squad Lapangan",
-    subtitle: "Matrix input massal satu squad di lapangan",
+    subtitle: "Matriks entri massal satu regu (*squad*) di lapangan",
     href: "/assessments/new?mode=squad",
     icon: PlusCircle,
     keywords: ["squad assessment", "tes squad", "input massal", "tes lapangan"],
@@ -194,7 +194,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   {
     id: "qa-new-plan",
     title: "Susun Program Latihan",
-    subtitle: "Buat silabus latihan atau template kurikulum",
+    subtitle: "Buat silabus latihan atau templat kurikulum",
     href: "/training-plans/new",
     icon: Dumbbell,
     keywords: ["buat program", "training plan", "kurikulum", "drill", "menu latihan", "plan"],
@@ -210,7 +210,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   {
     id: "qa-session-execution",
     title: "Eksekusi Lapangan",
-    subtitle: "Buka cockpit presensi & checklist latihan aktif",
+    subtitle: "Buka panel kontrol (*cockpit*) presensi & daftar cek (*checklist*) latihan aktif",
     href: "/schedule",
     icon: PlayCircle,
     keywords: ["eksekusi", "presensi lapangan", "mulai sesi", "checklist"],
@@ -218,7 +218,7 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
   {
     id: "qa-new-session-log",
     title: "Catat Log Harian",
-    subtitle: "Input catatan latihan, feedback, & video rekaman",
+    subtitle: "Input catatan latihan, umpan balik (*feedback*), & rekaman video",
     href: "/session-logs",
     icon: ClipboardCheck,
     keywords: ["catatan sesi", "input log", "session log", "presensi", "feedback"],
@@ -244,7 +244,7 @@ export const BREADCRUMB_MAP: Record<string, string> = {
   edit: "Ubah",
   execute: "Eksekusi Lapangan",
   templates: "Template Kurikulum",
-  exercises: "Library Latihan",
+  exercises: "Library Gerakan",
 };
 
 export function getBreadcrumbTitle(segment: string, parentSegment?: string): string {

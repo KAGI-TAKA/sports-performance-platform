@@ -184,6 +184,7 @@ export async function getPortalAthleteProfile(input: string | PortalAccessContex
     photoUrl: athlete.photoUrl,
     parentName: athlete.parentName,
     competitionLevel: athlete.competitionLevel,
+    sportCategory: athlete.sportCategory,
   };
 
   const latestAssessment = await prisma.assessment.findFirst({

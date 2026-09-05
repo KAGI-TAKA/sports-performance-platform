@@ -72,7 +72,7 @@ export function AppSidebar({
                 COACH ZULFI
               </span>
               <span className="block text-[10px] text-accent font-semibold leading-tight mt-0.5 truncate tracking-wide">
-                {isAssistant ? "Assistant Cockpit" : "Performance Workspace"}
+                {isAssistant ? <span className="italic">Assistant Cockpit</span> : <span className="italic">Performance Workspace</span>}
               </span>
             </div>
           )}

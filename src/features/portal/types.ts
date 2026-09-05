@@ -27,6 +27,7 @@ export interface PortalAthleteProfile {
   photoUrl: string | null;
   parentName: string | null;
   competitionLevel: string | null;
+  sportCategory?: string | null;
 }
 
 export interface PortalAssessmentSnapshot {
