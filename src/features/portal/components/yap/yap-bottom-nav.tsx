@@ -5,7 +5,7 @@ import {
   TrendingUp,
   Dumbbell,
   Trophy,
-  MoreHorizontal,
+  User,
 } from "lucide-react";
 import type { YapTab } from "./yap-sidebar";
 
@@ -20,7 +20,7 @@ export function YapBottomNav({ activeTab, onSelectTab }: YapBottomNavProps) {
     { id: "progress", label: "Progress", isForeign: true, icon: TrendingUp },
     { id: "train", label: "Train", isForeign: true, icon: Dumbbell },
     { id: "pb", label: "PB Hub", isForeign: true, icon: Trophy },
-    { id: "more", label: "More", isForeign: true, icon: MoreHorizontal },
+    { id: "more", label: "Profile", isForeign: true, icon: User },
   ];
 
   return (

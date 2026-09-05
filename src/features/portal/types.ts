@@ -28,6 +28,12 @@ export interface PortalAthleteProfile {
   parentName: string | null;
   competitionLevel: string | null;
   sportCategory?: string | null;
+  heightCm?: number | null;
+  weightKg?: number | null;
+  wingspanCm?: number | null;
+  trainingLevel?: string | null;
+  allergies?: string | null;
+  healthNotes?: string | null;
 }
 
 export interface PortalAssessmentSnapshot {

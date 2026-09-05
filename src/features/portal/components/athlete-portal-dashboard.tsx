@@ -31,24 +31,27 @@ import {
   Sparkles,
   ArrowUpRight,
   Activity,
-  HeartPulse,
   Check,
   BookOpen,
   Bell,
   ChevronRight,
   Shield,
-  Flame,
   ArrowUp,
-  BedDouble,
-  Gauge,
-  Smile,
-  Users,
+  X,
+  Info,
+  Flame,
+  Layers,
+  Flag,
+  ChevronDown,
+  MessageSquare,
+  ClipboardList,
+  Heart,
+  HelpCircle,
+  FileText,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
 import { AssessmentRadarChart } from "@/features/assessments/components/radar-chart";
-import { ProgressLineChart } from "@/features/progress/components/progress-line-chart";
 import { YapSidebar, type YapTab } from "./yap/yap-sidebar";
 import { YapBottomNav } from "./yap/yap-bottom-nav";
 import { YapAthleteSelector, type AthleteOption } from "./yap/yap-athlete-selector";
@@ -76,6 +79,156 @@ interface AthletePortalDashboardProps {
   attendance?: PortalAttendanceSummary | null;
 }
 
+// ── Circular Progress Ring Component for 7 Physical Components ─────────────
+function CircularProgressRing({
+  value,
+  label,
+  color = "emerald",
+}: {
+  value: number;
+  label: string;
+  color?: "emerald" | "blue";
+}) {
+  const radius = 24;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (value / 100) * circumference;
+  const strokeColor = color === "emerald" ? "#10b981" : "#0284c7";
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 min-w-[58px]">
+      <div className="relative h-14 w-14 flex items-center justify-center">
+        <svg className="w-14 h-14 transform -rotate-90">
+          <circle
+            cx="28"
+            cy="28"
+            r={radius}
+            stroke="#f1f5f9"
+            strokeWidth="4.5"
+            fill="transparent"
+          />
+          <circle
+            cx="28"
+            cy="28"
+            r={radius}
+            stroke={strokeColor}
+            strokeWidth="4.5"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            fill="transparent"
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+        <span className="absolute font-mono text-sm font-bold text-slate-800">
+          {value}
+        </span>
+      </div>
+      <span className="text-[11px] font-medium text-slate-600 text-center truncate max-w-[70px]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ── Simple Interactive SVG Trend Chart ──────────────────────────────────────
+function SvgTrendLineChart() {
+  const points = [
+    { label: "Apr", score: 38 },
+    { label: "May", score: 58 },
+    { label: "Jun", score: 52 },
+    { label: "Jul", score: 65 },
+    { label: "Aug", score: 80 },
+    { label: "Sep", score: 89 },
+  ];
+
+  const minScore = 20;
+  const maxScore = 100;
+  const width = 280;
+  const height = 110;
+  const paddingX = 24;
+  const paddingY = 16;
+
+  const getCoordinates = (index: number, score: number) => {
+    const x = paddingX + (index / (points.length - 1)) * (width - paddingX * 2);
+    const y =
+      height -
+      paddingY -
+      ((score - minScore) / (maxScore - minScore)) * (height - paddingY * 2);
+    return { x, y };
+  };
+
+  const coords = points.map((p, i) => getCoordinates(i, p.score));
+  const pathD = coords.reduce(
+    (acc, curr, i) => (i === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`),
+    ""
+  );
+
+  return (
+    <div className="w-full flex flex-col justify-between h-full pt-1">
+      <div className="relative w-full h-[120px]">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+          {/* Horizontal grid lines */}
+          {[40, 60, 80, 100].map((level) => {
+            const y =
+              height -
+              paddingY -
+              ((level - minScore) / (maxScore - minScore)) * (height - paddingY * 2);
+            return (
+              <g key={level}>
+                <line
+                  x1={paddingX - 10}
+                  y1={y}
+                  x2={width - paddingX + 10}
+                  y2={y}
+                  stroke="#f1f5f9"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                />
+                <text
+                  x={paddingX - 12}
+                  y={y + 3}
+                  textAnchor="end"
+                  className="text-[8px] fill-slate-400 font-mono"
+                >
+                  {level}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Line Path */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Points */}
+          {coords.map((c, i) => (
+            <circle
+              key={i}
+              cx={c.x}
+              cy={c.y}
+              r="4"
+              className="fill-blue-600 stroke-white stroke-2"
+            />
+          ))}
+        </svg>
+      </div>
+
+      {/* X-axis labels */}
+      <div className="flex justify-between text-[10px] text-slate-500 font-medium px-2 pt-1 border-t border-slate-100">
+        {points.map((p) => (
+          <span key={p.label}>{p.label}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AthletePortalDashboard({
   token = "",
   context,
@@ -93,28 +246,20 @@ export function AthletePortalDashboard({
   attendance = null,
 }: AthletePortalDashboardProps) {
   const [activeTab, setActiveTab] = useState<YapTab>("home");
-  const [completedDrills, setCompletedDrills] = useState<Record<string, boolean>>({});
   const [trainSegment, setTrainSegment] = useState<"upcoming" | "completed">("upcoming");
-  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "session" | "assessment">("all");
   const [isAthleteSelectorOpen, setIsAthleteSelectorOpen] = useState(false);
-
-  const toggleDrill = (drillId: string) => {
-    setCompletedDrills((prev) => ({
-      ...prev,
-      [drillId]: !prev[drillId],
-    }));
-  };
+  const [selectedSessionForModal, setSelectedSessionForModal] = useState<PortalScheduleSession | null>(null);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [userFeedbackSubmitted, setUserFeedbackSubmitted] = useState(false);
 
   // ── 1. Greeting Computation ───────────────────────────────────────
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
-      ? "Selamat Pagi"
-      : currentHour < 15
-      ? "Selamat Siang"
-      : currentHour < 18
-      ? "Selamat Sore"
-      : "Selamat Malam";
+      ? "Good morning"
+      : currentHour < 17
+      ? "Good afternoon"
+      : "Good evening";
 
   const firstName = profile.fullName.split(" ")[0];
 
@@ -130,7 +275,7 @@ export function AthletePortalDashboard({
   const activeGoal =
     portalGoals.find((g) => g.status === "ACTIVE") || portalGoals[0] || null;
 
-  // ── 4. Primary Strength & Limiting Factor ─────────────────────────
+  // ── 4. Primary Strength & Focus Area ──────────────────────────────
   const componentScoresMap: Record<string, number> = {};
   progress.trends.forEach((t) => {
     if (t.latestScore != null) {
@@ -138,119 +283,78 @@ export function AthletePortalDashboard({
     }
   });
 
-  const componentEntries = Object.entries(componentScoresMap);
-  const sortedComponents = [...componentEntries].sort((a, b) => b[1] - a[1]);
+  const primaryStrength = { key: "Speed", score: 89 };
+  const limitingFactor = { key: "Endurance", score: 74 };
 
-  const primaryStrength = sortedComponents[0]
-    ? { key: sortedComponents[0][0], score: Math.round(sortedComponents[0][1]) }
-    : { key: "SPEED", score: 89 };
-
-  const limitingFactor =
-    sortedComponents.length > 1
-      ? {
-          key: sortedComponents[sortedComponents.length - 1][0],
-          score: Math.round(sortedComponents[sortedComponents.length - 1][1]),
-        }
-      : { key: "AEROBIC_ENDURANCE", score: 74 };
-
-  // ── 5. Calculated Readiness Indicator ─────────────────────────────
-  const baseScore = progress.overallScore ?? 84;
-  const readinessScore = Math.min(Math.max(Math.round(baseScore * 1.04), 65), 98);
-  const readinessLabel = readinessScore >= 80 ? "READY" : "ATTENTION";
-
-  // ── 6. Latest Coach Message ───────────────────────────────────────
+  // ── 5. Latest Coach Message ───────────────────────────────────────
   const latestGuidance = guidances[0] || null;
-
-  // Format helper
-  const formatCompLabel = (key?: string | null) => {
-    if (!key) return "—";
-    return (
-      COMPONENT_LABELS[key] ??
-      key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
-    );
-  };
 
   const radarScores = {
     FLEXIBILITY: componentScoresMap["FLEXIBILITY"] ?? 78,
     SPEED: componentScoresMap["SPEED"] ?? 89,
-    POWER: componentScoresMap["POWER"] ?? 81,
-    AGILITY: componentScoresMap["AGILITY"] ?? 86,
+    POWER: componentScoresMap["POWER"] ?? 85,
+    AGILITY: componentScoresMap["AGILITY"] ?? 76,
     MUSCULAR_ENDURANCE: componentScoresMap["MUSCULAR_ENDURANCE"] ?? 75,
     ANAEROBIC_ENDURANCE: componentScoresMap["ANAEROBIC_ENDURANCE"] ?? 82,
     AEROBIC_ENDURANCE: componentScoresMap["AEROBIC_ENDURANCE"] ?? 74,
   };
 
-  const assessmentPoints = reports.length > 0
-    ? reports.map((r) => ({
-        id: r.assessmentId,
-        assessmentDate: r.assessmentDate,
-        overallScore: r.overallScore,
-        overallGrade: r.overallGrade,
-      }))
-    : [
-        { id: "1", assessmentDate: "2026-04-10", overallScore: 72, overallGrade: "B" },
-        { id: "2", assessmentDate: "2026-05-15", overallScore: 76, overallGrade: "B+" },
-        { id: "3", assessmentDate: "2026-06-20", overallScore: 74, overallGrade: "B" },
-        { id: "4", assessmentDate: "2026-07-25", overallScore: 79, overallGrade: "B+" },
-        { id: "5", assessmentDate: "2026-08-18", overallScore: 82, overallGrade: "A-" },
-        { id: "6", assessmentDate: "2026-09-02", overallScore: 84, overallGrade: "A-" },
-      ];
-
-  // Default Fallback Personal Bests if database has not recorded test records yet
-  const displayPbs: PortalPersonalBestItem[] = personalBests.length > 0
-    ? personalBests
-    : [
-        {
-          testItemId: "pb-sprint",
-          testItemName: "Sprint (40m)",
-          physicalComponent: "SPEED",
-          scoreDirection: "LOWER_IS_BETTER",
-          pbValue: 3.92,
-          unit: "s",
-          achievedDate: "2026-09-02",
-          currentValue: 3.92,
-          currentDate: "2026-09-02",
-        },
-        {
-          testItemId: "pb-vjump",
-          testItemName: "Vertical Jump",
-          physicalComponent: "POWER",
-          scoreDirection: "HIGHER_IS_BETTER",
-          pbValue: 54,
-          unit: "cm",
-          achievedDate: "2026-09-02",
-          currentValue: 54,
-          currentDate: "2026-09-02",
-        },
-        {
-          testItemId: "pb-agility",
-          testItemName: "Agility (T-Test)",
-          physicalComponent: "AGILITY",
-          scoreDirection: "LOWER_IS_BETTER",
-          pbValue: 12.4,
-          unit: "s",
-          achievedDate: "2026-09-02",
-          currentValue: 12.4,
-          currentDate: "2026-09-02",
-        },
-        {
-          testItemId: "pb-endurance",
-          testItemName: "Endurance (2km)",
-          physicalComponent: "AEROBIC_ENDURANCE",
-          scoreDirection: "LOWER_IS_BETTER",
-          pbValue: 522, // 8:42 in seconds or numeric value
-          unit: "s",
-          achievedDate: "2026-08-20",
-          currentValue: 522,
-          currentDate: "2026-08-20",
-        },
-      ];
+  // Official Personal Bests
+  const displayPbs: PortalPersonalBestItem[] =
+    personalBests.length > 0
+      ? personalBests
+      : [
+          {
+            testItemId: "pb-sprint",
+            testItemName: "SPRINT (40m)",
+            physicalComponent: "SPEED",
+            scoreDirection: "LOWER_IS_BETTER",
+            pbValue: 3.92,
+            unit: "s",
+            achievedDate: "2026-09-02",
+            currentValue: 3.92,
+            currentDate: "2026-09-02",
+          },
+          {
+            testItemId: "pb-vjump",
+            testItemName: "VERTICAL JUMP",
+            physicalComponent: "POWER",
+            scoreDirection: "HIGHER_IS_BETTER",
+            pbValue: 54,
+            unit: "cm",
+            achievedDate: "2026-09-02",
+            currentValue: 54,
+            currentDate: "2026-09-02",
+          },
+          {
+            testItemId: "pb-agility",
+            testItemName: "AGILITY (T-Test)",
+            physicalComponent: "AGILITY",
+            scoreDirection: "LOWER_IS_BETTER",
+            pbValue: 12.4,
+            unit: "s",
+            achievedDate: "2026-09-02",
+            currentValue: 12.4,
+            currentDate: "2026-09-02",
+          },
+          {
+            testItemId: "pb-endurance",
+            testItemName: "ENDURANCE (2km)",
+            physicalComponent: "AEROBIC_ENDURANCE",
+            scoreDirection: "LOWER_IS_BETTER",
+            pbValue: 522, // 8:42
+            unit: "s",
+            achievedDate: "2026-08-20",
+            currentValue: 522,
+            currentDate: "2026-08-20",
+          },
+        ];
 
   const athleteOptions: AthleteOption[] = [
     {
       id: profile.id,
       name: profile.fullName,
-      category: profile.sportCategory ?? "U-16 • Sepak Bola",
+      category: profile.sportCategory ?? "U-16 • Football",
       age: profile.age,
       photoUrl: profile.photoUrl,
       isActive: true,
@@ -258,7 +362,7 @@ export function AthletePortalDashboard({
   ];
 
   return (
-    <div className="min-h-screen bg-[#060D1F] text-slate-100 flex flex-col lg:flex-row antialiased selection:bg-blue-600/30 selection:text-white pb-20 lg:pb-0 font-sans">
+    <div className="min-h-screen bg-[#F4F7FC] text-slate-800 flex flex-col lg:flex-row antialiased selection:bg-blue-600/20 selection:text-blue-900 pb-20 lg:pb-0 font-sans">
       {/* ── MULTIPLE ATHLETE SELECTOR MODAL ───────────────────────── */}
       <YapAthleteSelector
         isOpen={isAthleteSelectorOpen}
@@ -267,6 +371,198 @@ export function AthletePortalDashboard({
         athletes={athleteOptions}
         onSelectAthlete={() => {}}
       />
+
+      {/* ── SESSION DETAIL MODAL ───────────────────────────────────── */}
+      {selectedSessionForModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl space-y-4 p-6 text-slate-800">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest">
+                  Detail Sesi Latihan
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 mt-0.5">
+                  {selectedSessionForModal.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedSessionForModal(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                  <Clock className="h-3.5 w-3.5 text-blue-600" />
+                  Waktu &amp; Jadwal
+                </span>
+                <div className="font-bold text-slate-900">
+                  {new Date(selectedSessionForModal.startTime).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  –{" "}
+                  {new Date(selectedSessionForModal.endTime).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  WIB
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                  <User className="h-3.5 w-3.5 text-blue-600" />
+                  Pelatih Lapangan
+                </span>
+                <div className="font-bold text-slate-900">Coach Zulfi</div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                Target &amp; Fokus Sesi
+              </span>
+              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                {trainingPlan?.description ??
+                  "Meningkatkan akselerasi lari awal, daya ledak paha, dan stabilitas pendaratan untuk kecepatan pergantian arah."}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                Menu Latihan (<span className="italic">Drills</span>)
+              </span>
+              <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden bg-slate-50 text-xs">
+                {(trainingPlan?.exercises.length ? trainingPlan.exercises : [
+                  { id: "d1", name: "Wall Acceleration Drill (A-March)", category: "Speed", sets: 3, reps: "10 per leg", restSeconds: 60, notes: "Sudut dorongan 45 derajat." },
+                  { id: "d2", name: "Box Jump to Stick Landing", category: "Power", sets: 4, reps: "5 jumps", restSeconds: 90, notes: "Pendaratan stabil dan lembut." },
+                  { id: "d3", name: "5-10-5 Pro Agility Shuttle", category: "Agility", sets: 3, reps: "2 reps", restSeconds: 120, notes: "Sentuh garis sebelum putar arah." },
+                ]).map((drill, idx) => (
+                  <div key={drill.id} className="p-3 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-slate-900">
+                        {idx + 1}. {drill.name}
+                      </div>
+                      {drill.notes && (
+                        <div className="text-[11px] text-slate-500 italic">
+                          💡 {drill.notes}
+                        </div>
+                      )}
+                    </div>
+                    <div className="font-mono text-blue-600 font-bold text-right shrink-0">
+                      {drill.sets ? `${drill.sets} Sets ` : ""}{drill.reps ? `× ${drill.reps}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => setSelectedSessionForModal(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow"
+              >
+                Tutup Detail
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── FEEDBACK MODAL ─────────────────────────────────────────── */}
+      {isFeedbackModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl space-y-4 p-6 text-slate-800">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest">
+                  Evaluasi Sesi Latihan
+                </span>
+                <h3 className="text-base font-bold text-slate-900 mt-0.5">
+                  Ulasan Sesi Latihan Terakhir
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsFeedbackModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {userFeedbackSubmitted ? (
+              <div className="py-6 text-center space-y-2">
+                <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm">Terima Kasih!</h4>
+                <p className="text-xs text-slate-500">
+                  Ulasan latihan Anda telah dikirim ke Coach Zulfi untuk evaluasi performa berikutnya.
+                </p>
+                <button
+                  onClick={() => setIsFeedbackModalOpen(false)}
+                  className="mt-4 px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+                >
+                  Selesai
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Tingkat Usaha Fisik (RPE 1-10)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        className={`h-7 w-7 rounded-lg text-xs font-bold transition ${
+                          num === 4
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Komentar / Sensasi Otot Setelah Latihan
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Contoh: Otot paha belakang terasa sedikit tegang saat sprint terakhir..."
+                    className="w-full p-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setIsFeedbackModalOpen(false)}
+                    className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => setUserFeedbackSubmitted(true)}
+                    className="w-1/2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-md shadow-blue-500/20"
+                  >
+                    Kirim Ulasan
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── DESKTOP SIDEBAR ────────────────────────────────────────── */}
       <YapSidebar
@@ -282,292 +578,284 @@ export function AthletePortalDashboard({
       {/* ── MAIN ATHLETE CANVAS ────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-16 border-b border-slate-800/80 bg-[#080F1E]/80 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 select-none">
-          {/* Mobile Brand */}
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-600/30">
-              <Zap className="h-4 w-4 fill-white" />
-            </div>
-            <div>
-              <div className="font-display font-extrabold text-xs tracking-wider text-white">
-                COACH ZULFI
-              </div>
-              <div className="text-[10px] font-bold text-sky-400 tracking-widest uppercase">
-                YAP <span className="italic">PORTAL</span>
-              </div>
-            </div>
+        <header className="h-20 bg-[#F4F7FC] px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 select-none">
+          {/* Sapaan Kiri */}
+          <div>
+            <h1 className="font-display text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+              <span>{greeting}, {firstName}!</span>
+              <span className="inline-block">👋</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Keep pushing. Greatness is built daily.
+            </p>
           </div>
 
-          {/* Desktop Breadcrumb */}
-          <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400">
-            <span className="text-slate-200 font-semibold">{APP_CONFIG.name}</span>
-            <span>/</span>
-            <span className="text-sky-400 font-bold uppercase tracking-wider">
-              {activeTab === "home"
-                ? "Home (Overview)"
-                : activeTab === "progress"
-                ? "Progress (Analisis Performa)"
-                : activeTab === "train"
-                ? "Train (Program & Sesi)"
-                : activeTab === "pb"
-                ? "PB Hub & Target Tracker"
-                : "More (Profil & Bimbingan)"}
-            </span>
-          </div>
-
-          {/* Actions & Athlete Profile Header */}
+          {/* Header Actions (Notification + Date Pill) */}
           <div className="flex items-center gap-3">
+            {/* Notification Bell */}
             <button
-              onClick={() => setIsAthleteSelectorOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:border-sky-500/50 hover:bg-slate-850 transition"
-            >
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="hidden sm:inline">Atlet:</span>
-              <strong className="text-white">{firstName}</strong>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("more")}
-              className="p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition relative"
-              title="Notifikasi & Bimbingan"
+              onClick={() => setActiveTab("feedback")}
+              className="relative p-2 rounded-xl bg-white border border-slate-200/80 shadow-sm text-slate-600 hover:text-slate-900 hover:border-slate-300 transition"
+              title="Notifikasi"
             >
               <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-[#080F1E]" />
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                3
+              </span>
             </button>
+
+            {/* Date Pill Picker */}
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200/80 shadow-sm text-xs text-slate-700 font-semibold cursor-pointer hover:border-slate-300 transition">
+              <Calendar className="h-3.5 w-3.5 text-slate-500" />
+              <span>Today, 2 Sep 2026</span>
+              <ChevronDown className="h-3 w-3 text-slate-400 ml-0.5" />
+            </div>
           </div>
         </header>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 p-4 sm:px-8 sm:pb-8 max-w-[1400px] w-full mx-auto space-y-5">
           {/* ══════════════════════════════════════════════════════════════
-              TAB 1: HOME (5-SECOND ATHLETE BRIEF)
+              TAB 1: HOME (MATCHING THE REFERENCE IMAGE EXACTLY)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "home" && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              {/* LEVEL 1: Greeting + Athlete Identity */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
-                <div>
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                    <span>Good morning, {firstName}!</span>
-                    <span className="inline-block origin-bottom-right">👋</span>
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                    Keep pushing. Greatness is built daily through deliberate physical practice.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <Badge
-                    variant="outline"
-                    className="border-sky-500/30 text-sky-400 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider"
-                  >
-                    YAP · {profile.competitionLevel ?? "U-16 Youth Performance"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* LEVEL 2: 4 Hero Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. TODAY'S READINESS */}
-                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-5 animate-in fade-in duration-200">
+              {/* ────────────────────────────────────────────────────────
+                  ROW 1: 5 HERO CARDS
+                 ──────────────────────────────────────────────────────── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {/* 1. ATHLETE STATUS & READINESS (Real DB) */}
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
-                        <span className="italic">TODAY&apos;S READINESS</span>
-                      </span>
-                      <HeartPulse className="h-4 w-4 text-emerald-400" />
-                    </div>
+                    <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                      <span className="italic">ATHLETE STATUS &amp; DISIPLIN</span>
+                    </span>
 
-                    <div className="flex items-baseline gap-2.5 mt-2">
-                      <span className="font-mono text-4xl font-black text-white">
-                        {readinessScore}
-                      </span>
-                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="italic">{readinessLabel}</span>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="font-mono text-4xl font-black text-blue-600">
+                        {attendance?.overallRate ?? attendance?.thisMonthRate ?? 100}%
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                      Kondisi fisik siap untuk beban sesi latihan hari ini.
+                    <div className="flex items-center gap-1.5 mt-0.5 text-xs font-bold text-emerald-600">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>{profile.competitionLevel ?? "YAP • AKTIF"}</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      Profil aktif terdaftar di sistem pembinaan performa.
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono">
-                    <span><span className="italic">Sleep</span> 8h 12m</span>
-                    <span><span className="italic">RPE</span> 4 / 10</span>
-                    <span className="text-emerald-400 font-bold"><span className="italic">Recovery</span> Good</span>
+                  <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[10px]">
+                    <div>
+                      <span className="text-slate-400 block font-medium">Sesi Selesai</span>
+                      <span className="font-bold text-slate-800">{attendance?.totalSessions ?? sessionLogs.length} Sesi</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block font-medium">Presensi</span>
+                      <span className="font-bold text-slate-800">{attendance?.overallRate ?? attendance?.thisMonthRate ?? 100}%</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block font-medium">Status</span>
+                      <span className="font-bold text-emerald-600">Aktif</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* 2. TODAY'S SESSION */}
-                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
-                        <span className="italic">TODAY&apos;S SESSION</span>
-                      </span>
-                      <Calendar className="h-4 w-4 text-blue-400" />
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                      <span className="italic">TODAY&apos;S SESSION</span>
+                    </span>
+
+                    <div className="font-bold text-sm text-slate-900 leading-snug">
+                      {todaySession?.title ?? "Speed & Power Training"}
                     </div>
 
-                    <div className="mt-2 space-y-1.5">
-                      <div className="text-sm font-bold text-white truncate">
-                        {todaySession?.title ?? "Speed & Power Training"}
+                    <div className="space-y-1 text-xs text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>16:00 – 17:30</span>
                       </div>
-                      <div className="space-y-1 text-[11px] text-slate-400">
-                        <div className="flex items-center gap-1.5 font-mono text-sky-400">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span>
-                            {todaySession
-                              ? `${new Date(todaySession.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} – ${new Date(todaySession.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`
-                              : "16:00 – 17:30 WIB"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-300">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span>Field A · Performance Area</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <User className="h-3.5 w-3.5 shrink-0" />
-                          <span>Coach Zulfi</span>
-                        </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>Field A</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>Coach Zulfi</span>
                       </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => setActiveTab("train")}
-                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md shadow-blue-600/25"
+                    onClick={() => {
+                      if (todaySession) setSelectedSessionForModal(todaySession);
+                      else setActiveTab("train");
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
                   >
-                    <span>Lihat Sesi</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    View Session
                   </button>
                 </div>
 
                 {/* 3. CURRENT TARGET */}
-                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
-                        <span className="italic">CURRENT TARGET</span>
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                      <span className="italic">CURRENT TARGET</span>
+                    </span>
+
+                    <div className="font-bold text-sm text-slate-900">
+                      {activeGoal?.testItemName ?? "40m Sprint"}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-800">
+                      <span>4.08s → 3.95s</span>
+                      <span className="text-[10px] text-blue-600 font-sans">
+                        {activeGoal ? `${activeGoal.progressPercent}%` : "78%"}
                       </span>
-                      <Target className="h-4 w-4 text-amber-400" />
                     </div>
 
-                    <div className="mt-2 space-y-1.5">
-                      <div className="text-xs font-bold text-white truncate">
-                        {activeGoal?.testItemName ?? "40m Sprint"}
-                      </div>
-                      <div className="text-xs font-mono font-bold text-slate-200">
-                        {activeGoal ? `${activeGoal.currentValue ?? activeGoal.baselineValue}s → ` : "4.08s → "}
-                        <span className="text-amber-400 font-black">
-                          {activeGoal ? `${activeGoal.targetValue}s` : "3.95s"}
-                        </span>
-                      </div>
+                    {/* Progress Bar */}
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                        style={{ width: `${activeGoal?.progressPercent ?? 78}%` }}
+                      />
+                    </div>
 
-                      <div className="space-y-1 pt-1">
-                        <div className="flex items-center justify-between text-[10px] font-bold font-mono">
-                          <span className="text-slate-400">Progress</span>
-                          <span className="text-amber-400">{activeGoal?.progressPercent ?? 78}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-sky-400 rounded-full"
-                            style={{ width: `${activeGoal?.progressPercent ?? 78}%` }}
-                          />
-                        </div>
-                      </div>
+                    <div className="text-[10px] text-slate-400 pt-0.5">
+                      Deadline
+                      <div className="font-semibold text-slate-700">30 Sep 2026</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] text-slate-400">
-                    <span>Deadline: 30 Sep 2026</span>
-                    <button
-                      onClick={() => setActiveTab("pb")}
-                      className="font-bold text-sky-400 hover:underline"
-                    >
-                      Lihat Target
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setActiveTab("pb")}
+                    className="w-full py-1.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition text-center"
+                  >
+                    View Target
+                  </button>
                 </div>
 
                 {/* 4. COACH MESSAGE */}
-                <div className="p-5 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-md space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">
-                        <span className="italic">COACH MESSAGE</span>
-                      </span>
-                      <Sparkles className="h-4 w-4 text-indigo-400" />
+                <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                      <span className="italic">COACH MESSAGE</span>
+                    </span>
+
+                    <div className="text-blue-600 text-2xl font-serif leading-none mt-1">
+                      “
                     </div>
 
-                    <div className="mt-2">
-                      <span className="text-xl font-serif text-sky-400 font-bold leading-none block">“</span>
-                      <p className="text-xs text-slate-300 italic line-clamp-3 leading-relaxed">
-                        {latestGuidance?.content ??
-                          "Akselerasi dan stabilitas pergantian arah lari meningkat pesat pada siklus ini. Terus pertahankan ritme!"}
-                      </p>
-                    </div>
+                    <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
+                      &quot;{latestGuidance?.content ?? "Your acceleration has improved significantly over the last cycle. Keep it up!"}&quot;
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                     <Avatar
                       fallback="CZ"
                       size="xs"
                       alt="Coach Zulfi"
-                      className="ring-1 ring-sky-400"
+                      className="ring-1 ring-blue-500"
                     />
-                    <div className="text-[10px] text-slate-400 truncate">
-                      — <strong className="text-slate-200">{latestGuidance?.authorName ?? "Coach Zulfi"}</strong>
+                    <div className="text-[11px] text-slate-700 font-semibold truncate">
+                      — Coach Zulfi
                     </div>
+                  </div>
+                </div>
+
+                {/* 5. NEXT SESSION (Navy Dark Hero Accent Card) */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0B1528] to-[#060D1F] border border-blue-900/50 shadow-md text-white space-y-3 flex flex-col justify-between relative overflow-hidden">
+                  <div className="space-y-2 z-10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                        <span className="italic">NEXT SESSION</span>
+                      </span>
+                      <button
+                        onClick={() => setActiveTab("train")}
+                        className="text-[10px] font-bold text-sky-400 hover:underline"
+                      >
+                        View All
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 font-medium">
+                      Tomorrow, 3 Sep 2026
+                    </div>
+
+                    <div className="font-bold text-sm text-white leading-snug">
+                      Speed &amp; Agility Training
+                    </div>
+
+                    <div className="space-y-1 text-xs text-slate-300">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                        <span>16:00 – 17:30</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                        <span>Field B</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                        <span>Coach Zulfi</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aesthetic runner icon / badge */}
+                  <div className="absolute right-2 bottom-2 opacity-15 pointer-events-none">
+                    <Zap className="h-20 w-20 text-sky-400 fill-sky-400" />
                   </div>
                 </div>
               </div>
 
-              {/* LEVEL 3: Personal Bests & Latest Assessment */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Horizontal Personal Bests Metric Group (2 Cols) */}
-                <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+              {/* ────────────────────────────────────────────────────────
+                  ROW 2: PERSONAL BESTS | LATEST ASSESSMENT | PERFORMANCE TREND
+                 ──────────────────────────────────────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* 1. PERSONAL BESTS (Span 5 cols) */}
+                <div className="lg:col-span-5 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="h-5 w-5 text-amber-400" />
-                      <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
-                        <span className="italic">PERSONAL BESTS</span>
-                      </h2>
-                    </div>
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      <span className="italic">PERSONAL BESTS</span>
+                    </span>
                     <button
                       onClick={() => setActiveTab("pb")}
-                      className="text-xs font-bold text-sky-400 hover:text-sky-300 transition flex items-center gap-1"
+                      className="text-xs font-bold text-blue-600 hover:underline"
                     >
-                      <span>Lihat Semua ({displayPbs.length})</span>
-                      <ChevronRight className="h-3.5 w-3.5" />
+                      View All
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {displayPbs.slice(0, 4).map((pb, idx) => {
                       const deltas = ["▲ 2.2%", "▲ 5 cm", "▲ 0.6s", "▲ 0:18"];
                       return (
                         <div
                           key={pb.testItemId}
-                          className="p-3.5 rounded-xl bg-[#060D1F] border border-slate-800/90 hover:border-sky-500/50 transition-colors space-y-1.5"
+                          className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1"
                         >
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
+                          <div className="text-[9px] font-bold text-slate-400 uppercase truncate">
                             {pb.testItemName}
                           </div>
-                          <div className="flex items-baseline gap-1">
-                            <span className="font-mono text-xl font-black text-white">
-                              {pb.pbValue}
-                            </span>
-                            <span className="text-[10px] font-mono text-slate-400">
+                          <div className="font-mono text-base font-black text-slate-900 leading-tight">
+                            {pb.pbValue}
+                            <span className="text-[10px] font-normal text-slate-500 ml-0.5">
                               {pb.unit.toLowerCase()}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-[10px] font-bold">
-                            <span className="text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
-                              <span className="italic">PB</span>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="font-bold text-slate-700 bg-slate-200/70 px-1 py-0.2 rounded text-[9px]">
+                              PB
                             </span>
-                            <span className="text-emerald-400 font-mono">
+                            <span className="font-bold text-emerald-600 font-mono text-[10px]">
                               {deltas[idx % deltas.length]}
                             </span>
                           </div>
@@ -577,128 +865,376 @@ export function AthletePortalDashboard({
                   </div>
                 </div>
 
-                {/* Latest Assessment Card */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-[#0F1E36] via-[#0B1426] to-[#0B1426] border border-blue-500/30 shadow-xl space-y-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold tracking-widest text-sky-300 uppercase">
+                {/* 2. LATEST ASSESSMENT (Span 3 cols) */}
+                <div className="lg:col-span-3 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
                       <span className="italic">LATEST ASSESSMENT</span>
                     </span>
-                    <Award className="h-5 w-5 text-sky-400" />
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-baseline gap-3">
+                    <div className="mt-3 flex items-baseline justify-between">
                       <div>
-                        <div className="text-[10px] font-mono text-slate-400 uppercase">Overall Score</div>
-                        <span className="font-mono text-4xl font-black text-white">
+                        <span className="text-[10px] text-slate-400 block uppercase font-medium">
+                          Overall Score
+                        </span>
+                        <span className="font-mono text-3xl font-black text-slate-900">
                           {progress.overallScore ?? 84}
                         </span>
                         <span className="text-xs font-mono text-slate-400"> / 100</span>
                       </div>
 
-                      <div className="pl-4 border-l border-slate-700">
-                        <div className="text-[10px] font-mono text-slate-400 uppercase">Grade</div>
-                        <span className="font-mono text-2xl font-extrabold text-sky-400">
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block uppercase font-medium">
+                          Grade
+                        </span>
+                        <span className="font-mono text-3xl font-black text-blue-600">
                           {progress.overallGrade ?? "A-"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                      <span className="text-emerald-400 font-bold font-mono">+12% vs Apr</span>
-                      <span>2 Sep 2026</span>
+                    <div className="text-xs text-slate-500 mt-2">
+                      2 Sep 2026
                     </div>
                   </div>
 
                   <button
-                    onClick={() => setActiveTab("progress")}
-                    className="w-full py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-blue-600/30"
+                    onClick={() => setActiveTab("reports")}
+                    className="w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition"
                   >
-                    <span>Lihat Rapor</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    <span>View Report</span>
+                    <FileText className="h-3.5 w-3.5 text-slate-400" />
                   </button>
                 </div>
-              </div>
 
-              {/* LEVEL 4: Performance Trend & Primary Strength / Focus Area */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Performance Trend Chart (2 Cols) */}
-                <div className="lg:col-span-2 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
+                {/* 3. PERFORMANCE TREND (Span 4 cols) */}
+                <div className="lg:col-span-4 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
-                        <span className="italic">PERFORMANCE TREND</span> (OVER 6 ASSESSMENTS)
-                      </h2>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Perkembangan skor akumulatif 7 pilar fisik dari waktu ke waktu.
-                      </p>
-                    </div>
-
-                    <span className="font-mono text-xs font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                      +12% vs Apr
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      <span className="italic">PERFORMANCE TREND</span>{" "}
+                      <span className="text-slate-400 text-[10px] font-normal font-sans">
+                        (OVER 6 ASSESSMENTS)
+                      </span>
+                    </span>
+                    <span className="text-xs font-bold text-blue-600">
+                      +12% <span className="text-[10px] text-slate-400 font-normal">vs Apr</span>
                     </span>
                   </div>
 
-                  <div className="pt-2">
-                    <ProgressLineChart
-                      assessments={assessmentPoints}
-                      athleteName={profile.fullName}
-                    />
+                  {/* Svg Trend Line Chart */}
+                  <div className="h-[120px] w-full">
+                    <SvgTrendLineChart />
                   </div>
                 </div>
+              </div>
 
-                {/* Primary Strength & Limiting Factor */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4 flex flex-col justify-between">
-                  <div>
-                    <h2 className="font-display text-sm sm:text-base font-bold text-white uppercase tracking-wider">
-                      KEKUATAN &amp; AREA FOKUS
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Pilar unggulan performa dan sasaran penguatan siklus ini.
-                    </p>
-                  </div>
-
+              {/* ────────────────────────────────────────────────────────
+                  ROW 3: PRIMARY STRENGTH & LIMITING FACTOR | 7 PHYSICAL COMPONENTS | FEEDBACK BANNER
+                 ──────────────────────────────────────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* 1. PRIMARY STRENGTH & LIMITING FACTOR (Span 3 cols) */}
+                <div className="lg:col-span-3 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
                   <div className="space-y-3">
-                    {/* Primary Strength */}
-                    <div className="p-3.5 rounded-xl bg-[#060D1F] border border-sky-500/40 space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-extrabold text-sky-400 uppercase tracking-wider">
-                        <span>⚡ <span className="italic">PRIMARY STRENGTH</span></span>
-                        <Zap className="h-3.5 w-3.5 text-sky-400" />
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          <span className="italic">PRIMARY STRENGTH</span>
+                        </span>
+                        <div className="font-bold text-base text-slate-900 mt-0.5">
+                          Speed
+                        </div>
+                        <div className="font-mono text-xs text-slate-500">
+                          <strong className="text-slate-900 font-bold">89</strong> / 100
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-white">
-                          {formatCompLabel(primaryStrength.key)}
-                        </span>
-                        <span className="font-mono text-sm font-extrabold text-sky-400">
-                          {primaryStrength.score} / 100
-                        </span>
+                      <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Zap className="h-4 w-4 fill-blue-600" />
                       </div>
                     </div>
 
-                    {/* Limiting Factor */}
-                    <div className="p-3.5 rounded-xl bg-[#060D1F] border border-rose-500/40 space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-extrabold text-rose-400 uppercase tracking-wider">
-                        <span>🎯 <span className="italic">LIMITING FACTOR</span></span>
-                        <HeartPulse className="h-3.5 w-3.5 text-rose-400" />
+                    <div className="pt-2 border-t border-slate-100 flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          <span className="italic">LIMITING FACTOR</span>
+                        </span>
+                        <div className="font-bold text-base text-slate-900 mt-0.5">
+                          Endurance
+                        </div>
+                        <div className="font-mono text-xs text-slate-500">
+                          <strong className="text-slate-900 font-bold">74</strong> / 100
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-white">
-                          {formatCompLabel(limitingFactor.key)}
-                        </span>
-                        <span className="font-mono text-sm font-extrabold text-rose-400">
-                          {limitingFactor.score} / 100
-                        </span>
+                      <div className="h-8 w-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                        <Heart className="h-4 w-4" />
                       </div>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setActiveTab("progress")}
-                    className="w-full py-2 px-3 rounded-xl border border-slate-700 hover:border-sky-500/50 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1 transition"
+                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 pt-1"
                   >
-                    <span>Detail 7 Komponen</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span>View Details</span>
+                    <span>→</span>
                   </button>
+                </div>
+
+                {/* 2. 7 PHYSICAL COMPONENTS (Span 6 cols) */}
+                <div className="lg:col-span-6 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      7 PHYSICAL COMPONENTS
+                    </span>
+                    <button
+                      onClick={() => setActiveTab("progress")}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  {/* 7 Circular Gauges Horizontal Row */}
+                  <div className="flex items-center justify-between overflow-x-auto py-1 gap-2">
+                    <CircularProgressRing value={Math.round(radarScores.SPEED)} label="Speed" color="emerald" />
+                    <CircularProgressRing value={Math.round(radarScores.POWER)} label="Power" color="emerald" />
+                    <CircularProgressRing value={Math.round(radarScores.AGILITY)} label="Agility" color="blue" />
+                    <CircularProgressRing value={Math.round(radarScores.AEROBIC_ENDURANCE)} label="Endurance" color="blue" />
+                    <CircularProgressRing value={Math.round(radarScores.ANAEROBIC_ENDURANCE)} label="Strength" color="emerald" />
+                    <CircularProgressRing value={Math.round(radarScores.MUSCULAR_ENDURANCE)} label="Coordination" color="emerald" />
+                    <CircularProgressRing value={Math.round(radarScores.FLEXIBILITY)} label="Mobility" color="blue" />
+                  </div>
+                </div>
+
+                {/* 3. FEEDBACK MENUNGGU ULASAN BANNER (Span 3 cols) */}
+                <div className="lg:col-span-3 p-5 rounded-2xl bg-[#FFFBEB] border border-amber-200/80 shadow-sm space-y-3 flex flex-col justify-between relative overflow-hidden">
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase block">
+                      FEEDBACK MENUNGGU ULASAN
+                    </span>
+
+                    <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs mt-1">
+                      <span>⚠️</span>
+                      <span>1 session selesai belum diulas</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      Berikan feedback untuk membantu coach memantau perkembanganmu.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => setIsFeedbackModalOpen(true)}
+                      className="py-2 px-4 rounded-xl bg-white hover:bg-amber-50 text-slate-900 border border-slate-200 font-bold text-xs transition shadow-sm"
+                    >
+                      Beri Ulasan
+                    </button>
+
+                    {/* Illustration Icon */}
+                    <div className="h-10 w-10 text-amber-500 opacity-80 flex items-center justify-center">
+                      <ClipboardList className="h-8 w-8" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ────────────────────────────────────────────────────────
+                  ROW 4: UPCOMING SESSIONS | RECENT COACH FEEDBACK | TRAINING LOAD & RECOVERY
+                 ──────────────────────────────────────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* 1. UPCOMING SESSIONS */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      <span className="italic">UPCOMING SESSIONS</span>
+                    </span>
+                    <button
+                      onClick={() => setActiveTab("schedule")}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {[
+                      {
+                        day: "03",
+                        month: "SEP",
+                        title: "Speed & Agility Training",
+                        time: "16:00 – 17:30",
+                        location: "Field B",
+                        coach: "Coach Zulfi",
+                      },
+                      {
+                        day: "05",
+                        month: "SEP",
+                        title: "Strength & Power Training",
+                        time: "16:00 – 17:30",
+                        location: "Gym",
+                        coach: "Coach Zulfi",
+                      },
+                      {
+                        day: "07",
+                        month: "SEP",
+                        title: "Game Simulation",
+                        time: "16:00 – 17:30",
+                        location: "Field A",
+                        coach: "Coach Zulfi",
+                      },
+                    ].map((s, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition"
+                      >
+                        {/* Date badge */}
+                        <div className="h-12 w-12 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0 shadow-sm">
+                          <span className="text-[9px] font-bold text-blue-600 uppercase leading-none">
+                            {s.month}
+                          </span>
+                          <span className="font-mono text-base font-black text-slate-900 leading-tight">
+                            {s.day}
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 space-y-0.5 text-xs">
+                          <div className="font-bold text-slate-900 truncate">
+                            {s.title}
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate">
+                            {s.time} • {s.location} • {s.coach}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. RECENT COACH FEEDBACK */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      <span className="italic">RECENT COACH FEEDBACK</span>
+                    </span>
+                    <button
+                      onClick={() => setActiveTab("feedback")}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      {
+                        type: "Assessment",
+                        date: "2 Sep 2026",
+                        text: "Great improvement in speed and explosiveness. Keep building endurance.",
+                        iconBg: "bg-blue-100 text-blue-600",
+                      },
+                      {
+                        type: "Session",
+                        date: "28 Aug 2026",
+                        text: "Good effort today. Focus on consistency during high intensity drills.",
+                        iconBg: "bg-emerald-100 text-emerald-600",
+                      },
+                      {
+                        type: "Session",
+                        date: "25 Aug 2026",
+                        text: "Your movement quality is getting better. Keep it up!",
+                        iconBg: "bg-amber-100 text-amber-600",
+                      },
+                    ].map((f, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 text-xs">
+                        <div
+                          className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${f.iconBg}`}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="text-[11px] font-semibold text-slate-500">
+                            {f.date} ({f.type})
+                          </div>
+                          <p className="text-slate-800 font-normal leading-snug">
+                            {f.text}
+                          </p>
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            — Coach Zulfi
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. ATTENDANCE & TRAINING LOGS (Real DB) */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 tracking-wider uppercase">
+                      <span className="italic">RINGKASAN KEHADIRAN &amp; SESI</span>
+                    </span>
+                    <button
+                      onClick={() => setActiveTab("train")}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      View Details
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Left: Total Sesi Dihadiri */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-slate-400 font-medium uppercase block">
+                        Total Sesi Selesai
+                      </span>
+                      <div className="font-mono text-3xl font-black text-slate-900">
+                        {attendance?.totalSessions ?? sessionLogs.length}
+                      </div>
+                      <div className="text-xs font-bold text-emerald-600">
+                        {attendance?.overallRate ?? attendance?.thisMonthRate ?? 100}% Presensi
+                      </div>
+                      {/* Bar */}
+                      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: `${attendance?.overallRate ?? attendance?.thisMonthRate ?? 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 block text-right">
+                        {attendance?.overallRate ?? attendance?.thisMonthRate ?? 100}%
+                      </span>
+                    </div>
+
+                    {/* Right: Rincian Presensi */}
+                    <div className="space-y-1.5 text-xs">
+                      <span className="text-[10px] text-slate-400 font-medium uppercase block">
+                        Status Presensi
+                      </span>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span>Aktif &amp; Teratur</span>
+                      </div>
+
+                      <div className="space-y-1 pt-1 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Tepat Waktu</span>
+                          <span className="font-bold text-slate-800">{attendance?.presentCount ?? sessionLogs.length} Sesi</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Terlambat</span>
+                          <span className="font-bold text-slate-800">{attendance?.lateCount ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Izin / Sakit</span>
+                          <span className="font-bold text-slate-800">{attendance?.excusedCount ?? 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Alpa</span>
+                          <span className="font-bold text-slate-800">{attendance?.absentCount ?? 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -709,19 +1245,19 @@ export function AthletePortalDashboard({
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "progress" && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                     Pusat Analisis Performa (7 Komponen Fisik)
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                    Evaluasi komprehensif profil atletik berdasarkan <span className="italic">sport science</span> dan standar <span className="italic">benchmark</span>.
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Evaluasi komprehensif profil atletik berdasarkan <span className="italic">sport science</span> dan standar <span className="italic">benchmark</span> resmi.
                   </p>
                 </div>
 
                 <Badge
                   variant="outline"
-                  className="border-sky-500/30 text-sky-400 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase self-start sm:self-auto"
+                  className="border-blue-500/30 text-blue-600 bg-blue-50 px-3 py-1 text-xs font-bold uppercase self-start sm:self-auto"
                 >
                   {progress.totalAssessments > 0 ? `${progress.totalAssessments} Siklus Evaluasi` : "6 Siklus Evaluasi"}
                 </Badge>
@@ -730,11 +1266,11 @@ export function AthletePortalDashboard({
               {/* Radar Chart & Score Breakdown Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Hero Radar Chart */}
-                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-sky-400" />
-                      <span><span className="italic">Spider / Radar Chart</span> 7 Komponen</span>
+                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-blue-600" />
+                      <span><span className="italic">Radar Chart</span> 7 Komponen Fisik</span>
                     </h2>
                     <span className="text-[11px] font-mono text-slate-400">Skala 0–100</span>
                   </div>
@@ -745,13 +1281,13 @@ export function AthletePortalDashboard({
                 </div>
 
                 {/* Component Score Bars & Status */}
-                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Award className="h-4 w-4 text-amber-400" />
+                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Award className="h-4 w-4 text-amber-500" />
                       <span>Rincian Nilai 7 Komponen Fisik</span>
                     </h2>
-                    <span className="text-[11px] font-mono font-bold text-sky-400">
+                    <span className="text-[11px] font-mono font-bold text-blue-600">
                       Rata-rata: {progress.overallScore ?? 84} / 100
                     </span>
                   </div>
@@ -763,31 +1299,31 @@ export function AthletePortalDashboard({
                       const isLow = score < 75;
 
                       return (
-                        <div key={key} className="space-y-1.5 p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
+                        <div key={key} className="space-y-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-200">{label}</span>
+                            <span className="font-semibold text-slate-800">{label}</span>
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-white">{score} / 100</span>
+                              <span className="font-mono font-bold text-slate-900">{score} / 100</span>
                               {isHigh && (
-                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                                   Unggul
                                 </span>
                               )}
                               {isLow && (
-                                <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
                                   Fokus
                                 </span>
                               )}
                             </div>
                           </div>
-                          <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+                          <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
                                 isHigh
-                                  ? "bg-gradient-to-r from-blue-600 to-sky-400"
+                                  ? "bg-emerald-500"
                                   : isLow
-                                  ? "bg-gradient-to-r from-rose-500 to-amber-400"
-                                  : "bg-gradient-to-r from-blue-500 to-indigo-500"
+                                  ? "bg-rose-500"
+                                  : "bg-blue-600"
                               }`}
                               style={{ width: `${Math.min(score, 100)}%` }}
                             />
@@ -798,64 +1334,32 @@ export function AthletePortalDashboard({
                   </div>
                 </div>
               </div>
-
-              {/* Historical Assessment Cycles List */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-sky-400" />
-                  <span>Riwayat Laporan Evaluasi Resmi</span>
-                </h2>
-
-                <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-[#060D1F]">
-                  {(reports.length > 0 ? reports : [
-                    { assessmentId: "rep-1", assessmentDate: "2026-09-02", overallScore: 84, overallGrade: "A-" },
-                    { assessmentId: "rep-2", assessmentDate: "2026-08-18", overallScore: 82, overallGrade: "A-" },
-                    { assessmentId: "rep-3", assessmentDate: "2026-07-25", overallScore: 79, overallGrade: "B+" },
-                  ]).map((rep) => (
-                    <div key={rep.assessmentId} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      <div className="space-y-1">
-                        <div className="font-bold text-white text-sm">Evaluasi Fisik Berkala Atlet</div>
-                        <div className="text-slate-400 text-[11px]">
-                          Tanggal Tes: {new Date(rep.assessmentDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <span className="font-mono text-base font-extrabold text-white">{rep.overallScore} / 100</span>
-                          <span className="block text-[10px] text-sky-400 font-bold">Grade {rep.overallGrade}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
           {/* ══════════════════════════════════════════════════════════════
-              TAB 3: TRAIN (UPCOMING SESSIONS & DRILLS)
+              TAB 3: TRAIN & SCHEDULE (PROGRAM LATIHAN & SESI)
              ══════════════════════════════════════════════════════════════ */}
-          {activeTab === "train" && (
+          {(activeTab === "train" || activeTab === "schedule") && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                     Program Latihan &amp; Jadwal Sesi
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                    Menu latihan terstruktur, target repetisi, dan jadwal operasional latihan.
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Jadwal latihan terstruktur, menu latihan, dan catatan pelatih.
                   </p>
                 </div>
 
                 {/* Segmented Controller (Upcoming / Completed) */}
-                <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex items-center p-1 rounded-xl bg-slate-200 border border-slate-300">
                   <button
                     onClick={() => setTrainSegment("upcoming")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                       trainSegment === "upcoming"
-                        ? "bg-blue-600 text-white shadow"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     <span className="italic">Upcoming</span>
@@ -864,8 +1368,8 @@ export function AthletePortalDashboard({
                     onClick={() => setTrainSegment("completed")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                       trainSegment === "completed"
-                        ? "bg-blue-600 text-white shadow"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     <span className="italic">Completed</span>
@@ -875,127 +1379,124 @@ export function AthletePortalDashboard({
 
               {trainSegment === "upcoming" ? (
                 <>
-                  {/* Active Training Plan & Drill Checklist */}
-                  <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  {/* Active Training Plan & Drill List */}
+                  <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2">
-                        <Dumbbell className="h-5 w-5 text-sky-400" />
+                        <Dumbbell className="h-5 w-5 text-blue-600" />
                         <div>
-                          <h2 className="text-sm font-bold text-white">
+                          <h2 className="text-sm font-bold text-slate-900">
                             {trainingPlan?.title ?? "Fase Akselerasi & Power Eksplosif"}
                           </h2>
-                          <p className="text-[11px] text-slate-400">
-                            {trainingPlan?.description ?? "Fokus penguatan dorongan kaki awal dan kelincahan arah."}
+                          <p className="text-[11px] text-slate-500">
+                            {trainingPlan?.description ?? "Fokus penguatan dorongan langkah awal dan kelincahan arah."}
                           </p>
                         </div>
                       </div>
 
-                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold">
+                      <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold">
                         Program Aktif
                       </Badge>
                     </div>
 
                     <div className="space-y-3">
                       <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                        <span className="italic">CHECKLIST DRILL</span> LATIHAN
+                        DAFTAR MENU LATIHAN (<span className="italic">DRILLS</span>)
                       </span>
 
-                      <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-[#060D1F]">
+                      <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden bg-slate-50">
                         {(trainingPlan?.exercises.length ? trainingPlan.exercises : [
                           { id: "d1", name: "Wall Acceleration Drill (A-March)", category: "Speed", sets: 3, reps: "10 per leg", restSeconds: 60, notes: "Jaga sudut tubuh 45 derajat dan dorongan jempol kaki." },
                           { id: "d2", name: "Box Jump to Stick Landing", category: "Power", sets: 4, reps: "5 jumps", restSeconds: 90, notes: "Fokus pada pendaratan lembut tanpa lutut menekuk ke dalam." },
                           { id: "d3", name: "5-10-5 Pro Agility Shuttle", category: "Agility", sets: 3, reps: "2 reps", restSeconds: 120, notes: "Sentuh garis dengan tangan terdekat sebelum putar arah." },
-                        ]).map((ex, idx) => {
-                          const isDone = completedDrills[ex.id] ?? false;
-
-                          return (
-                            <div
-                              key={ex.id}
-                              onClick={() => toggleDrill(ex.id)}
-                              className={`p-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
-                                isDone ? "bg-emerald-950/20" : "hover:bg-slate-900/60"
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div
-                                  className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-                                    isDone
-                                      ? "bg-emerald-500 text-white"
-                                      : "bg-slate-800 text-slate-400 border border-slate-700"
-                                  }`}
-                                >
-                                  {isDone ? <Check className="h-4 w-4" /> : idx + 1}
-                                </div>
-
-                                <div>
-                                  <div className={`text-xs font-bold ${isDone ? "text-emerald-400 line-through" : "text-white"}`}>
-                                    {ex.name}
-                                  </div>
-                                  {ex.category && (
-                                    <span className="text-[10px] text-slate-400 block mt-0.5">
-                                      Kategori: {ex.category}
-                                    </span>
-                                  )}
-                                  {ex.notes && (
-                                    <p className="text-[11px] text-slate-400 mt-1 italic leading-relaxed">
-                                      💡 {ex.notes}
-                                    </p>
-                                  )}
-                                </div>
+                        ]).map((ex, idx) => (
+                          <div
+                            key={ex.id}
+                            className="p-4 flex items-center justify-between gap-4 transition-colors hover:bg-slate-100/60"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-white text-slate-700 border border-slate-200">
+                                {idx + 1}
                               </div>
 
-                              <div className="text-right font-mono text-xs shrink-0">
-                                <div className="font-extrabold text-sky-400">
-                                  {ex.sets ? `${ex.sets} Sets` : ""} {ex.reps ? `× ${ex.reps}` : ""}
+                              <div>
+                                <div className="text-xs font-bold text-slate-900">
+                                  {ex.name}
                                 </div>
-                                {ex.restSeconds && (
-                                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                                    Rest: {ex.restSeconds}s
+                                {ex.category && (
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                                    Kategori: {ex.category}
                                   </span>
+                                )}
+                                {ex.notes && (
+                                  <p className="text-[11px] text-slate-500 mt-1 italic leading-relaxed">
+                                    💡 {ex.notes}
+                                  </p>
                                 )}
                               </div>
                             </div>
-                          );
-                        })}
+
+                            <div className="text-right font-mono text-xs shrink-0">
+                              <div className="font-extrabold text-blue-600">
+                                {ex.sets ? `${ex.sets} Sets` : ""} {ex.reps ? `× ${ex.reps}` : ""}
+                              </div>
+                              {ex.restSeconds && (
+                                <span className="text-[10px] text-slate-400 block mt-0.5">
+                                  Rest: {ex.restSeconds}s
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   {/* Upcoming Schedule Cards */}
-                  <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-sky-400" />
+                  <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
                       <span>Jadwal Sesi Mendatang</span>
                     </h2>
 
                     <div className="space-y-3">
                       {(upcomingSessions.length > 0 ? upcomingSessions : [
-                        { id: "s1", title: "Speed & Power Training", startTime: "2026-09-04T16:00:00Z", endTime: "2026-09-04T17:30:00Z", status: "SCHEDULED" },
-                        { id: "s2", title: "Agility & Change of Direction", startTime: "2026-09-06T16:00:00Z", endTime: "2026-09-06T17:30:00Z", status: "SCHEDULED" },
-                        { id: "s3", title: "Endurance & Conditioning", startTime: "2026-09-09T16:00:00Z", endTime: "2026-09-09T17:30:00Z", status: "SCHEDULED" },
+                        { id: "s1", title: "Speed & Power Training", startTime: "2026-09-04T16:00:00Z", endTime: "2026-09-04T17:30:00Z", status: "SCHEDULED", location: "Field A", coachName: "Coach Zulfi", trainingPlanTitle: "Speed & Power" },
+                        { id: "s2", title: "Agility & Change of Direction", startTime: "2026-09-06T16:00:00Z", endTime: "2026-09-06T17:30:00Z", status: "SCHEDULED", location: "Field A", coachName: "Coach Zulfi", trainingPlanTitle: "Agility & Coordination" },
+                        { id: "s3", title: "Endurance & Conditioning", startTime: "2026-09-09T16:00:00Z", endTime: "2026-09-09T17:30:00Z", status: "SCHEDULED", location: "Track Area", coachName: "Coach Zulfi", trainingPlanTitle: "Aerobic Conditioning" },
                       ]).map((s) => (
-                        <div key={s.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-white text-sm">{s.title}</span>
-                            <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                              Terjadwal
-                            </span>
+                        <div
+                          key={s.id}
+                          className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-sm">{s.title}</span>
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                Terjadwal
+                              </span>
+                            </div>
+                            <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
+                              <span className="text-slate-800">
+                                {new Date(s.startTime).toLocaleDateString("id-ID", {
+                                  weekday: "short",
+                                  day: "numeric",
+                                  month: "short",
+                                })}
+                              </span>
+                              <span>·</span>
+                              <span className="text-blue-600">
+                                {new Date(s.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} – {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-xs font-mono text-slate-400 flex items-center gap-3">
-                            <span className="text-white">
-                              {new Date(s.startTime).toLocaleDateString("id-ID", {
-                                weekday: "short",
-                                day: "numeric",
-                                month: "short",
-                              })}
-                            </span>
-                            <span>·</span>
-                            <span className="text-sky-400">
-                              {new Date(s.startTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} – {new Date(s.endTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
-                            </span>
-                            <span>·</span>
-                            <span>Coach Zulfi</span>
-                          </div>
+
+                          <button
+                            onClick={() => setSelectedSessionForModal(s)}
+                            className="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 text-xs font-semibold self-start sm:self-auto transition shadow-sm"
+                          >
+                            Detail Sesi
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1003,9 +1504,9 @@ export function AthletePortalDashboard({
                 </>
               ) : (
                 /* Completed Sessions History */
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span>Riwayat Kehadiran Sesi Selesai</span>
                   </h2>
 
@@ -1014,19 +1515,19 @@ export function AthletePortalDashboard({
                       { id: "log-1", sessionTitle: "Agility & Core Stability", sessionDate: "2026-09-01", coachFeedback: "Fokus yang sangat baik pada cone drills. Pendaratan stabil." },
                       { id: "log-2", sessionTitle: "Sprint Acceleration 40M", sessionDate: "2026-08-28", coachFeedback: "Peningkatan dorongan langkah awal sangat terasa." },
                     ]).map((log) => (
-                      <div key={log.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-1.5">
+                      <div key={log.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white text-sm">{log.sessionTitle ?? "Sesi Latihan"}</span>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                            Selesai &amp; Hadir
+                          <span className="font-bold text-slate-900 text-sm">{log.sessionTitle ?? "Sesi Latihan"}</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            SESSION COMPLETED ✓
                           </span>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {new Date(log.sessionDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        <div className="text-xs text-slate-500">
+                          Selesai pada: {new Date(log.sessionDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                         </div>
                         {log.coachFeedback && (
-                          <p className="text-xs text-slate-300 italic pt-1.5 border-t border-slate-800/80 mt-1">
-                            &quot;{log.coachFeedback}&quot;
+                          <p className="text-xs text-slate-700 italic pt-1.5 border-t border-slate-200/80 mt-1">
+                            Catatan Pelatih: &quot;{log.coachFeedback}&quot;
                           </p>
                         )}
                       </div>
@@ -1038,96 +1539,24 @@ export function AthletePortalDashboard({
           )}
 
           {/* ══════════════════════════════════════════════════════════════
-              TAB 4: PB HUB (PERSONAL BESTS & TARGET TRACKER)
+              TAB 4: PB HUB (PERSONAL BESTS & TARGETS)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "pb" && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="border-b border-slate-800/60 pb-4">
-                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                  <Trophy className="h-6 w-6 text-amber-400" />
+              <div className="border-b border-slate-200 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+                  <Trophy className="h-6 w-6 text-amber-500" />
                   <span><span className="italic">Personal Best Hub &amp; Target Tracker</span></span>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  Papan rekor terbaik performa fisik pribadi dan target capaian terstruktur yang ditetapkan pelatih.
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Papan rekor terbaik performa fisik pribadi, target terstruktur, dan tonggak pencapaian atletik.
                 </p>
               </div>
 
-              {/* Target Tracker Section */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Target className="h-4 w-4 text-amber-400" />
-                  <span>Target Performa Aktif ({portalGoals.length > 0 ? portalGoals.length : 1})</span>
-                </h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(portalGoals.length > 0 ? portalGoals : [
-                    {
-                      id: "g1",
-                      testItemName: "40m Sprint Acceleration",
-                      baselineValue: 4.21,
-                      currentValue: 4.08,
-                      targetValue: 3.95,
-                      unit: "s",
-                      progressPercent: 78,
-                      targetDate: "2026-09-30",
-                      title: "Fokus dorongan 10 meter awal dan sudut badan.",
-                    },
-                    {
-                      id: "g2",
-                      testItemName: "Vertical Jump Explosiveness",
-                      baselineValue: 48,
-                      currentValue: 52,
-                      targetValue: 56,
-                      unit: "cm",
-                      progressPercent: 65,
-                      targetDate: "2026-10-15",
-                      title: "Maksimalkan arm swing dan triple extension.",
-                    },
-                  ]).map((goal) => (
-                    <div key={goal.id} className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-xs">{goal.testItemName}</span>
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
-                          {goal.progressPercent}% Tercapai
-                        </span>
-                      </div>
-
-                      <div className="flex items-baseline justify-between font-mono text-xs text-slate-300">
-                        <div>
-                          <span className="text-[10px] text-slate-500 block uppercase">Baseline</span>
-                          <span>{goal.baselineValue} {goal.unit.toLowerCase()}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-500 block uppercase">Saat Ini</span>
-                          <span className="font-bold text-white">{goal.currentValue ?? goal.baselineValue} {goal.unit.toLowerCase()}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-amber-400 block uppercase font-bold">Target</span>
-                          <span className="font-bold text-amber-400">{goal.targetValue} {goal.unit.toLowerCase()}</span>
-                        </div>
-                      </div>
-
-                      <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-amber-400 rounded-full"
-                          style={{ width: `${Math.min(goal.progressPercent, 100)}%` }}
-                        />
-                      </div>
-
-                      {goal.title && (
-                        <p className="text-[11px] text-slate-400 italic">
-                          Catatan: {goal.title}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* All Personal Bests Grid */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Award className="h-4 w-4 text-sky-400" />
+              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-blue-600" />
                   <span>Daftar Rekor Fisik Resmi (<span className="italic">Personal Bests</span>)</span>
                 </h2>
 
@@ -1135,31 +1564,31 @@ export function AthletePortalDashboard({
                   {displayPbs.map((pb) => (
                     <div
                       key={pb.testItemId}
-                      className="p-4 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2 hover:border-sky-500/50 transition-colors"
+                      className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 hover:border-blue-300 transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white truncate">{pb.testItemName}</span>
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        <span className="text-xs font-bold text-slate-900 truncate">{pb.testItemName}</span>
+                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">
                           PB
                         </span>
                       </div>
 
                       <div className="flex items-baseline gap-1.5">
-                        <span className="font-mono text-2xl font-black text-white">
+                        <span className="font-mono text-2xl font-black text-slate-900">
                           {pb.pbValue}
                         </span>
-                        <span className="text-xs font-mono text-slate-400">
+                        <span className="text-xs font-mono text-slate-500">
                           {pb.unit.toLowerCase()}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-200">
                         <span>
                           {pb.achievedDate
                             ? new Date(pb.achievedDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
                             : "Baseline"}
                         </span>
-                        <span className="text-emerald-400 font-bold">
+                        <span className="text-emerald-600 font-bold">
                           Tercatat Resmi
                         </span>
                       </div>
@@ -1171,70 +1600,125 @@ export function AthletePortalDashboard({
           )}
 
           {/* ══════════════════════════════════════════════════════════════
-              TAB 5: MORE (RECOVERY, FEEDBACK & ATHLETE PROFILE)
+              TAB 5: REPORTS (RAPOR EVALUASI RESMI)
              ══════════════════════════════════════════════════════════════ */}
-          {activeTab === "more" && (
+          {activeTab === "reports" && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="border-b border-slate-800/60 pb-4">
-                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                  Kebugaran, Bimbingan &amp; Profil Atlet
+              <div className="border-b border-slate-200 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+                  Riwayat Rapor Evaluasi Resmi
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  Monitoring pemulihan fisik, riwayat masukan pelatih, dan biodata atlet.
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Arsip resmi hasil evaluasi dan penilaian fisik oleh pelatih.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 1. RPE & RECOVERY CARD */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <HeartPulse className="h-4 w-4 text-emerald-400" />
-                      <span><span className="italic">RPE &amp; Recovery</span> (Pemulihan)</span>
-                    </h2>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
-                      ● Good
-                    </span>
-                  </div>
+              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden bg-slate-50">
+                  {(reports.length > 0 ? reports : [
+                    { assessmentId: "rep-1", assessmentDate: "2026-09-02", overallScore: 84, overallGrade: "A-" },
+                    { assessmentId: "rep-2", assessmentDate: "2026-08-18", overallScore: 82, overallGrade: "A-" },
+                    { assessmentId: "rep-3", assessmentDate: "2026-07-25", overallScore: 79, overallGrade: "B+" },
+                  ]).map((rep) => (
+                    <div key={rep.assessmentId} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="font-bold text-slate-900 text-sm">Evaluasi Fisik Berkala Atlet</div>
+                        <div className="text-slate-500 text-[11px]">
+                          Tanggal Tes: {new Date(rep.assessmentDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        </div>
+                      </div>
 
-                  <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
-                      <span className="text-slate-400 flex items-center gap-2">
-                        <BedDouble className="h-4 w-4 text-sky-400" />
-                        <span className="italic">Sleep Duration</span>
-                      </span>
-                      <span className="font-mono font-bold text-white">8h 12m</span>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span className="font-mono text-base font-extrabold text-slate-900">{rep.overallScore} / 100</span>
+                          <span className="block text-[10px] text-blue-600 font-bold">Grade {rep.overallGrade}</span>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
-                      <span className="text-slate-400 flex items-center gap-2">
-                        <Gauge className="h-4 w-4 text-amber-400" />
-                        <span className="italic">Daily RPE</span>
-                      </span>
-                      <span className="font-mono font-bold text-amber-400">4 / 10 (Optimal)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
-                      <span className="text-slate-400 flex items-center gap-2">
-                        <Smile className="h-4 w-4 text-emerald-400" />
-                        <span className="italic">Muscle Soreness</span>
-                      </span>
-                      <span className="font-bold text-white">Ringan (Mild)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#060D1F] border border-slate-800/80">
-                      <span className="text-slate-400 flex items-center gap-2">
-                        <Flame className="h-4 w-4 text-indigo-400" />
-                        <span className="italic">Training Load (7 Days)</span>
-                      </span>
-                      <span className="font-mono font-bold text-indigo-400">420 AU · Optimal</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
+            </div>
+          )}
 
-                {/* 2. ATHLETE PROFILE CARD */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <div className="flex items-center gap-4 border-b border-slate-800 pb-3">
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 6: FEEDBACK (CATATAN & BIMBINGAN PELATIH)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "feedback" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="border-b border-slate-200 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+                  Catatan &amp; Bimbingan Pelatih
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Masukan langsung, arahan perbaikan gerakan, dan evaluasi berkala dari Coach Zulfi.
+                </p>
+              </div>
+
+              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                <div className="space-y-3">
+                  {(guidances.length > 0 ? guidances : [
+                    {
+                      id: "g-1",
+                      authorName: "Coach Zulfi",
+                      createdAt: "2026-09-02",
+                      content: "Great improvement in speed and explosiveness. Keep building endurance.",
+                    },
+                    {
+                      id: "g-2",
+                      authorName: "Coach Zulfi",
+                      createdAt: "2026-08-28",
+                      content: "Good effort today. Focus on consistency during high intensity drills.",
+                    },
+                    {
+                      id: "g-3",
+                      authorName: "Coach Zulfi",
+                      createdAt: "2026-08-25",
+                      content: "Your movement quality is getting better. Keep it up!",
+                    },
+                  ]).map((g) => (
+                    <div key={g.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5 text-blue-600" />
+                          {g.authorName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(g.createdAt).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-700 leading-relaxed italic">
+                        &quot;{g.content}&quot;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              TAB 7: MORE / PROFILE (PROFIL ATLET & AKUN)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "more" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="border-b border-slate-200 pb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+                  Profil Atlet &amp; Akses Akun
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Biodata performa fisik dan informasi akun portal resmi.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Athlete Profile Card */}
+                <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
+                  <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
                     <Avatar
                       src={profile.photoUrl ?? undefined}
                       fallback={profile.fullName.slice(0, 2).toUpperCase()}
@@ -1243,98 +1727,57 @@ export function AthletePortalDashboard({
                       className="ring-2 ring-blue-500"
                     />
                     <div>
-                      <h2 className="font-bold text-base text-white">{profile.fullName}</h2>
-                      <p className="text-xs text-slate-400">{profile.sportCategory ?? "U-16 • Football"}</p>
-                      <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-sky-400 mt-1 font-mono">
-                        ID: YAP-00481
+                      <h2 className="font-bold text-base text-slate-900">{profile.fullName}</h2>
+                      <p className="text-xs text-slate-500">{profile.sportCategory ?? "Youth Performance"}</p>
+                      <span className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700 mt-1 font-mono">
+                        ID: {profile.id.slice(0, 10).toUpperCase()}
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between py-1 border-b border-slate-800/50">
-                      <span className="text-slate-400">Tanggal Lahir</span>
-                      <span className="font-bold text-white">
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Tanggal Lahir</span>
+                      <span className="font-bold text-slate-900">
                         {new Date(profile.dateOfBirth).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "long",
                           year: "numeric",
-                        })}
+                        })} ({profile.age} Th)
                       </span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-800/50">
-                      <span className="text-slate-400">Tinggi Badan</span>
-                      <span className="font-mono font-bold text-white">175 cm</span>
+                    {profile.jerseyNumber != null && (
+                      <div className="flex justify-between py-1 border-b border-slate-100">
+                        <span className="text-slate-500">Nomor Jersey</span>
+                        <span className="font-mono font-bold text-slate-900">#{profile.jerseyNumber}</span>
+                      </div>
+                    )}
+                    {profile.position && profile.position !== "UNSPECIFIED" && (
+                      <div className="flex justify-between py-1 border-b border-slate-100">
+                        <span className="text-slate-500">Posisi</span>
+                        <span className="font-bold text-slate-900">{profile.position}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Tinggi Badan</span>
+                      <span className="font-mono font-bold text-slate-900">
+                        {profile.heightCm ? `${profile.heightCm} cm` : "—"}
+                      </span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-800/50">
-                      <span className="text-slate-400">Berat Badan</span>
-                      <span className="font-mono font-bold text-white">62 kg</span>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Berat Badan</span>
+                      <span className="font-mono font-bold text-slate-900">
+                        {profile.weightKg ? `${profile.weightKg} kg` : "—"}
+                      </span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-800/50">
-                      <span className="text-slate-400">Kaki Dominan</span>
-                      <span className="font-bold text-white">Kanan (Right)</span>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Organisasi</span>
+                      <span className="font-bold text-blue-600">{context.organizationName}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-400">Organisasi</span>
-                      <span className="font-bold text-sky-400">{context.organizationName}</span>
+                      <span className="text-slate-500">Tipe Akses Portal</span>
+                      <span className="font-bold text-emerald-600 font-mono">ATHLETE (READ-ONLY)</span>
                     </div>
-                  </div>
-                </div>
-
-                {/* 3. COACH GUIDANCE FEED */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0B1426] border border-slate-800 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-sky-400" />
-                      <span>Masukan &amp; Bimbingan Pelatih</span>
-                    </h2>
-
-                    <div className="flex items-center gap-1 text-[10px]">
-                      <button
-                        onClick={() => setFeedbackFilter("all")}
-                        className={`px-2 py-0.5 rounded font-bold ${
-                          feedbackFilter === "all" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Semua
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                    {(guidances.length > 0 ? guidances : [
-                      {
-                        id: "g-1",
-                        authorName: "Coach Zulfi",
-                        createdAt: "2026-09-02",
-                        content: "Peningkatan sangat signifikan pada kecepatan sprint dan daya ledak paha.",
-                      },
-                      {
-                        id: "g-2",
-                        authorName: "Coach Zulfi",
-                        createdAt: "2026-08-26",
-                        content: "Latihan hari ini bagus. Jaga konsistensi teknik pergantian arah saat intensitas tinggi.",
-                      },
-                    ]).map((g) => (
-                      <div key={g.id} className="p-3.5 rounded-xl bg-[#060D1F] border border-slate-800 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-sky-400" />
-                            {g.authorName}
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(g.createdAt).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-300 leading-relaxed italic">
-                          &quot;{g.content}&quot;
-                        </p>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -1344,7 +1787,7 @@ export function AthletePortalDashboard({
       </div>
 
       {/* ── MOBILE BOTTOM NAVIGATION ────────────────────────────────── */}
-      <YapBottomNav activeTab={activeTab} onSelectTab={setActiveTab} />
+      <YapBottomNav activeTab={activeTab as any} onSelectTab={(t) => setActiveTab(t as YapTab)} />
     </div>
   );
 }

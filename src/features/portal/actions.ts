@@ -159,7 +159,39 @@ export async function createPortalAccess(
   const { username, plainPassword } = await generatePortalCredentials(athlete.fullName, accessType);
   const passwordHash = await bcrypt.hash(plainPassword, 10);
 
+  const existing = await prisma.portalAccess.findFirst({
+    where: {
+      organizationId: ctx.organizationId,
+      athleteId: athlete.id,
+      accessType,
+    },
+  });
+
   try {
+    if (existing) {
+      await prisma.portalAccess.update({
+        where: { id: existing.id },
+        data: {
+          tokenHash,
+          expiresAt,
+          revokedAt: null,
+          username: existing.username ?? username,
+          passwordHash: existing.passwordHash ?? passwordHash,
+          plainPassword: existing.plainPassword ?? plainPassword,
+          createdByMemberId: ctx.memberId,
+        },
+      });
+
+      revalidatePath(`/athletes/${athleteId}`);
+      return {
+        success: true,
+        rawToken,
+        username: existing.username ?? username,
+        plainPassword: existing.plainPassword ?? plainPassword,
+        expiresAt: expiresAt.toISOString(),
+      };
+    }
+
     await prisma.portalAccess.create({
       data: {
         organizationId: ctx.organizationId,
@@ -188,6 +220,71 @@ export async function createPortalAccess(
       success: false,
       error: "Gagal membuat link akses portal",
     };
+  }
+}
+
+export async function updatePortalCredentials(
+  accessId: string,
+  athleteId: string,
+  newUsername: string,
+  newPassword: string
+) {
+  const ctx = await requireOrgContext();
+
+  const cleanUsername = newUsername.trim().toLowerCase();
+  const cleanPassword = newPassword.trim();
+
+  if (cleanUsername.length < 3) {
+    return { success: false, error: "Username minimal harus 3 karakter" };
+  }
+  if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+    return { success: false, error: "Username hanya boleh memuat huruf kecil, angka, dan underscore (_)" };
+  }
+  if (cleanPassword.length < 6) {
+    return { success: false, error: "Password minimal harus 6 karakter" };
+  }
+
+  const access = await prisma.portalAccess.findFirst({
+    where: {
+      id: accessId,
+      organizationId: ctx.organizationId,
+      athleteId,
+    },
+  });
+
+  if (!access) {
+    return { success: false, error: "Akses portal tidak ditemukan" };
+  }
+
+  // Check if username is already taken by another portal access
+  const existingWithSameUsername = await prisma.portalAccess.findFirst({
+    where: {
+      username: cleanUsername,
+      id: { not: accessId },
+    },
+  });
+
+  if (existingWithSameUsername) {
+    return { success: false, error: "Username ini sudah digunakan oleh akun portal lain. Silakan pilih username unik." };
+  }
+
+  const passwordHash = await bcrypt.hash(cleanPassword, 10);
+
+  try {
+    await prisma.portalAccess.update({
+      where: { id: accessId },
+      data: {
+        username: cleanUsername,
+        passwordHash,
+        plainPassword: cleanPassword,
+      },
+    });
+
+    revalidatePath(`/athletes/${athleteId}`);
+    return { success: true, username: cleanUsername, plainPassword: cleanPassword };
+  } catch (err: unknown) {
+    console.error("Gagal mengupdate kredensial portal:", err);
+    return { success: false, error: "Gagal menyimpan username dan password baru" };
   }
 }
 
@@ -260,6 +357,40 @@ export async function revokePortalAccess(accessId: string, athleteId: string) {
     return {
       success: false,
       error: "Gagal mencabut akses portal",
+    };
+  }
+}
+
+export async function deletePortalAccess(accessId: string, athleteId: string) {
+  const ctx = await requireOrgContext();
+
+  const access = await prisma.portalAccess.findFirst({
+    where: {
+      id: accessId,
+      organizationId: ctx.organizationId,
+      athleteId,
+    },
+  });
+
+  if (!access) {
+    return {
+      success: false,
+      error: "Akses portal tidak ditemukan atau akses ditolak",
+    };
+  }
+
+  try {
+    await prisma.portalAccess.delete({
+      where: { id: accessId },
+    });
+
+    revalidatePath(`/athletes/${athleteId}`);
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Gagal menghapus portal access:", err);
+    return {
+      success: false,
+      error: "Gagal menghapus riwayat akses portal",
     };
   }
 }
@@ -361,4 +492,62 @@ export async function updatePortalAthleteAvatar(athleteId: string, photoUrl: str
     return { success: false, error: "Gagal menyimpan foto profil" };
   }
 }
+
+export async function changePortalAthletePassword(
+  tokenHashOrAccessId: string,
+  currentPass: string,
+  newPass: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!tokenHashOrAccessId) {
+    return { success: false, error: "Token akses tidak valid" };
+  }
+  if (!newPass || newPass.trim().length < 6) {
+    return { success: false, error: "Password baru minimal 6 karakter" };
+  }
+
+  try {
+    const access = await prisma.portalAccess.findFirst({
+      where: {
+        OR: [
+          { id: tokenHashOrAccessId },
+          { tokenHash: tokenHashOrAccessId },
+        ],
+        revokedAt: null,
+        expiresAt: { gte: new Date() },
+      },
+    });
+
+    if (!access) {
+      return { success: false, error: "Akses portal tidak ditemukan atau telah berakhir" };
+    }
+
+    let isCurrentValid = false;
+    if (access.passwordHash) {
+      isCurrentValid = await bcrypt.compare(currentPass.trim(), access.passwordHash);
+    } else if (access.plainPassword) {
+      isCurrentValid = access.plainPassword === currentPass.trim();
+    } else {
+      isCurrentValid = true;
+    }
+
+    if (!isCurrentValid && (access.passwordHash || access.plainPassword)) {
+      return { success: false, error: "Password saat ini tidak sesuai" };
+    }
+
+    const passwordHash = await bcrypt.hash(newPass.trim(), 10);
+    await prisma.portalAccess.update({
+      where: { id: access.id },
+      data: {
+        passwordHash,
+        plainPassword: newPass.trim(),
+      },
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("Gagal mengganti password portal:", err);
+    return { success: false, error: "Terjadi kesalahan saat mengganti password" };
+  }
+}
+
 

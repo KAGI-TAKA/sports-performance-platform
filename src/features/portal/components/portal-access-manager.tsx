@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createPortalAccess, revokePortalAccess, resetPortalPassword } from "../actions";
+import {
+  createPortalAccess,
+  revokePortalAccess,
+  deletePortalAccess,
+  resetPortalPassword,
+  updatePortalCredentials,
+} from "../actions";
 import { toast } from "sonner";
 import {
   Link as LinkIcon,
@@ -19,6 +25,8 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
+  Trash2,
+  Edit3,
 } from "lucide-react";
 import {
   Dialog,
@@ -63,6 +71,15 @@ export function PortalAccessManager({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
 
+  // Edit Credential Modal States
+  const [editingAccess, setEditingAccess] = useState<AccessItem | null>(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+
+  // Filter 2 canonical accounts
+  const athleteAccess = accesses.find((a) => a.accessType === "ATHLETE" && a.isActive) || accesses.find((a) => a.accessType === "ATHLETE") || null;
+  const parentAccess = accesses.find((a) => a.accessType === "PARENT" && a.isActive) || accesses.find((a) => a.accessType === "PARENT") || null;
+
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -71,11 +88,27 @@ export function PortalAccessManager({
     startTransition(async () => {
       const res = await createPortalAccess(athleteId, formData);
       if (res.success && res.rawToken) {
-        toast.success("Link & Kredensial Portal berhasil dibuat!");
+        toast.success("Link & Kredensial Portal berhasil dibuat/diperbarui!");
         setCreatedToken(res.rawToken);
         form.reset();
       } else {
         toast.error(res.error ?? "Gagal membuat link akses portal");
+      }
+    });
+  }
+
+  async function handleQuickCreate(accessType: "ATHLETE" | "PARENT") {
+    const formData = new FormData();
+    formData.append("accessType", accessType);
+    formData.append("expiresInDays", "90");
+
+    startTransition(async () => {
+      const res = await createPortalAccess(athleteId, formData);
+      if (res.success && res.rawToken) {
+        toast.success(`Akun Login ${accessType === "PARENT" ? "Orang Tua" : "Atlet"} berhasil dibuat!`);
+        setCreatedToken(res.rawToken);
+      } else {
+        toast.error(res.error ?? "Gagal membuat akun akses");
       }
     });
   }
@@ -93,6 +126,19 @@ export function PortalAccessManager({
     });
   }
 
+  async function handleDelete(accessId: string) {
+    if (!confirm("Apakah Anda yakin ingin MENGHAPUS PERMANEN riwayat akses ini?")) return;
+
+    startTransition(async () => {
+      const res = await deletePortalAccess(accessId, athleteId);
+      if (res.success) {
+        toast.success("Riwayat akses portal berhasil dihapus permanen");
+      } else {
+        toast.error(res.error ?? "Gagal menghapus riwayat akses");
+      }
+    });
+  }
+
   async function handleResetPassword(accessId: string) {
     if (!confirm("Reset password akan memperbarui kredensial login atlet/orang tua ini. Lanjutkan?")) return;
 
@@ -102,6 +148,33 @@ export function PortalAccessManager({
         toast.success(`Password berhasil di-reset!\nUsername: ${res.username}\nPassword Baru: ${res.plainPassword}`);
       } else {
         toast.error(res.error ?? "Gagal me-reset password");
+      }
+    });
+  }
+
+  function openEditModal(access: AccessItem) {
+    setEditingAccess(access);
+    setEditUsername(access.username ?? "");
+    setEditPassword(access.plainPassword ?? "");
+  }
+
+  async function handleSaveCredentials(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingAccess) return;
+
+    startTransition(async () => {
+      const res = await updatePortalCredentials(
+        editingAccess.id,
+        athleteId,
+        editUsername,
+        editPassword
+      );
+
+      if (res.success) {
+        toast.success(`Kredensial login berhasil diperbarui!\nUsername: ${res.username}`);
+        setEditingAccess(null);
+      } else {
+        toast.error(res.error ?? "Gagal memperbarui username & password");
       }
     });
   }
@@ -161,7 +234,7 @@ export function PortalAccessManager({
               </DialogTitle>
             </div>
             <p className="text-xs text-muted mt-0.5 leading-relaxed">
-              Dual-option access: Gunakan Link Instan (WA) atau Username &amp; Password untuk {athleteName}.
+              Dual-option access: Gunakan Link Instan (WA) atau 2 Akun Login Resmi (Atlet &amp; Orang Tua) untuk {athleteName}.
             </p>
           </DialogHeader>
 
@@ -187,7 +260,7 @@ export function PortalAccessManager({
               }`}
             >
               <KeyRound className="h-3.5 w-3.5" />
-              Opsi 2: Username &amp; Password Login
+              Opsi 2: 2 Akun Login (Atlet &amp; Orang Tua)
             </button>
           </div>
 
@@ -237,7 +310,7 @@ export function PortalAccessManager({
               <form onSubmit={handleCreate} className="space-y-3 text-xs">
                 <div className="font-semibold text-foreground flex items-center gap-1.5">
                   <Plus className="h-3.5 w-3.5 text-accent" />
-                  Buat Link Akses Baru
+                  Buat / Perbarui Link Akses
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -269,6 +342,7 @@ export function PortalAccessManager({
                       <option value="7">7 Hari</option>
                       <option value="30">30 Hari (Standard)</option>
                       <option value="90">90 Hari (3 Bulan)</option>
+                      <option value="180">180 Hari (6 Bulan)</option>
                     </select>
                   </div>
                 </div>
@@ -281,32 +355,37 @@ export function PortalAccessManager({
                     className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5"
                   >
                     {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    Generate Link Portal
+                    Generate / Perbarui Link Portal
                   </Button>
                 </div>
               </form>
 
-              {/* Active Links List */}
+              {/* Active & History Links List with Delete Option */}
               <div className="space-y-2 pt-3 border-t border-border text-xs">
-                <div className="font-semibold text-foreground flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-accent" />
-                  Daftar Akses Portal Tersimpan ({accesses.length})
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-accent" />
+                    Riwayat Link Akses ({accesses.length})
+                  </span>
+                  <span className="text-[10px] text-muted">
+                    Hapus link usang untuk merapikan daftar
+                  </span>
                 </div>
 
                 {accesses.length === 0 ? (
                   <p className="text-muted text-[11px] py-3 text-center">
-                    Belum ada link portal yang dibuat untuk atlet ini.
+                    Belum ada riwayat link portal yang dibuat untuk atlet ini.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {accesses.map((acc) => (
                       <div
                         key={acc.id}
-                        className="flex items-center justify-between rounded-lg border border-border bg-surface-2 p-2.5"
+                        className="flex items-center justify-between rounded-lg border border-border bg-surface-2 p-2.5 gap-2"
                       >
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">
+                            <span className="font-bold text-foreground truncate">
                               {acc.accessType === "PARENT" ? "Orang Tua" : "Atlet"}
                             </span>
                             {acc.isActive ? (
@@ -323,28 +402,43 @@ export function PortalAccessManager({
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-muted">
+                          <p className="text-[11px] text-muted truncate">
                             Exp:{" "}
                             {new Date(acc.expiresAt).toLocaleDateString("id-ID", {
                               day: "numeric",
                               month: "short",
                               year: "numeric",
-                            })}
+                            })} · Dibuat oleh {acc.createdByName}
                           </p>
                         </div>
 
-                        {acc.isActive && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {acc.isActive && (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => handleRevoke(acc.id)}
+                              disabled={isPending}
+                              className="h-7 px-2 text-rose-400 border-rose-500/30 hover:bg-rose-500/10 text-[11px]"
+                              title="Cabut akses"
+                            >
+                              <Ban className="h-3 w-3" />
+                              <span className="hidden sm:inline">Cabut</span>
+                            </Button>
+                          )}
+
                           <Button
                             size="xs"
-                            variant="outline"
-                            onClick={() => handleRevoke(acc.id)}
+                            variant="ghost"
+                            onClick={() => handleDelete(acc.id)}
                             disabled={isPending}
-                            className="gap-1 text-rose-400 border-rose-500/30 hover:bg-rose-500/10 text-[11px]"
+                            className="h-7 px-2 text-muted hover:text-rose-400 hover:bg-rose-950/20 text-[11px]"
+                            title="Hapus riwayat akses permanen"
                           >
-                            <Ban className="h-3 w-3" />
-                            Cabut
+                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                            <span className="hidden sm:inline">Hapus</span>
                           </Button>
-                        )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -352,124 +446,394 @@ export function PortalAccessManager({
               </div>
             </div>
           ) : (
-            /* TAB 2: CREDENTIALS (USERNAME & PASSWORD) */
+            /* TAB 2: STANDARDIZED 2 CREDENTIALS ACCOUNTS (ATLET & ORANG TUA) */
             <div className="space-y-4 text-xs">
-              <p className="text-muted leading-relaxed">
-                Kredensial login ini dapat digunakan oleh Atlet dan Orang Tua untuk masuk secara resmi melalui halaman <code className="text-accent font-mono">/login</code>.
-              </p>
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-200 text-xs">
+                💡 Setiap atlet memiliki <strong>maksimal 2 akun login resmi</strong> (1 Akun Atlet &amp; 1 Akun Orang Tua). Anda dapat mengedit username &amp; password kustom di bawah ini.
+              </div>
 
-              {accesses.filter((a) => a.isActive).length === 0 ? (
-                <div className="p-4 rounded-lg border border-border bg-surface-2 text-center text-muted">
-                  Belum ada akun aktif. Silakan buat akses portal terlebih dahulu pada Opsi 1.
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                  {accesses
-                    .filter((a) => a.isActive)
-                    .map((acc) => {
-                      const isShowingPass = showPasswordMap[acc.id] ?? false;
-                      return (
-                        <div
-                          key={acc.id}
-                          className="p-3 rounded-xl border border-border bg-surface-2/70 space-y-2.5"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-foreground flex items-center gap-1.5">
-                              <KeyRound className="h-3.5 w-3.5 text-accent" />
-                              Akun Login {acc.accessType === "PARENT" ? "Orang Tua" : "Atlet"}
-                            </span>
+              <div className="grid grid-cols-1 gap-4">
+                {/* 1. AKUN LOGIN ATLET */}
+                <div className="p-4 rounded-xl border border-border bg-surface-2 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/80 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-foreground text-xs">Akun Login Atlet</div>
+                        <div className="text-[10px] text-muted">Untuk login mandiri atlet di /login</div>
+                      </div>
+                    </div>
+
+                    {athleteAccess?.isActive ? (
+                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                        ● Aktif
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-slate-800 text-slate-400 px-2 py-0.5 text-[10px] font-medium">
+                        Belum Dibuat
+                      </span>
+                    )}
+                  </div>
+
+                  {athleteAccess ? (
+                    <div className="space-y-2.5">
+                      {/* Username Field */}
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                        <div>
+                          <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
+                            Username / ID
+                          </span>
+                          <span className="font-mono font-bold text-foreground text-xs">
+                            {athleteAccess.username ?? "—"}
+                          </span>
+                        </div>
+                        {athleteAccess.username && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={() => handleCopyText(athleteAccess.username!, `u-${athleteAccess.id}`, "Username")}
+                            className="gap-1 text-[11px]"
+                          >
+                            {copiedField === `u-${athleteAccess.id}` ? (
+                              <Check className="h-3 w-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            {copiedField === `u-${athleteAccess.id}` ? "Tersalin!" : "Salin"}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Password Field */}
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                        <div>
+                          <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
+                            Password
+                          </span>
+                          <span className="font-mono font-bold text-foreground text-xs">
+                            {showPasswordMap[athleteAccess.id]
+                              ? athleteAccess.plainPassword ?? "••••••••"
+                              : "••••••••"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => togglePasswordVisibility(athleteAccess.id)}
+                            className="h-7 px-2 text-muted hover:text-foreground"
+                          >
+                            {showPasswordMap[athleteAccess.id] ? (
+                              <EyeOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                          {athleteAccess.plainPassword && (
                             <Button
                               size="xs"
-                              variant="ghost"
-                              onClick={() => handleResetPassword(acc.id)}
-                              disabled={isPending}
-                              className="gap-1 text-[10px] text-muted hover:text-accent"
+                              variant="outline"
+                              onClick={() =>
+                                handleCopyText(athleteAccess.plainPassword!, `p-${athleteAccess.id}`, "Password")
+                              }
+                              className="gap-1 text-[11px]"
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              Reset Password
-                            </Button>
-                          </div>
-
-                          {/* Username Field */}
-                          <div className="flex items-center justify-between p-2 rounded-lg bg-background border border-border">
-                            <div>
-                              <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
-                                Username / ID
-                              </span>
-                              <span className="font-mono font-bold text-foreground">
-                                {acc.username ?? "—"}
-                              </span>
-                            </div>
-                            {acc.username && (
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => handleCopyText(acc.username!, `u-${acc.id}`, "Username")}
-                                className="gap-1 text-[11px]"
-                              >
-                                {copiedField === `u-${acc.id}` ? (
-                                  <Check className="h-3 w-3 text-emerald-400" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                                {copiedField === `u-${acc.id}` ? "Tersalin!" : "Salin"}
-                              </Button>
-                            )}
-                          </div>
-
-                          {/* Password Field */}
-                          <div className="flex items-center justify-between p-2 rounded-lg bg-background border border-border">
-                            <div>
-                              <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
-                                Password
-                              </span>
-                              <span className="font-mono font-bold text-foreground">
-                                {isShowingPass
-                                  ? acc.plainPassword ?? "••••••••"
-                                  : "••••••••"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                onClick={() => togglePasswordVisibility(acc.id)}
-                                className="h-7 px-2 text-muted hover:text-foreground"
-                              >
-                                {isShowingPass ? (
-                                  <EyeOff className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Eye className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                              {acc.plainPassword && (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleCopyText(acc.plainPassword!, `p-${acc.id}`, "Password")
-                                  }
-                                  className="gap-1 text-[11px]"
-                                >
-                                  {copiedField === `p-${acc.id}` ? (
-                                    <Check className="h-3 w-3 text-emerald-400" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                  {copiedField === `p-${acc.id}` ? "Tersalin!" : "Salin"}
-                                </Button>
+                              {copiedField === `p-${athleteAccess.id}` ? (
+                                <Check className="h-3 w-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
                               )}
-                            </div>
-                          </div>
+                              {copiedField === `p-${athleteAccess.id}` ? "Tersalin!" : "Salin"}
+                            </Button>
+                          )}
                         </div>
-                      );
-                    })}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between pt-1 gap-2">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => openEditModal(athleteAccess)}
+                          className="gap-1 text-[11px] border-accent/40 text-accent hover:bg-accent/10"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          Edit Username &amp; Password
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => handleResetPassword(athleteAccess.id)}
+                            disabled={isPending}
+                            className="gap-1 text-[10px] text-muted hover:text-accent"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Reset Acak
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => handleDelete(athleteAccess.id)}
+                            disabled={isPending}
+                            className="gap-1 text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-950/20"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Hapus
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2 text-center space-y-2">
+                      <p className="text-[11px] text-muted">Akun login atlet belum dibuat.</p>
+                      <Button
+                        size="xs"
+                        onClick={() => handleQuickCreate("ATHLETE")}
+                        disabled={isPending}
+                        className="bg-sky-600 hover:bg-sky-500 text-white font-semibold"
+                      >
+                        {isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                        + Buat Akun Atlet Sekarang
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* 2. AKUN LOGIN ORANG TUA */}
+                <div className="p-4 rounded-xl border border-border bg-surface-2 space-y-3">
+                  <div className="flex items-center justify-between border-b border-border/80 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-foreground text-xs">Akun Login Orang Tua</div>
+                        <div className="text-[10px] text-muted">Untuk akses Parent Portal &amp; pemantauan</div>
+                      </div>
+                    </div>
+
+                    {parentAccess?.isActive ? (
+                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                        ● Aktif
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-slate-800 text-slate-400 px-2 py-0.5 text-[10px] font-medium">
+                        Belum Dibuat
+                      </span>
+                    )}
+                  </div>
+
+                  {parentAccess ? (
+                    <div className="space-y-2.5">
+                      {/* Username Field */}
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                        <div>
+                          <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
+                            Username / ID
+                          </span>
+                          <span className="font-mono font-bold text-foreground text-xs">
+                            {parentAccess.username ?? "—"}
+                          </span>
+                        </div>
+                        {parentAccess.username && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={() => handleCopyText(parentAccess.username!, `u-${parentAccess.id}`, "Username")}
+                            className="gap-1 text-[11px]"
+                          >
+                            {copiedField === `u-${parentAccess.id}` ? (
+                              <Check className="h-3 w-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            {copiedField === `u-${parentAccess.id}` ? "Tersalin!" : "Salin"}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Password Field */}
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                        <div>
+                          <span className="text-[10px] text-muted block uppercase tracking-wider font-semibold">
+                            Password
+                          </span>
+                          <span className="font-mono font-bold text-foreground text-xs">
+                            {showPasswordMap[parentAccess.id]
+                              ? parentAccess.plainPassword ?? "••••••••"
+                              : "••••••••"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => togglePasswordVisibility(parentAccess.id)}
+                            className="h-7 px-2 text-muted hover:text-foreground"
+                          >
+                            {showPasswordMap[parentAccess.id] ? (
+                              <EyeOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                          {parentAccess.plainPassword && (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() =>
+                                handleCopyText(parentAccess.plainPassword!, `p-${parentAccess.id}`, "Password")
+                              }
+                              className="gap-1 text-[11px]"
+                            >
+                              {copiedField === `p-${parentAccess.id}` ? (
+                                <Check className="h-3 w-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              {copiedField === `p-${parentAccess.id}` ? "Tersalin!" : "Salin"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between pt-1 gap-2">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => openEditModal(parentAccess)}
+                          className="gap-1 text-[11px] border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          Edit Username &amp; Password
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => handleResetPassword(parentAccess.id)}
+                            disabled={isPending}
+                            className="gap-1 text-[10px] text-muted hover:text-emerald-400"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Reset Acak
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => handleDelete(parentAccess.id)}
+                            disabled={isPending}
+                            className="gap-1 text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-950/20"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Hapus
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2 text-center space-y-2">
+                      <p className="text-[11px] text-muted">Akun login orang tua belum dibuat.</p>
+                      <Button
+                        size="xs"
+                        onClick={() => handleQuickCreate("PARENT")}
+                        disabled={isPending}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                      >
+                        {isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                        + Buat Akun Orang Tua Sekarang
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ── EDIT CREDENTIALS MODAL DIALOG ──────────────────────────── */}
+      {editingAccess && (
+        <Dialog open={!!editingAccess} onOpenChange={(open) => !open && setEditingAccess(null)}>
+          <DialogContent onClose={() => setEditingAccess(null)} className="max-w-md p-5 sm:p-6">
+            <DialogHeader className="pr-8">
+              <div className="flex items-center gap-2">
+                <Edit3 className="h-5 w-5 text-accent shrink-0" />
+                <DialogTitle className="text-base font-bold">
+                  Edit Username &amp; Password Akun {editingAccess.accessType === "PARENT" ? "Orang Tua" : "Atlet"}
+                </DialogTitle>
+              </div>
+              <p className="text-xs text-muted mt-0.5">
+                Ubah kredensial login akun {athleteName} sesuai kebutuhan.
+              </p>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveCredentials} className="space-y-4 pt-2 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-foreground block">
+                  Username Baru
+                </label>
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value.toLowerCase())}
+                  placeholder="contoh: atlet_rangga / ortu_rangga"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground font-mono focus:border-accent focus:outline-none"
+                />
+                <span className="text-[10px] text-muted block">
+                  Huruf kecil, angka, dan underscore (_). Minimal 3 karakter.
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-foreground block">
+                  Password Baru
+                </label>
+                <input
+                  type="text"
+                  required
+                  minLength={6}
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Minimal 6 karakter"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-foreground font-mono focus:border-accent focus:outline-none"
+                />
+                <span className="text-[10px] text-muted block">
+                  Password akan dienkripsi secara aman dan langsung aktif untuk login di /login.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingAccess(null)}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  size="sm"
+                  className="bg-accent hover:bg-accent/90 text-white font-semibold"
+                >
+                  {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                  Simpan Kredensial
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

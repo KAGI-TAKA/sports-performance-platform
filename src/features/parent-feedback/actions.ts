@@ -74,6 +74,9 @@ export async function submitParentFeedbackAction(
       coach: {
         select: { id: true, organizationId: true },
       },
+      executor: {
+        select: { id: true, organizationId: true },
+      },
     },
   });
 
@@ -131,8 +134,9 @@ export async function submitParentFeedbackAction(
     };
   }
 
-  // 9. Verify Coach Tenant Integrity
-  if (session.coach.organizationId !== context.organizationId) {
+  // 9. Verify Actual Coach / Executor Tenant Integrity
+  const actualCoachMember = session.executor ?? session.coach;
+  if (actualCoachMember.organizationId !== context.organizationId) {
     return {
       success: false,
       error: "Integritas data pelatih sesi tidak valid",
@@ -157,7 +161,7 @@ export async function submitParentFeedbackAction(
     };
   }
 
-  // 11. Create Parent Feedback Record
+  // 11. Create Parent Feedback Record with Actual Executor Attribution
   try {
     const newFeedback = await prisma.parentFeedback.create({
       data: {
@@ -165,7 +169,7 @@ export async function submitParentFeedbackAction(
         scheduleSessionId,
         athleteId: context.athleteId,
         portalAccessId: context.portalAccessId,
-        coachMemberId: session.coach.id, // Strictly server-determined
+        coachMemberId: actualCoachMember.id, // Strictly server-determined: Actual Executor
         sessionRating,
         communicationRating,
         athleteAttentionRating,

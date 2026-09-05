@@ -57,6 +57,11 @@ export async function getEligibleParentFeedbackSessions(
           user: { select: { name: true } },
         },
       },
+      executor: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
       attendances: {
         where: { athleteId: context.athleteId },
       },
@@ -83,7 +88,7 @@ export async function getEligibleParentFeedbackSessions(
       sessionDate: s.startTime.toISOString().split("T")[0],
       startTime: s.startTime.toISOString(),
       endTime: s.endTime.toISOString(),
-      coachName: s.coach.user.name,
+      coachName: s.executor?.user.name ?? s.coach.user.name,
       location: s.location,
       attendanceStatus: attendance.status as "PRESENT" | "LATE",
       hasSubmittedFeedback,
@@ -118,9 +123,19 @@ export async function getParentFeedbackForSession(
       },
     },
     include: {
+      coachMember: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
       scheduleSession: {
         include: {
           coach: {
+            include: {
+              user: { select: { name: true } },
+            },
+          },
+          executor: {
             include: {
               user: { select: { name: true } },
             },
@@ -139,7 +154,7 @@ export async function getParentFeedbackForSession(
     scheduleSessionId: feedback.scheduleSessionId,
     sessionTitle: feedback.scheduleSession.title,
     sessionDate: feedback.scheduleSession.startTime.toISOString().split("T")[0],
-    coachName: feedback.scheduleSession.coach.user.name,
+    coachName: feedback.coachMember?.user.name ?? feedback.scheduleSession.executor?.user.name ?? feedback.scheduleSession.coach.user.name,
     sessionRating: feedback.sessionRating,
     communicationRating: feedback.communicationRating,
     athleteAttentionRating: feedback.athleteAttentionRating,
