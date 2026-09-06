@@ -111,11 +111,14 @@ export async function getAssistantPerformanceList(options?: {
 
   const summaries: AssistantPerformanceSummary[] = await Promise.all(
     targetMembers.map(async (member) => {
-      // 1. Completed sessions assigned to this assistant
+      // 1. Completed sessions executed by this assistant (executorId or fallback to coachId)
       const sessions = await prisma.scheduleSession.findMany({
         where: {
           organizationId: ctx.organizationId,
-          coachId: member.id,
+          OR: [
+            { executorId: member.id },
+            { executorId: null, coachId: member.id },
+          ],
           status: "COMPLETED",
           ...(currentPeriodFilter ? { startTime: currentPeriodFilter } : {}),
         },
@@ -238,11 +241,14 @@ export async function getAssistantDetailPerformance(
 
   if (!member) return null;
 
-  // Overview calculation
+  // Overview calculation: completed sessions executed by this assistant
   const sessions = await prisma.scheduleSession.findMany({
     where: {
       organizationId: ctx.organizationId,
-      coachId: member.id,
+      OR: [
+        { executorId: member.id },
+        { executorId: null, coachId: member.id },
+      ],
       status: "COMPLETED",
     },
     select: { id: true },

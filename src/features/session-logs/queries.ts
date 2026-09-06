@@ -23,7 +23,8 @@ export async function listSessionLogs(
   if (opts?.createdById) {
     where.OR = [
       { createdByMemberId: opts.createdById },
-      { scheduleSession: { coachId: opts.createdById } },
+      { scheduleSession: { executorId: opts.createdById } },
+      { scheduleSession: { executorId: null, coachId: opts.createdById } },
     ];
   }
 

@@ -236,8 +236,12 @@ export function ScheduleAgendaView({
       const sDateStr = toLocalDateStr(s.startTime);
       if (sDateStr !== selectedDate) return false;
     }
-    // 2. Coach Filter
-    if (coachFilter !== "ALL" && s.coachId !== coachFilter) {
+    // 2. Coach Filter (matches actual executor or primary coach)
+    if (
+      coachFilter !== "ALL" &&
+      (s.executorId ?? s.coachId) !== coachFilter &&
+      s.coachId !== coachFilter
+    ) {
       return false;
     }
     // 3. Status Filter

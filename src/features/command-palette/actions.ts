@@ -56,8 +56,14 @@ export async function searchCommandPaletteAction(
         where: {
           organizationId: ctx.organizationId,
           title: { contains: query, mode: "insensitive" },
-          // If assistant, prioritize or scope according to assignment if desired, but allow viewing club timetable
-          ...(isAssistant ? { coachId: ctx.memberId } : {}),
+          ...(isAssistant
+            ? {
+                OR: [
+                  { executorId: ctx.memberId },
+                  { executorId: null, coachId: ctx.memberId },
+                ],
+              }
+            : {}),
         },
         select: {
           id: true,

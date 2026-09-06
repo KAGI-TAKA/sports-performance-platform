@@ -259,7 +259,7 @@ export function ScheduleWeeklyMatrixView({
                         <div className="space-y-1.5">
                           {matchingSessions.map((s) => {
                             const isPast = new Date(s.endTime) < new Date();
-                            const isAssigned = s.coachId === coaches[0]?.id;
+                            const isAssigned = (s.executorId ?? s.coachId) === coaches[0]?.id;
 
                             return (
                               <button

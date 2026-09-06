@@ -138,8 +138,13 @@ export function ScheduleCalendarView({
 
   // Filter Sessions
   const filteredSessions = sessions.filter((s) => {
-    // Coach Filter
-    if (coachFilter !== "ALL" && s.coachId !== coachFilter) return false;
+    // Coach Filter (matches actual executor or primary coach)
+    if (
+      coachFilter !== "ALL" &&
+      (s.executorId ?? s.coachId) !== coachFilter &&
+      s.coachId !== coachFilter
+    )
+      return false;
     // Status Filter
     if (statusFilter !== "ALL" && s.status !== statusFilter) return false;
     // Search Query
