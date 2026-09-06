@@ -44,6 +44,7 @@ vi.mock("./queries", () => ({
 
 vi.mock("@/features/parent-feedback/queries", () => ({
   getEligibleParentFeedbackSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+  getParentFeedbackHistory: vi.fn().mockResolvedValue({ success: true, feedbackHistory: [] }),
 }));
 
 import {

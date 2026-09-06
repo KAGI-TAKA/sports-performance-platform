@@ -41,6 +41,7 @@ interface PortalViewProps {
   achievements: PortalAchievementData;
   guidances?: CoachGuidanceItem[];
   feedbackSessions?: EligibleFeedbackSessionItem[];
+  parentFeedbacks?: import("@/features/parent-feedback/types").ParentFeedbackPublicSummary[];
   personalBests?: PortalPersonalBestItem[];
   portalGoals?: PortalAthleteGoalItem[];
   attendance?: PortalAttendanceSummary | null;
@@ -62,6 +63,7 @@ export function PortalView({
   achievements,
   guidances = [],
   feedbackSessions = [],
+  parentFeedbacks = [],
   personalBests = [],
   portalGoals = [],
   attendance = null,
@@ -87,6 +89,7 @@ export function PortalView({
         achievements={achievements}
         guidances={guidances}
         feedbackSessions={feedbackSessions}
+        parentFeedbacks={parentFeedbacks}
         personalBests={personalBests}
         portalGoals={portalGoals}
         attendance={attendance}

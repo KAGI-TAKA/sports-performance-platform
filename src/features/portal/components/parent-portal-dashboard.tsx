@@ -64,7 +64,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { CoachGuidanceItem } from "@/features/guidance/types";
 import { GuidanceFeed } from "@/features/guidance/components/guidance-feed";
-import type { EligibleFeedbackSessionItem } from "@/features/parent-feedback/types";
+import type { EligibleFeedbackSessionItem, ParentFeedbackPublicSummary } from "@/features/parent-feedback/types";
+
 import { ParentFeedbackDialog } from "@/features/parent-feedback/components/parent-feedback-dialog";
 import { ParentChildBottomSheet } from "./parent-child-bottom-sheet";
 import { PortalParentGoalsSummary } from "./portal-parent-goals-summary";
@@ -92,6 +93,7 @@ interface ParentPortalDashboardProps {
   achievements: PortalAchievementData;
   guidances?: CoachGuidanceItem[];
   feedbackSessions?: EligibleFeedbackSessionItem[];
+  parentFeedbacks?: ParentFeedbackPublicSummary[];
   personalBests?: PortalPersonalBestItem[];
   portalGoals?: PortalAthleteGoalItem[];
   attendance?: PortalAttendanceSummary | null;
@@ -173,6 +175,7 @@ export function ParentPortalDashboard({
   achievements,
   guidances = [],
   feedbackSessions = [],
+  parentFeedbacks = [],
   personalBests = [],
   portalGoals = [],
   attendance = null,
@@ -1523,10 +1526,10 @@ export function ParentPortalDashboard({
                     </p>
                   </div>
 
-                  {submittedSessionIds.size > 0 || completedSessions.length > 0 ? (
-                    completedSessions.slice(0, 5).map((s) => (
+                  {parentFeedbacks.length > 0 ? (
+                    parentFeedbacks.map((fb) => (
                       <div
-                        key={s.id}
+                        key={fb.feedbackId}
                         className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#131f3c] p-5 shadow-xs space-y-3"
                       >
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -1535,23 +1538,47 @@ export function ParentPortalDashboard({
                               Ulasan untuk Pelatih Eksekutor
                             </span>
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                              {s.executorName || s.coachName} ({s.executorRole || s.coachRole || "Assistant Coach"})
+                              {fb.coachName}
                             </h4>
                           </div>
                           <div className="flex items-center gap-1 text-amber-500">
                             {[1, 2, 3, 4, 5].map((star) => (
-                              <Star key={star} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                              <Star
+                                key={star}
+                                className={`h-3.5 w-3.5 ${
+                                  star <= fb.sessionRating
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "fill-slate-200 text-slate-200"
+                                }`}
+                              />
                             ))}
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 ml-1">
+                              {fb.sessionRating}/5
+                            </span>
                           </div>
                         </div>
 
                         <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
                           <p>
-                            Sesi: <strong>{s.title}</strong> · {new Date(s.startTime).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                            Sesi: <strong>{fb.sessionTitle}</strong> ·{" "}
+                            {new Date(fb.sessionDate).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
                           </p>
-                          <p className="italic text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#182649] p-3 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                            &quot;Latihan sangat terstruktur dan ananda terlihat antusias mengikuti instruksi pelatih dengan gembira.&quot;
-                          </p>
+                          {fb.comment ? (
+                            <p className="italic text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#182649] p-3 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                              &quot;{fb.comment}&quot;
+                            </p>
+                          ) : (
+                            <p className="text-slate-400 italic">Tidak ada komentar tambahan.</p>
+                          )}
+                          <div className="flex gap-4 pt-1 text-[10px] text-slate-400">
+                            <span>Sesi: ⭐ {fb.sessionRating}</span>
+                            <span>Komunikasi: ⭐ {fb.communicationRating}</span>
+                            <span>Perhatian: ⭐ {fb.athleteAttentionRating}</span>
+                          </div>
                         </div>
                       </div>
                     ))

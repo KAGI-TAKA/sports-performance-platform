@@ -68,12 +68,15 @@ export async function getAssistantPerformanceList(options?: {
     }
   }
 
-  // Calculate unreviewed feedback count for organization (for supervisory badge)
+  // Calculate unreviewed feedback count for assistant coaches (for supervisory badge)
   const unreviewedCount = isSupervisory
     ? await prisma.parentFeedback.count({
         where: {
           organizationId: ctx.organizationId,
           isReviewed: false,
+          coachMember: {
+            role: "assistant_coach",
+          },
         },
       })
     : 0;

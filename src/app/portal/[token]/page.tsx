@@ -13,7 +13,7 @@ import {
   getPortalAthleteAttendance,
   getPortalAthleteSiblings,
 } from "@/features/portal/queries";
-import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/queries";
+import { getEligibleParentFeedbackSessions, getParentFeedbackHistory } from "@/features/parent-feedback/queries";
 import { PortalView } from "@/features/portal/components/portal-view";
 import { ShieldAlert, Clock, Ban, UserX } from "lucide-react";
 
@@ -96,7 +96,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
     getPortalAthleteSiblings(auth.context),
   ]);
 
-  const [achievementsData, feedbackData] = await Promise.all([
+  const [achievementsData, feedbackData, feedbackHistoryData] = await Promise.all([
     getPortalAthleteAchievements(
       auth.context,
       progressData?.trends,
@@ -105,6 +105,9 @@ export default async function PortalPage({ params }: PortalPageProps) {
     auth.context.accessType === "PARENT"
       ? getEligibleParentFeedbackSessions(token)
       : Promise.resolve({ success: true, sessions: [] }),
+    auth.context.accessType === "PARENT"
+      ? getParentFeedbackHistory(token)
+      : Promise.resolve({ success: true, feedbackHistory: [] }),
   ]);
 
   if (!profileData || !progressData) {
@@ -141,6 +144,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       reports={reportsData?.reports ?? []}
       guidances={guidanceData?.guidances ?? []}
       feedbackSessions={feedbackData.sessions ?? []}
+      parentFeedbacks={feedbackHistoryData.feedbackHistory ?? []}
       achievements={achievementsData?.achievements ?? {
         starRating: 0,
         starLabel: "Belum Ada Evaluasi",

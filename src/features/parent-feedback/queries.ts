@@ -239,3 +239,51 @@ export async function getInternalFeedbackQueue(options?: {
 
   return { success: true, feedbacks };
 }
+
+/**
+ * Retrieves the parent's submitted feedback history for their athlete.
+ * Returns real data from the ParentFeedback table — no fake/hardcoded data.
+ */
+export async function getParentFeedbackHistory(rawToken: string): Promise<{
+  success: boolean;
+  error?: string;
+  feedbackHistory?: ParentFeedbackPublicSummary[];
+}> {
+  const authRes = await getPortalContextByToken(rawToken);
+  if (!authRes.success || authRes.context.accessType !== "PARENT") {
+    return { success: false, error: "Akses portal tidak valid" };
+  }
+
+  const { context } = authRes;
+
+  const records = await prisma.parentFeedback.findMany({
+    where: {
+      organizationId: context.organizationId,
+      athleteId: context.athleteId,
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      coachMember: {
+        include: { user: { select: { name: true } } },
+      },
+      scheduleSession: {
+        select: { title: true, startTime: true },
+      },
+    },
+  });
+
+  const feedbackHistory: ParentFeedbackPublicSummary[] = records.map((f) => ({
+    feedbackId: f.id,
+    scheduleSessionId: f.scheduleSessionId,
+    sessionTitle: f.scheduleSession.title,
+    sessionDate: f.scheduleSession.startTime.toISOString().split("T")[0],
+    coachName: f.coachMember?.user.name ?? "Pelatih",
+    sessionRating: f.sessionRating,
+    communicationRating: f.communicationRating,
+    athleteAttentionRating: f.athleteAttentionRating,
+    comment: f.comment,
+    createdAt: f.createdAt.toISOString(),
+  }));
+
+  return { success: true, feedbackHistory };
+}

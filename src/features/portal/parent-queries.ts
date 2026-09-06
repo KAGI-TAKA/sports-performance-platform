@@ -33,7 +33,8 @@ import {
   getPortalAthleteAttendance,
   getPortalAthleteSiblings,
 } from "./queries";
-import { getEligibleParentFeedbackSessions } from "@/features/parent-feedback/queries";
+import { getEligibleParentFeedbackSessions, getParentFeedbackHistory } from "@/features/parent-feedback/queries";
+
 
 export interface ParentChildItem {
   id: string;
@@ -345,6 +346,7 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
     achievements: PortalAchievementData;
     guidances: any[];
     feedbackSessions: any[];
+    parentFeedbacks: any[];
     personalBests: PortalPersonalBestItem[];
     portalGoals: PortalAthleteGoalItem[];
     attendance: PortalAttendanceSummary | null;
@@ -429,13 +431,14 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
     };
   }
 
-  const [achievementsData, feedbackData] = await Promise.all([
+  const [achievementsData, feedbackData, feedbackHistoryData] = await Promise.all([
     getPortalAthleteAchievements(
       portalContext,
       progressData.trends,
       reportsData?.reports
     ),
     getEligibleParentFeedbackSessions(portalContext.portalAccessId),
+    getParentFeedbackHistory(portalContext.portalAccessId),
   ]);
 
   return {
@@ -456,6 +459,7 @@ export async function getParentChildPortalData(athleteId: string): Promise<{
       reports: reportsData?.reports ?? [],
       guidances: guidanceData?.guidances ?? [],
       feedbackSessions: feedbackData.sessions ?? [],
+      parentFeedbacks: feedbackHistoryData.feedbackHistory ?? [],
       achievements: achievementsData?.achievements ?? {
         starRating: 0,
         starLabel: "Belum Ada Evaluasi",
@@ -553,13 +557,14 @@ export async function getPortalChildDataByToken(
     return { success: false, error: "Gagal memuat profil atlet terpilih." };
   }
 
-  const [achievementsData, feedbackData] = await Promise.all([
+  const [achievementsData, feedbackData, feedbackHistoryData] = await Promise.all([
     getPortalAthleteAchievements(
       portalContext,
       progressData.trends,
       reportsData?.reports
     ),
     getEligibleParentFeedbackSessions(rawToken),
+    getParentFeedbackHistory(rawToken),
   ]);
 
   return {
@@ -580,6 +585,7 @@ export async function getPortalChildDataByToken(
       reports: reportsData?.reports ?? [],
       guidances: guidanceData?.guidances ?? [],
       feedbackSessions: feedbackData.sessions ?? [],
+      parentFeedbacks: feedbackHistoryData.feedbackHistory ?? [],
       achievements: achievementsData?.achievements ?? {
         starRating: 0,
         starLabel: "Belum Ada Evaluasi",

@@ -90,6 +90,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
     location: s.location,
     notes: s.notes,
     coachId: s.coachId,
+    executorId: s.executor?.id ?? null,
     coach: {
       user: {
         name: s.coach.user.name,
@@ -97,6 +98,15 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
         image: s.coach.user.image,
       },
     },
+    executor: s.executor
+      ? {
+          user: {
+            name: s.executor.user.name,
+            email: s.executor.user.email,
+            image: s.executor.user.image,
+          },
+        }
+      : null,
     athletes: s.athletes.map((a) => ({
       athlete: {
         id: a.athlete.id,
@@ -117,9 +127,9 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
   const isAssistant = ctx.role === "assistant_coach";
   const todayDateStr = toLocalDateStr(new Date());
 
-  // Filter sessions assigned to current Assistant Coach
+  // Filter sessions assigned to current Assistant Coach (actual executor)
   const assignedSessions = isAssistant
-    ? sessions.filter((s) => s.coachId === ctx.memberId)
+    ? sessions.filter((s) => (s.executorId ?? s.coachId) === ctx.memberId)
     : sessions;
 
   // Find sessions specifically for TODAY

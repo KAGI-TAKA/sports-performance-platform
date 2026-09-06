@@ -75,11 +75,12 @@ export async function markAttendanceAction(
     };
   }
 
-  // 3. Verify member permission (Assistant Coach can only mark their own session)
+  // 3. Verify member permission (Assistant Coach can mark if they are actual executor)
+  const actualExecutorId = session.executorId ?? session.coachId;
   const isAuthorized = canMemberMarkAttendance(
     ctx.role,
     ctx.memberId,
-    session.coachId
+    actualExecutorId
   );
 
   if (!isAuthorized) {
@@ -202,11 +203,12 @@ export async function batchMarkAttendanceAction(
     };
   }
 
-  // 3. Verify permission
+  // 3. Verify permission (Assistant Coach can mark if they are actual executor)
+  const actualExecutorId = session.executorId ?? session.coachId;
   const isAuthorized = canMemberMarkAttendance(
     ctx.role,
     ctx.memberId,
-    session.coachId
+    actualExecutorId
   );
 
   if (!isAuthorized) {
@@ -358,8 +360,9 @@ export async function fetchSessionAttendanceAction(sessionId: string) {
       };
     });
 
+  const actualExecutorId = session.executorId ?? session.coachId;
   const isEditable =
-    canMemberMarkAttendance(ctx.role, ctx.memberId, session.coachId) &&
+    canMemberMarkAttendance(ctx.role, ctx.memberId, actualExecutorId) &&
     session.status !== "CANCELLED";
 
   return {
