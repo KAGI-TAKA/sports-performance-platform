@@ -6,27 +6,13 @@ import {
   TrendingUp,
   Dumbbell,
   Trophy,
-  User,
   LogOut,
   Zap,
-  Users,
-  Calendar,
-  BookOpen,
-  MessageSquare,
-  MoreHorizontal,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { APP_CONFIG } from "@/lib/constants";
 
-export type YapTab =
-  | "home"
-  | "progress"
-  | "train"
-  | "pb"
-  | "schedule"
-  | "reports"
-  | "feedback"
-  | "more";
+export type YapTab = "home" | "progress" | "train" | "pb";
 
 interface YapSidebarProps {
   activeTab: YapTab;
@@ -35,7 +21,6 @@ interface YapSidebarProps {
   sportCategory?: string | null;
   photoUrl?: string | null;
   age?: number | null;
-  onOpenAthleteSelector?: () => void;
 }
 
 export function YapSidebar({
@@ -45,7 +30,6 @@ export function YapSidebar({
   sportCategory,
   photoUrl,
   age,
-  onOpenAthleteSelector,
 }: YapSidebarProps) {
   const initials = athleteName
     .split(" ")
@@ -61,20 +45,16 @@ export function YapSidebar({
     isForeign?: boolean;
     icon: React.ElementType;
   }[] = [
-    { id: "home", label: "Home", subLabel: "Overview", isForeign: true, icon: Home },
-    { id: "progress", label: "Progress", subLabel: "Analisis Performa", isForeign: true, icon: TrendingUp },
-    { id: "train", label: "Train", subLabel: "Program Latihan", isForeign: true, icon: Dumbbell },
+    { id: "home", label: "Beranda", subLabel: "Overview", icon: Home },
+    { id: "progress", label: "Progres Fisik", subLabel: "Analisis 7 Komponen", icon: TrendingUp },
+    { id: "train", label: "Program Latihan", subLabel: "Drills & Jadwal", icon: Dumbbell },
     { id: "pb", label: "PB Hub", subLabel: "Rekor & Target", isForeign: true, icon: Trophy },
-    { id: "schedule", label: "Schedule", subLabel: "Jadwal Sesi", isForeign: true, icon: Calendar },
-    { id: "reports", label: "Reports", subLabel: "Rapor Evaluasi", isForeign: true, icon: BookOpen },
-    { id: "feedback", label: "Coach Feedback", subLabel: "Catatan Pelatih", isForeign: true, icon: MessageSquare },
-    { id: "more", label: "More", subLabel: "Profil & Akun", isForeign: true, icon: MoreHorizontal },
   ];
 
   return (
     <aside className="hidden lg:flex w-64 flex-col justify-between border-r border-slate-800/80 bg-[#060D1F] text-slate-100 min-h-screen p-5 select-none shrink-0 sticky top-0 h-screen overflow-y-auto">
       {/* Top Branding */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Brand Header */}
         <div className="px-1 pt-1 space-y-2">
           <div className="flex items-center gap-2.5">
@@ -98,8 +78,8 @@ export function YapSidebar({
           </div>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="space-y-1.5 pt-1">
+        {/* Navigation Menu (Only 4 Core Athlete Tabs) */}
+        <nav className="space-y-2 pt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -107,50 +87,45 @@ export function YapSidebar({
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left ${
                   isActive
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 font-extrabold"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
-                <span className={item.isForeign ? "italic" : ""}>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <span className={item.isForeign ? "italic" : ""}>{item.label}</span>
+                </div>
+                <span className={`text-[10px] ${isActive ? "text-blue-100" : "text-slate-500"}`}>
+                  {item.subLabel}
+                </span>
               </button>
             );
           })}
         </nav>
       </div>
 
-      {/* Bottom Athlete Profile & Coach Quote Card */}
+      {/* Bottom Athlete Profile & Coach Motivation */}
       <div className="pt-4 border-t border-slate-800/80 space-y-3">
-        {/* Switch Athlete Profile Card */}
-        <div className="p-3 rounded-xl bg-[#0B1426] border border-slate-800 space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <Avatar
-              src={photoUrl ?? undefined}
-              fallback={initials}
-              size="sm"
-              alt={athleteName}
-              className="ring-2 ring-blue-500/40"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-white truncate">
-                {athleteName}
-              </div>
-              <div className="text-[10px] text-slate-400 truncate">
-                <span className="italic">{sportCategory ?? "U-16 • Football"}</span>
-                {age ? ` · ${age}th` : ""}
-              </div>
+        {/* Personal Athlete Info Card (Personal Space, No Switcher) */}
+        <div className="p-3 rounded-xl bg-[#0B1426] border border-slate-800 flex items-center gap-2.5">
+          <Avatar
+            src={photoUrl ?? undefined}
+            fallback={initials}
+            size="sm"
+            alt={athleteName}
+            className="ring-2 ring-blue-500/40"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-bold text-white truncate">
+              {athleteName}
+            </div>
+            <div className="text-[10px] text-slate-400 truncate">
+              <span className="italic">{sportCategory ?? "Youth Athlete"}</span>
+              {age ? ` · ${age}th` : ""}
             </div>
           </div>
-
-          <button
-            onClick={onOpenAthleteSelector}
-            className="w-full py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1.5 transition border border-slate-700"
-          >
-            <Users className="h-3 w-3 text-sky-400" />
-            <span>Switch Athlete</span>
-          </button>
         </div>
 
         {/* Coach Zulfi Motivation Card */}
@@ -180,4 +155,3 @@ export function YapSidebar({
     </aside>
   );
 }
-

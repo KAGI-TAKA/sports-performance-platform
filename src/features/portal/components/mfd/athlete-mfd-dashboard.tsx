@@ -318,38 +318,56 @@ export function AthleteMfdDashboard({
     }
   };
 
-  // ── 1. Honest XP & Star Level Computation ──────────────────────────────
+  // ── 1. Real XP & Star Level Computation (no hardcoded floor) ────────────
   const completedSessionsCount = achievements.completedSessions || sessionLogs.length;
   const totalAssessmentsCount = achievements.totalAssessments || progress.totalAssessments;
-  const earnedXp = 780 + completedSessionsCount * 50 + totalAssessmentsCount * 100 + (challengeDone ? 30 : 0);
-  const xpPerLevel = 1000;
-  const currentLevel = Math.max(7, Math.floor(earnedXp / xpPerLevel) + 1);
+  const earnedXp = completedSessionsCount * 50 + totalAssessmentsCount * 100 + (challengeDone ? 30 : 0);
+  const xpPerLevel = 500;
+  const currentLevel = Math.max(1, Math.floor(earnedXp / xpPerLevel) + 1);
   const currentLevelXp = earnedXp % xpPerLevel;
   const xpProgressPercent = Math.min(100, Math.round((currentLevelXp / xpPerLevel) * 100));
 
-  // ── 2. Real Streak & Attendance Calculation ───────────────────────────
-  let streakDays = 5;
+  // ── 2. Real Streak & Attendance Calculation (no hardcoded fallback) ──────
+  // Count consecutive PRESENT/LATE sessions from most-recent → older
+  let streakDays = 0;
   if (attendance && attendance.history.length > 0) {
-    let count = 0;
     for (const h of attendance.history) {
       if (h.status === "PRESENT" || h.status === "LATE") {
-        count++;
+        streakDays++;
       } else {
         break;
       }
     }
-    if (count > 0) streakDays = count;
   }
 
-  const daysOfWeek = [
-    { label: "M", full: "Mon", active: true },
-    { label: "T", full: "Tue", active: true },
-    { label: "W", full: "Wed", active: true },
-    { label: "T", full: "Thu", active: true },
-    { label: "F", full: "Fri", active: true },
-    { label: "S", full: "Sat", active: false },
-    { label: "S", full: "Sun", active: false },
-  ];
+  // Build last-7-day grid from real attendance history
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const DAY_LABELS = ["M", "S", "R", "K", "J", "S", "M"] as const; // Senin-Minggu
+  const FULL_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+  // Build a set of attended dates from real history
+  const attendedDates = new Set<string>();
+  if (attendance) {
+    for (const h of attendance.history) {
+      if (h.status === "PRESENT" || h.status === "LATE") {
+        attendedDates.add(h.sessionDate.slice(0, 10));
+      }
+    }
+  }
+
+  // Last 7 calendar days: Sunday=0 … Saturday=6, map to grid Mon-Sun
+  const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i)); // [6 days ago … today]
+    const dayIdx = (d.getDay() + 6) % 7; // 0=Mon … 6=Sun
+    const dateStr = d.toISOString().split("T")[0];
+    return {
+      label: DAY_LABELS[dayIdx],
+      full: FULL_LABELS[dayIdx],
+      active: attendedDates.has(dateStr),
+    };
+  });
 
   // ── 3. Sessions Classification ───────────────────────────────────────
   const now = new Date();
@@ -1602,8 +1620,8 @@ export function AthleteMfdDashboard({
                 <div className="space-y-2 flex-1 min-w-0 z-10">
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-sky-300 border border-blue-200/80 dark:border-blue-800/80">
-                      <span>🌟</span>
-                      <span>Movement Explorer</span>
+                      <span>🏃</span>
+                      <span>Atlet MFD · Level {currentLevel}</span>
                     </span>
                   </div>
 
