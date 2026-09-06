@@ -13,6 +13,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+} from "@/components/ui/table";
 import type { DashboardAthleteSummary } from "../types";
 import { resolveAthletePathway } from "@/lib/athlete-pathway";
 

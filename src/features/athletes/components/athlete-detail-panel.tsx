@@ -16,6 +16,7 @@ import {
   Plus,
   Star,
   Sparkles,
+} from "lucide-react";
 import { calculateStarRating } from "@/features/portal/achievements";
 import { GuidanceDialogForm } from "@/features/guidance/components/guidance-dialog-form";
 import { resolveAthletePathway } from "@/lib/athlete-pathway";

@@ -2,7 +2,7 @@ import { prisma } from "../src/lib/prisma";
 
 async function check() {
   const daniUser = await prisma.user.findUnique({ where: { email: "dani@coachzulfi.com" } });
-  console.log("Dani user:", daniUser?.id, daniUser?.email, "hasPassword:", !!daniUser?.password);
+  console.log("Dani user:", daniUser?.id, daniUser?.email, "hasPassword:", !!(daniUser as any)?.password);
   
   const athletes = await prisma.athlete.findMany({ select: { id: true, fullName: true, competitionLevel: true } });
   console.log("Athletes:", athletes);
