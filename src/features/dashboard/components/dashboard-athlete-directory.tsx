@@ -13,8 +13,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
 import type { DashboardAthleteSummary } from "../types";
+import { resolveAthletePathway } from "@/lib/athlete-pathway";
 
 interface DashboardAthleteDirectoryProps {
   athletes?: DashboardAthleteSummary[];
@@ -26,20 +26,13 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
 
   const enrichedAthletes = useMemo(() => {
     return athletes.map((a) => {
-      const sportLower = (a.sportCategory || "").toLowerCase();
-      const isMfd =
-        sportLower.includes("mfd") ||
-        sportLower.includes("multilateral") ||
-        sportLower.includes("fondasi") ||
-        sportLower.includes("umum") ||
-        sportLower === "multi-sport" ||
-        sportLower === "" ||
-        a.age < 11;
+      const pathway = resolveAthletePathway(a);
+      const isMfd = pathway === "MFD";
 
       return {
         ...a,
         pathway: isMfd ? ("MFD" as const) : ("PERFORMANCE" as const),
-        pathwayLabel: isMfd ? "Multilateral (MFD)" : "Youth Performance",
+        pathwayLabel: isMfd ? "Multilateral (MFD)" : "Youth Performance (YAP)",
       };
     });
   }, [athletes]);
@@ -105,7 +98,7 @@ export function DashboardAthleteDirectory({ athletes = [] }: DashboardAthleteDir
               },
               {
                 id: "PERFORMANCE",
-                label: `Youth Performance (${enrichedAthletes.filter((a) => a.pathway === "PERFORMANCE").length})`,
+                label: `Youth Performance / YAP (${enrichedAthletes.filter((a) => a.pathway === "PERFORMANCE").length})`,
               },
             ].map((tab) => (
               <button

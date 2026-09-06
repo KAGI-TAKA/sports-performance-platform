@@ -57,12 +57,14 @@ export default async function EditAthletePage({
           initialData={{
             id: athlete.id,
             fullName: athlete.fullName,
+            sportCategory: athlete.sportCategory,
             gender: athlete.gender,
             dateOfBirth: athlete.dateOfBirth,
             heightCm: athlete.heightCm ? Number(athlete.heightCm) : null,
             weightKg: athlete.weightKg ? Number(athlete.weightKg) : null,
             competitionLevel: athlete.competitionLevel,
             assignedCoachId: athlete.assignedCoachId,
+            photoUrl: athlete.photoUrl,
           }}
         />
       </div>

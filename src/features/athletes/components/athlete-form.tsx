@@ -4,9 +4,10 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createAthlete, updateAthlete } from "../actions";
 import { toast } from "sonner";
-import { Loader2, Camera, Upload, Check } from "lucide-react";
+import { Loader2, Camera, Upload, Check, Zap, Sparkles } from "lucide-react";
 import { ATHLETE_AVATARS } from "@/lib/avatar-presets";
 import { processImageFile } from "@/lib/image-upload-helper";
+import { resolveAthletePathway, type AthletePathway, PATHWAY_CONFIG } from "@/lib/athlete-pathway";
 
 export type GenderType = "MALE" | "FEMALE";
 
@@ -49,6 +50,21 @@ const TRAINING_LEVEL_OPTIONS = [
   },
 ];
 
+const LEVEL_TO_TRAINING_ENUM: Record<string, "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ELITE"> = {
+  Pemula: "BEGINNER",
+  Berkembang: "INTERMEDIATE",
+  Lanjutan: "ADVANCED",
+  Performance: "ELITE",
+};
+
+function parseInitialLevel(level?: string | null): string {
+  if (!level) return "Pemula";
+  if (level.includes("Performance")) return "Performance";
+  if (level.includes("Lanjutan")) return "Lanjutan";
+  if (level.includes("Berkembang")) return "Berkembang";
+  return "Pemula";
+}
+
 export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -73,8 +89,14 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
     }
   };
 
-  const [selectedLevel, setSelectedLevel] = useState<string>(
-    initialData?.competitionLevel || "Pemula"
+  const [selectedSport, setSelectedSport] = useState<string>(
+    initialData?.sportCategory || "Sepak Bola / Futsal"
+  );
+  const [selectedPathway, setSelectedPathway] = useState<AthletePathway>(() =>
+    resolveAthletePathway(initialData || { sportCategory: "Sepak Bola / Futsal" })
+  );
+  const [selectedLevel, setSelectedLevel] = useState<string>(() =>
+    parseInitialLevel(initialData?.competitionLevel)
   );
   const [selectedCoachId, setSelectedCoachId] = useState<string>(
     initialData?.assignedCoachId || "NONE"
@@ -86,6 +108,16 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
     ? new Date(initialData.dateOfBirth).toISOString().split("T")[0]
     : "";
 
+  const handleSportCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const sport = e.target.value;
+    setSelectedSport(sport);
+    if (sport === "Multi-Sport / Atletik") {
+      setSelectedPathway("MFD");
+    } else {
+      setSelectedPathway("YAP");
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -94,9 +126,12 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
     const formData = new FormData(e.currentTarget);
     const assignedCoachVal = formData.get("assignedCoachId") as string;
 
+    const finalCompLevel = `${selectedPathway} • ${selectedLevel}`;
+    const mappedTrainingLevel = LEVEL_TO_TRAINING_ENUM[selectedLevel] || "BEGINNER";
+
     const data = {
       fullName: formData.get("fullName") as string,
-      sportCategory: (formData.get("sportCategory") as string) || "Multi-Sport / Atletik",
+      sportCategory: selectedSport,
       position: "UNSPECIFIED" as const,
       gender: formData.get("gender") as GenderType,
       dateOfBirth: formData.get("dateOfBirth")
@@ -108,7 +143,8 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
       weightKg: formData.get("weightKg")
         ? Number(formData.get("weightKg"))
         : undefined,
-      competitionLevel: (formData.get("competitionLevel") as string) || "Pemula",
+      competitionLevel: finalCompLevel,
+      trainingLevel: mappedTrainingLevel,
       assignedCoachId: assignedCoachVal && assignedCoachVal !== "NONE" ? assignedCoachVal : null,
       photoUrl: photoUrl.trim() || null,
     };
@@ -237,6 +273,77 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
         </div>
       </div>
 
+      {/* Jalur Pembinaan (Program Pathway) */}
+      <div className="rounded-xl border border-border bg-surface-1/60 p-3.5 sm:p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div>
+            <label className="block font-bold text-foreground text-xs">
+              Jalur Pembinaan (Program Pathway) <span className="text-danger">*</span>
+            </label>
+            <p className="text-[11px] text-muted">
+              Pilih jalur platform untuk atlet. Kategorisasi tidak dikunci oleh batas usia.
+            </p>
+          </div>
+          <span className="text-[10.5px] font-semibold text-accent px-2 py-0.5 rounded-md bg-surface-2 border border-border w-fit">
+            Penentu Akses Portal Atlet
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
+          {/* Card YAP */}
+          <button
+            type="button"
+            onClick={() => setSelectedPathway("YAP")}
+            className={`relative flex flex-col p-3 rounded-xl border text-left transition ${
+              selectedPathway === "YAP"
+                ? "border-blue-500 bg-blue-500/10 shadow-xs ring-2 ring-blue-500/20"
+                : "border-border bg-surface-2 hover:bg-surface-3 opacity-75 hover:opacity-100"
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="inline-flex items-center gap-1.5 font-bold text-xs text-blue-600 dark:text-blue-400">
+                <Zap className="h-3.5 w-3.5 shrink-0" />
+                Youth Athlete Performance (YAP)
+              </span>
+              {selectedPathway === "YAP" && (
+                <span className="h-4 w-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted leading-snug">
+              Atlet cabang olahraga spesifik (Sepak Bola, Basket, Bulutangkis, dll.) &amp; fokus peningkatan performa atletik. Berapapun usianya.
+            </p>
+          </button>
+
+          {/* Card MFD */}
+          <button
+            type="button"
+            onClick={() => setSelectedPathway("MFD")}
+            className={`relative flex flex-col p-3 rounded-xl border text-left transition ${
+              selectedPathway === "MFD"
+                ? "border-emerald-500 bg-emerald-500/10 shadow-xs ring-2 ring-emerald-500/20"
+                : "border-border bg-surface-2 hover:bg-surface-3 opacity-75 hover:opacity-100"
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="inline-flex items-center gap-1.5 font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                Multilateral Development (MFD)
+              </span>
+              {selectedPathway === "MFD" && (
+                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted leading-snug">
+              Fondasi gerak multilateral, variasi motorik dasar anak, &amp; kebugaran umum tanpa spesialisasi cabang tunggal.
+            </p>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block font-medium text-foreground mb-1.5 text-xs">
@@ -258,10 +365,11 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
           </label>
           <select
             name="sportCategory"
-            defaultValue={initialData?.sportCategory || "Multi-Sport / Atletik"}
+            value={selectedSport}
+            onChange={handleSportCategoryChange}
             className="w-full min-h-[44px] sm:min-h-[48px] rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-xs text-foreground focus:border-accent focus:outline-none transition"
           >
-            <option value="Multi-Sport / Atletik">Multi-Sport / Atletik (Umum)</option>
+            <option value="Multi-Sport / Atletik">Multi-Sport / Fondasi Umum (MFD)</option>
             <option value="Sepak Bola / Futsal">Sepak Bola / Futsal</option>
             <option value="Bola Basket">Bola Basket</option>
             <option value="Bulutangkis">Bulutangkis</option>
@@ -271,6 +379,17 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
             <option value="Tenis / Padel">Tenis / Padel</option>
             <option value="Lainnya">Cabang Lainnya</option>
           </select>
+          <p className="mt-1.5 text-[11px] text-muted">
+            {selectedPathway === "YAP" ? (
+              <span className="text-blue-500 font-medium inline-flex items-center gap-1">
+                <Zap className="h-3 w-3 inline" /> Terhubung ke Jalur YAP (Youth Athlete Performance)
+              </span>
+            ) : (
+              <span className="text-emerald-500 font-medium inline-flex items-center gap-1">
+                <Sparkles className="h-3 w-3 inline" /> Terhubung ke Jalur MFD (Multilateral Development)
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -356,6 +475,16 @@ export function AthleteForm({ initialData, coaches = [] }: AthleteFormProps) {
             💡 <span className="font-semibold text-foreground">{activeOption.label}</span>: {activeOption.description}
           </p>
         )}
+        <div className="mt-2 flex items-center gap-2 text-[11.5px] rounded-lg bg-surface-2 border border-border px-3 py-1.5 text-muted">
+          <span>Kombinasi Status:</span>
+          <span className="font-bold text-foreground inline-flex items-center gap-1.5">
+            <span className={selectedPathway === "YAP" ? "text-blue-500 font-bold" : "text-emerald-500 font-bold"}>
+              {selectedPathway === "YAP" ? "Jalur YAP" : "Jalur MFD"}
+            </span>
+            <span>·</span>
+            <span>Tingkat {selectedLevel}</span>
+          </span>
+        </div>
       </div>
 
       {/* Assigned Assistant Coach (Penugasan Pembinaan) */}

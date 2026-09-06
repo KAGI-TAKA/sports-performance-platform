@@ -8,6 +8,7 @@ import { AthleteCoachBrief } from "@/features/athletes/components/athlete-coach-
 import { AthleteProfileTabs } from "@/features/athletes/components/athlete-profile-tabs";
 import { ArrowLeft, User, Award, ShieldAlert } from "lucide-react";
 import { listPortalAccessesForAthlete } from "@/features/portal/actions";
+import { resolveAthletePathway } from "@/lib/athlete-pathway";
 import {
   getAthletePerformanceOverview,
   getAthleteGoals,
@@ -155,6 +156,15 @@ export default async function AthleteProfilePage({ params }: AthleteProfilePageP
                 }`}
               >
                 {athlete.isActive ? "Aktif" : "Nonaktif"}
+              </span>
+              <span
+                className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold border ${
+                  resolveAthletePathway(athlete) === "YAP"
+                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25"
+                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                }`}
+              >
+                {resolveAthletePathway(athlete) === "YAP" ? "Jalur YAP" : "Jalur MFD"}
               </span>
               <span className="inline-flex items-center rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-secondary border border-border">
                 {athlete.competitionLevel ?? "Pemula"}

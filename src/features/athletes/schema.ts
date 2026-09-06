@@ -24,6 +24,7 @@ export const createAthleteSchema = z.object({
   allergies: z.string().optional(),
   healthNotes: z.string().optional(),
   competitionLevel: z.string().optional(),
+  trainingLevel: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "ELITE"]).optional(),
   assignedCoachId: z.string().nullable().optional(),
   photoUrl: z.string().nullable().optional(),
 });

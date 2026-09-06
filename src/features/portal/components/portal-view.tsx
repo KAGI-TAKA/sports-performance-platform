@@ -22,6 +22,7 @@ import { User, Sparkles, Zap } from "lucide-react";
 import type { CoachGuidanceItem } from "@/features/guidance/types";
 import type { EligibleFeedbackSessionItem } from "@/features/parent-feedback/types";
 import { APP_CONFIG } from "@/lib/constants";
+import { resolveAthletePathway } from "@/lib/athlete-pathway";
 
 interface PortalViewProps {
   token?: string;
@@ -100,10 +101,8 @@ export function PortalView({
     );
   }
 
-  // ── 2. ATHLETE MFD PORTAL (MOVEMENT & FITNESS DEVELOPMENT, 6-12 TH) ──
-  const isMfdPathway =
-    profile.competitionLevel === "MFD" ||
-    (profile.competitionLevel !== "YAP" && profile.age <= 12);
+  // ── 2. ATHLETE MFD PORTAL (MULTILATERAL ATHLETIC DEVELOPMENT) ──
+  const isMfdPathway = resolveAthletePathway(profile) === "MFD";
 
   if (isMfdPathway) {
     return (
@@ -126,7 +125,7 @@ export function PortalView({
     );
   }
 
-  // ── 3. ATHLETE YAP PORTAL (YOUTH ATHLETIC PERFORMANCE, 13-18+ TH) ──
+  // ── 3. ATHLETE YAP PORTAL (YOUTH ATHLETIC PERFORMANCE) ──
   return (
     <AthletePortalDashboard
       token={token}

@@ -1,25 +1,44 @@
 import { describe, it, expect } from "vitest";
 import { calculateStarRating, calculateAthleteBadges } from "./achievements";
+import { resolveAthletePathway, isMfdAthlete, isYapAthlete } from "@/lib/athlete-pathway";
 
 describe("Athlete MFD Portal (Movement & Fitness Development) Logic & Pathway Tests", () => {
-  it("determines MFD pathway correctly based on age <= 12 or MFD competition level", () => {
-    const isMfdAthlete = (age: number, competitionLevel: string | null) => {
-      return competitionLevel === "MFD" || (competitionLevel !== "YAP" && age <= 12);
-    };
+  it("determines YAP vs MFD pathway correctly based on sport category & coach categorization, not rigid age", () => {
+    // 1. Atlet usia anak (< 12 th) dengan cabor spesifik (Sepak Bola, Basket, Bulutangkis, dll.) MASUK KE YAP
+    expect(
+      isYapAthlete({ age: 8, sportCategory: "Sepak Bola / Futsal", competitionLevel: "Pemula" })
+    ).toBe(true);
+    expect(
+      isMfdAthlete({ age: 8, sportCategory: "Sepak Bola / Futsal", competitionLevel: "Pemula" })
+    ).toBe(false);
 
-    // Young athlete 8 years old
-    expect(isMfdAthlete(8, null)).toBe(true);
-    expect(isMfdAthlete(11, "Grassroots")).toBe(true);
-    expect(isMfdAthlete(10, "MFD")).toBe(true);
+    expect(
+      isYapAthlete({ age: 10, sportCategory: "Bola Basket", competitionLevel: null })
+    ).toBe(true);
+    expect(
+      isYapAthlete({ age: 7, sportCategory: "Bulutangkis", competitionLevel: "Pemula" })
+    ).toBe(true);
 
-    // Teen athlete 14 years old
-    expect(isMfdAthlete(14, "YAP")).toBe(false);
-    expect(isMfdAthlete(15, null)).toBe(false);
+    // 2. Tag eksplisit pelatih YAP selalu memprioritaskan YAP berapapun usianya
+    expect(
+      isYapAthlete({ age: 6, sportCategory: "Multi-Sport / Atletik", competitionLevel: "YAP • Pemula" })
+    ).toBe(true);
+    expect(
+      isYapAthlete({ age: 16, sportCategory: "Sepak Bola", competitionLevel: "YAP" })
+    ).toBe(true);
 
-    // Explicit MFD tag overrides
-    expect(isMfdAthlete(13, "MFD")).toBe(true);
-    // Explicit YAP tag overrides
-    expect(isMfdAthlete(12, "YAP")).toBe(false);
+    // 3. Atlet dengan kelas gerak dasar / Multi-Sport / MFD masuk ke MFD
+    expect(
+      isMfdAthlete({ age: 8, sportCategory: "Multi-Sport / Fondasi Umum", competitionLevel: "Pemula" })
+    ).toBe(true);
+    expect(
+      isMfdAthlete({ age: 14, sportCategory: "Multi-Sport", competitionLevel: "Pemula" })
+    ).toBe(true);
+
+    // 4. Tag eksplisit pelatih MFD selalu memprioritaskan MFD berapapun usianya
+    expect(
+      isMfdAthlete({ age: 15, sportCategory: "Sepak Bola", competitionLevel: "MFD • Fondasi" })
+    ).toBe(true);
   });
 
   it("calculates MFD star levels and XP progression honestly", () => {

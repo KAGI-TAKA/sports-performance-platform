@@ -74,7 +74,7 @@ export function YapSidebar({
           {/* YAP Blue Pill Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 border border-blue-500/30 text-sky-400 text-[10px] font-bold">
             <span className="h-2 w-2 rounded-full bg-blue-500" />
-            <span>YAP · <span className="italic">Youth Athletic Performance (13–18+)</span></span>
+            <span>YAP · <span className="italic">Youth Athlete Performance</span></span>
           </div>
         </div>
 
