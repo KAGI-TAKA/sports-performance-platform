@@ -358,3 +358,43 @@ export async function batchCreateSquadAssessmentAction(input: unknown): Promise<
   }
 }
 
+export async function updateAssessmentRecommendation(
+  assessmentId: string,
+  recommendationText: string
+) {
+  try {
+    const ctx = await requireOrgContext();
+
+    const assessment = await prisma.assessment.findFirst({
+      where: {
+        id: assessmentId,
+        organizationId: ctx.organizationId,
+      },
+      select: { id: true, athleteId: true },
+    });
+
+    if (!assessment) {
+      return { success: false, error: "Assessment tidak ditemukan atau tidak memiliki akses" };
+    }
+
+    await prisma.assessmentAnalysis.update({
+      where: { assessmentId },
+      data: {
+        recommendationText: recommendationText.trim(),
+      },
+    });
+
+    revalidatePath(`/assessments/${assessmentId}`);
+    revalidatePath(`/api/assessments/${assessmentId}/pdf`);
+    revalidatePath("/assessments");
+    revalidatePath("/reports");
+    revalidatePath(`/athletes/${assessment.athleteId}`);
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui rekomendasi.";
+    return { success: false, error: errorMsg };
+  }
+}
+
+

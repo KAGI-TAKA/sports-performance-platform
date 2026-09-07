@@ -3,6 +3,7 @@ export interface DashboardAthleteSummary {
   fullName: string;
   sportCategory: string | null;
   trainingLevel: string | null;
+  competitionLevel: string | null;
   age: number;
   hasActiveInjury: boolean;
   latestScore: number | null;

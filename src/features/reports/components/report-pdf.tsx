@@ -5,6 +5,12 @@ import {
   Text,
   View,
   StyleSheet,
+  Svg,
+  Polygon,
+  Line,
+  Circle,
+  Text as SvgText,
+  G,
 } from "@react-pdf/renderer";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -193,6 +199,38 @@ const styles = StyleSheet.create({
   },
   insightLabel: { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
   insightText: { fontSize: 8, lineHeight: 1.5 },
+  // Radar Card
+  radarCard: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 8,
+    backgroundColor: C.white,
+    alignItems: "center",
+  },
+  radarCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    marginBottom: 2,
+  },
+  radarCardTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: C.navy,
+    letterSpacing: 0.5,
+  },
+  radarCardSubtitle: {
+    fontSize: 7,
+    fontWeight: "bold",
+    color: C.textMuted,
+    letterSpacing: 0.5,
+  },
   // Footer
   footer: {
     position: "absolute",
@@ -452,8 +490,157 @@ export function AssessmentReportPDF({
           <Text style={[styles.headerSub, { alignSelf: "flex-end" }]}>{orgName}</Text>
         </View>
 
+        {/* ── GRAFIK RADAR HASIL TES FISIK ── */}
+        {(() => {
+          // Dynamic items strictly based on this child's actual tested items
+          const testedItems = (items || []).filter((it) => it.name && it.score != null);
+
+          // If child has at least 3 test items, render Dynamic N-Axis Radar Chart!
+          if (testedItems.length >= 3) {
+            const n = testedItems.length;
+            const width = 530;
+            const height = 180;
+            const cx = width / 2;
+            const cy = height / 2 + 5;
+            const r = 62;
+            const levels = [0.25, 0.5, 0.75, 1.0];
+
+            const ringPolygons = levels.map((lvl) => {
+              return testedItems
+                .map((_, i) => {
+                  const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+                  const x = cx + r * lvl * Math.cos(angle);
+                  const y = cy + r * lvl * Math.sin(angle);
+                  return `${x.toFixed(1)},${y.toFixed(1)}`;
+                })
+                .join(" ");
+            });
+
+            const dataPoints = testedItems.map((item, i) => {
+              const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+              const clampedScore = Math.max(5, Math.min(100, item.score));
+              const currentR = r * (clampedScore / 100);
+              const x = cx + currentR * Math.cos(angle);
+              const y = cy + currentR * Math.sin(angle);
+              return { x, y, str: `${x.toFixed(1)},${y.toFixed(1)}` };
+            });
+            const dataPointsStr = dataPoints.map((p) => p.str).join(" ");
+
+            return (
+              <View style={styles.radarCard}>
+                <View style={styles.radarCardHeader}>
+                  <Text style={styles.radarCardTitle}>HASIL TES FISIK</Text>
+                  <Text style={styles.radarCardSubtitle}>% KONDISI FISIK</Text>
+                </View>
+                <Svg width={width} height={height}>
+                  {/* Ring Polygons */}
+                  {ringPolygons.map((pts, idx) => (
+                    <Polygon
+                      key={`ring-${idx}`}
+                      points={pts}
+                      stroke="#CBD5E1"
+                      strokeWidth={idx === levels.length - 1 ? 0.9 : 0.5}
+                      fill="none"
+                    />
+                  ))}
+
+                  {/* Spoke Lines & Labels */}
+                  {testedItems.map((item, i) => {
+                    const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+                    const outerX = cx + r * Math.cos(angle);
+                    const outerY = cy + r * Math.sin(angle);
+
+                    const labelDist = r + 13;
+                    const lx = cx + labelDist * Math.cos(angle);
+                    const ly = cy + labelDist * Math.sin(angle);
+
+                    let textAnchor: "middle" | "start" | "end" = "middle";
+                    if (Math.cos(angle) > 0.3) textAnchor = "start";
+                    else if (Math.cos(angle) < -0.3) textAnchor = "end";
+
+                    return (
+                      <G key={`spoke-${i}`}>
+                        <Line
+                          x1={cx}
+                          y1={cy}
+                          x2={outerX}
+                          y2={outerY}
+                          stroke="#E2E8F0"
+                          strokeWidth={0.6}
+                        />
+                        <SvgText
+                          x={lx}
+                          y={ly + 2.5}
+                          fill="#334155"
+                          style={{ fontSize: 6.5 }}
+                          textAnchor={textAnchor}
+                        >
+                          {item.name}
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+
+                  {/* Data Polygon */}
+                  <Polygon
+                    points={dataPointsStr}
+                    stroke="#2563EB"
+                    strokeWidth={1.8}
+                    fill="#3B82F6"
+                    fillOpacity={0.22}
+                  />
+
+                  {/* Data Vertex Dots */}
+                  {dataPoints.map((pt, i) => (
+                    <Circle
+                      key={`pt-${i}`}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={2}
+                      fill="#2563EB"
+                      stroke="#FFFFFF"
+                      strokeWidth={0.6}
+                    />
+                  ))}
+                </Svg>
+              </View>
+            );
+          }
+
+          // If tested on 1 or 2 specific items, render focused Visual Bar Score Card
+          return (
+            <View style={styles.radarCard}>
+              <View style={styles.radarCardHeader}>
+                <Text style={styles.radarCardTitle}>HASIL TES FISIK</Text>
+                <Text style={styles.radarCardSubtitle}>% KONDISI FISIK</Text>
+              </View>
+              <View style={{ width: "100%", paddingVertical: 8, paddingHorizontal: 14 }}>
+                {testedItems.map((item, idx) => {
+                  const col = gradeColor(item.score >= 80 ? "A" : item.score >= 60 ? "B" : "C");
+                  return (
+                    <View key={idx} style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 3 }}>
+                        <Text style={{ fontSize: 8.5, fontWeight: "bold", color: C.navy }}>{item.name}</Text>
+                        <Text style={{ fontSize: 8.5, fontWeight: "bold", color: col }}>
+                          {item.score}% {item.rawValue ? `(${item.rawValue} ${item.unit?.toLowerCase() ?? ""})` : ""}
+                        </Text>
+                      </View>
+                      <View style={{ height: 8, width: "100%", backgroundColor: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+                        <View style={{ height: "100%", width: `${Math.min(100, Math.max(5, item.score))}%`, backgroundColor: col, borderRadius: 4 }} />
+                      </View>
+                    </View>
+                  );
+                })}
+                <Text style={{ fontSize: 6.5, color: C.textMuted, textAlign: "center", marginTop: 2 }}>
+                  Asesmen fisik spesifik ({testedItems.length} parameter uji terukur). Grafik radar otomatis aktif jika pengujian mencakup minimal 3 parameter.
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Skor Per Komponen */}
-        <Text style={styles.sectionTitle}>% KONDISI FISIK PER KOMPONEN</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 4 }]}>% KONDISI FISIK PER KOMPONEN</Text>
         <View style={styles.compGrid}>
           {Object.entries(componentScores)
             .sort((a, b) => b[1] - a[1])

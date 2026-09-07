@@ -97,6 +97,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
         fullName: true,
         sportCategory: true,
         trainingLevel: true,
+        competitionLevel: true,
         dateOfBirth: true,
         injuryHistories: {
           where: { recoveredAt: null },
@@ -231,6 +232,7 @@ export async function getDashboardStats(organizationId: string): Promise<Dashboa
       fullName: ath.fullName,
       sportCategory: ath.sportCategory,
       trainingLevel: ath.trainingLevel,
+      competitionLevel: ath.competitionLevel,
       age,
       hasActiveInjury: ath.injuryHistories.length > 0,
       latestScore: ath.assessments[0]?.overallScore ? Number(ath.assessments[0].overallScore) : null,

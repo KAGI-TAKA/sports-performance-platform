@@ -3,7 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAssessmentById, getPreviousAssessment } from "@/features/assessments/queries";
-import { AssessmentRadarChart } from "@/features/assessments/components/radar-chart";
+import { PhysicalTestRadarChart } from "@/features/assessments/components/physical-test-radar-chart";
+import { AssessmentRecommendationEditor } from "@/features/assessments/components/assessment-recommendation-editor";
 import { AssessmentQuickGoalButton } from "@/features/athlete-goals/components/assessment-quick-goal-button";
 import { canMemberManageGoals } from "@/features/athlete-goals/engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -217,20 +218,20 @@ export default async function AssessmentDetailPage({
         </Card>
       </div>
 
-      {/* Middle Section: 7-Component Radar Chart & Best/Weakest Highlights */}
+      {/* Middle Section: Physical Test Item Radar Chart & Best/Weakest Highlights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Radar Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-3 border-b border-border/60">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4 text-accent" />
-              Radar Chart Profil Kualitas Fisik &amp; Gerak
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5">
-            <AssessmentRadarChart componentScores={componentScores} />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2">
+          <PhysicalTestRadarChart
+            items={assessment.resultItems.map((r) => ({
+              name: r.testItem.name,
+              score: Number(r.score ?? 0),
+              rawValue: r.rawValue != null ? Number(r.rawValue) : null,
+              unit: r.testItem.unit,
+              component: r.testItem.physicalComponent,
+            }))}
+            componentScores={componentScores}
+          />
+        </div>
 
         {/* Highlights Side Panel */}
         <div className="space-y-4">
@@ -290,8 +291,8 @@ export default async function AssessmentDetailPage({
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </CardHeader>
-        <CardContent className="p-5 space-y-3">
-          <div className="grid sm:grid-cols-3 gap-3">
+        <CardContent className="p-5 space-y-4">
+          <div className="grid sm:grid-cols-2 gap-3">
             <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">
                 01. Hasil Asesmen
@@ -315,19 +316,15 @@ export default async function AssessmentDetailPage({
                 {weakestComponents.length > 0 ? `Area perlu diasah: ${weakestComponents.map(w => w.replace(/_/g, " ").toLowerCase()).join(", ")}` : "Pertahankan konsistensi"}
               </p>
             </div>
-
-            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                03. Training Direction
-              </span>
-              <p className="text-xs text-foreground font-bold">
-                {assessment.analysis?.recommendationText || "Fokus pada penguatan fundamental gerak & kapasitas fisik adaptif."}
-              </p>
-              <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80">
-                Lanjutkan siklus 6-8 minggu sebelum re-assessment.
-              </p>
-            </div>
           </div>
+
+          <AssessmentRecommendationEditor
+            assessmentId={assessment.id}
+            initialRecommendation={assessment.analysis?.recommendationText || ""}
+            defaultSystemSuggestion={assessment.analysis?.recommendationText}
+            weakestComponents={weakestComponents}
+            bestComponent={bestComponent}
+          />
         </CardContent>
       </Card>
 
