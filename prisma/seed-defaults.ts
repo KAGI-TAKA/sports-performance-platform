@@ -78,13 +78,33 @@ export async function seedDefaultTestItemsAndBenchmarks(organizationId: string) 
     },
   ];
 
+  // Ensure default BenchmarkProfile exists
+  let defaultProfile = await prisma.benchmarkProfile.findFirst({
+    where: { organizationId, isDefault: true },
+  });
+
+  if (!defaultProfile) {
+    defaultProfile = await prisma.benchmarkProfile.create({
+      data: {
+        organizationId,
+        name: "Standar Acuan Fisik Nasional (Universal)",
+        description: "Benchmark acuan standar fisik atletik umum untuk pembinaan performa olahraga.",
+        gender: null,
+        ageMin: 12,
+        ageMax: 25,
+        isDefault: true,
+        isActive: true,
+      },
+    });
+  }
+
   for (const item of defaultItems) {
-    const existing = await prisma.testItem.findFirst({
+    let existingItem = await prisma.testItem.findFirst({
       where: { organizationId, name: item.name },
     });
 
-    if (!existing) {
-      const createdItem = await prisma.testItem.create({
+    if (!existingItem) {
+      existingItem = await prisma.testItem.create({
         data: {
           organizationId,
           physicalComponent: item.physicalComponent,
@@ -94,11 +114,18 @@ export async function seedDefaultTestItemsAndBenchmarks(organizationId: string) 
           order: item.order,
         },
       });
+    }
 
+    const existingBm = await prisma.benchmark.findFirst({
+      where: { organizationId, testItemId: existingItem.id },
+    });
+
+    if (!existingBm) {
       await prisma.benchmark.create({
         data: {
           organizationId,
-          testItemId: createdItem.id,
+          testItemId: existingItem.id,
+          benchmarkProfileId: defaultProfile.id,
           ageMin: 12,
           ageMax: 25,
           thresholdA: item.bm.thresholdA,
@@ -106,6 +133,11 @@ export async function seedDefaultTestItemsAndBenchmarks(organizationId: string) 
           thresholdC: item.bm.thresholdC,
           thresholdD: item.bm.thresholdD,
         },
+      });
+    } else if (!existingBm.benchmarkProfileId) {
+      await prisma.benchmark.update({
+        where: { id: existingBm.id },
+        data: { benchmarkProfileId: defaultProfile.id },
       });
     }
   }

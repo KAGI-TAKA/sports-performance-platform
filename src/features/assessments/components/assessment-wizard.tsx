@@ -43,6 +43,22 @@ interface AssessmentWizardProps {
     trainingLevel?: string;
   }>;
   testItems: TestItemProp[];
+  selectedBenchmarkProfile?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    benchmarks?: Array<{
+      id?: string;
+      testItemId: string;
+      thresholdA: number;
+      thresholdB: number;
+      thresholdC: number;
+      thresholdD: number;
+      ageMin?: number;
+      ageMax?: number;
+      gender?: string | null;
+    }>;
+  } | null;
   previousAssessment?: {
     id: string;
     assessmentDate: Date;
@@ -81,7 +97,7 @@ function getSliderMax(item: TestItemProp): number {
   return unitFallback[item.unit] ?? 100;
 }
 
-const STEP_COMPONENTS: { key: PhysicalComponent; label: string }[] = [
+const ALL_STEP_COMPONENTS: { key: PhysicalComponent; label: string }[] = [
   { key: "FLEXIBILITY", label: "Fleksibilitas" },
   { key: "POWER", label: "Power" },
   { key: "SPEED", label: "Kecepatan" },
@@ -89,12 +105,14 @@ const STEP_COMPONENTS: { key: PhysicalComponent; label: string }[] = [
   { key: "MUSCULAR_ENDURANCE", label: "Daya Tahan Otot" },
   { key: "ANAEROBIC_ENDURANCE", label: "Daya Tahan Anaerobik" },
   { key: "AEROBIC_ENDURANCE", label: "Daya Tahan Aerobik" },
+  { key: "COORDINATION", label: "Koordinasi" },
 ];
 
 export function AssessmentWizard({
   athlete,
   allAthletes = [],
   testItems,
+  selectedBenchmarkProfile,
   previousAssessment,
 }: AssessmentWizardProps) {
   const router = useRouter();
@@ -112,12 +130,20 @@ export function AssessmentWizard({
 
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const currentComponent = STEP_COMPONENTS[currentStepIndex];
+  // Dinamis: filter komponen yang memiliki item tes aktif agar komponen kosong (misal COORDINATION yang belum diinput) tidak muncul sebagai step kosong
+  const activeComponents = useMemo(() => {
+    const available = ALL_STEP_COMPONENTS.filter((comp) =>
+      testItems.some((item) => item.physicalComponent === comp.key)
+    );
+    return available.length > 0 ? available : ALL_STEP_COMPONENTS;
+  }, [testItems]);
+
+  const currentComponent = activeComponents[currentStepIndex] ?? activeComponents[0];
 
   // Map test items by component
   const componentTestItems = useMemo(() => {
-    return testItems.filter((item) => item.physicalComponent === currentComponent.key);
-  }, [testItems, currentComponent.key]);
+    return testItems.filter((item) => item.physicalComponent === currentComponent?.key);
+  }, [testItems, currentComponent?.key]);
 
   // Find next athlete in list for the "Save & Next" flow
   const nextAthlete = useMemo(() => {
@@ -140,21 +166,44 @@ export function AssessmentWizard({
         const itemDef = testItems.find((t) => t.id === id);
         if (!itemDef || rawValue == null || isNaN(rawValue)) return null;
 
-        const benchmarksFormatted = (itemDef.benchmarks ?? []).map((b) => ({
-          ageMin: b.ageMin ?? 0,
-          ageMax: b.ageMax ?? 99,
-          gender: b.gender ?? null,
-          thresholdA: b.thresholdA,
-          thresholdB: b.thresholdB,
-          thresholdC: b.thresholdC,
-          thresholdD: b.thresholdD,
-        }));
+        let bm: { thresholdA?: unknown; thresholdB?: unknown; thresholdC?: unknown; thresholdD?: unknown } | null | undefined = null;
 
-        const bm = pickBestBenchmark(
-          benchmarksFormatted,
-          athlete.gender ?? "MALE",
-          athleteAge
-        ) ?? itemDef.benchmarks[0];
+        // KETENTUAN UTAMA:
+        // Jika pelatih memilih BenchmarkProfile, live score engine HARUS mengambil benchmark dari profile tersebut.
+        // Tidak boleh fallback ke seluruh benchmark organisasi.
+        if (selectedBenchmarkProfile) {
+          const profileBms = (selectedBenchmarkProfile.benchmarks ?? [])
+            .filter((b) => b.testItemId === id)
+            .map((b) => ({
+              ageMin: b.ageMin ?? 0,
+              ageMax: b.ageMax ?? 99,
+              gender: b.gender ?? null,
+              thresholdA: b.thresholdA,
+              thresholdB: b.thresholdB,
+              thresholdC: b.thresholdC,
+              thresholdD: b.thresholdD,
+            }));
+
+          bm = profileBms.length > 0
+            ? pickBestBenchmark(profileBms, athlete.gender ?? "MALE", athleteAge)
+            : null;
+        } else {
+          const benchmarksFormatted = (itemDef.benchmarks ?? []).map((b) => ({
+            ageMin: b.ageMin ?? 0,
+            ageMax: b.ageMax ?? 99,
+            gender: b.gender ?? null,
+            thresholdA: b.thresholdA,
+            thresholdB: b.thresholdB,
+            thresholdC: b.thresholdC,
+            thresholdD: b.thresholdD,
+          }));
+
+          bm = pickBestBenchmark(
+            benchmarksFormatted,
+            athlete.gender ?? "MALE",
+            athleteAge
+          ) ?? itemDef.benchmarks[0];
+        }
 
         return {
           testItemId: id,
@@ -188,9 +237,9 @@ export function AssessmentWizard({
       grade: calculated.overallGrade ?? "—",
       filledCount,
       componentScores: calculated.componentScores,
-      isPartial: filledCount < 7,
+      isPartial: filledCount < activeComponents.length,
     };
-  }, [rawValues, testItems, athlete]);
+  }, [rawValues, testItems, athlete, selectedBenchmarkProfile, activeComponents.length]);
 
   // Live Delta Progress comparison for PROGRESS_BASED mode
   const progressComparisons = useMemo(() => {
@@ -270,6 +319,7 @@ export function AssessmentWizard({
     try {
       const res = await createAssessment({
         athleteId: athlete.id,
+        benchmarkProfileId: selectedBenchmarkProfile?.id,
         assessmentDate: new Date(),
         assessmentType,
         results,
@@ -297,7 +347,7 @@ export function AssessmentWizard({
     }
   }
 
-  const isLastStep = currentStepIndex === STEP_COMPONENTS.length - 1;
+  const isLastStep = currentStepIndex === activeComponents.length - 1;
   const athleteAge = athlete.dateOfBirth ? calculateAgeAtDate(new Date(athlete.dateOfBirth)) : null;
 
   return (
@@ -324,6 +374,22 @@ export function AssessmentWizard({
             )}
             {athleteAge != null && <span>· Usia {athleteAge} Thn</span>}
             <span>· Level: <strong className="text-foreground">{athlete.trainingLevel || "Pemula"}</strong></span>
+            {selectedBenchmarkProfile ? (
+              <span className="bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
+                🎯 Standar: {selectedBenchmarkProfile.name}
+                <Link
+                  href={`/assessments/new?athleteId=${athlete.id}`}
+                  className="underline hover:opacity-80 ml-1"
+                  title="Ganti Standar Benchmark"
+                >
+                  (Ubah)
+                </Link>
+              </span>
+            ) : (
+              <span className="bg-surface-2 text-muted border border-border px-2 py-0.5 rounded text-[10px]">
+                Standar: Default Organisasi
+              </span>
+            )}
             {hasPrevious && (
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold">
                 📈 Ada Data Baseline
@@ -378,9 +444,9 @@ export function AssessmentWizard({
         </div>
       </div>
 
-      {/* ── STEPPER TABS (1 to 7) ───────────────────────────────────── */}
+      {/* ── STEPPER TABS ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between overflow-x-auto gap-2 py-1 select-none">
-        {STEP_COMPONENTS.map((comp, idx) => {
+        {activeComponents.map((comp, idx) => {
           const isActive = idx === currentStepIndex;
           const isCompleted = idx < currentStepIndex;
 
@@ -551,7 +617,7 @@ export function AssessmentWizard({
                               if (nextItem && inputRefs.current[nextItem.id]) {
                                 inputRefs.current[nextItem.id]?.focus();
                               } else if (!isLastStep) {
-                                setCurrentStepIndex((prev) => Math.min(STEP_COMPONENTS.length - 1, prev + 1));
+                                setCurrentStepIndex((prev) => Math.min(activeComponents.length - 1, prev + 1));
                               }
                             }
                           }}
@@ -627,7 +693,7 @@ export function AssessmentWizard({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setCurrentStepIndex((prev) => Math.min(STEP_COMPONENTS.length - 1, prev + 1))}
+                  onClick={() => setCurrentStepIndex((prev) => Math.min(activeComponents.length - 1, prev + 1))}
                   className="rounded-lg bg-accent px-4 py-1.5 text-xs font-bold text-white hover:bg-accent/90 transition shadow-2xs"
                 >
                   Lanjut →

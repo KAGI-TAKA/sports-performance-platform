@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAssessmentById, getPreviousAssessment } from "@/features/assessments/queries";
+import { DeleteAssessmentDialog } from "@/features/assessments/components/delete-assessment-dialog";
 import { PhysicalTestRadarChart } from "@/features/assessments/components/physical-test-radar-chart";
 import { AssessmentRecommendationEditor } from "@/features/assessments/components/assessment-recommendation-editor";
 import { AssessmentQuickGoalButton } from "@/features/athlete-goals/components/assessment-quick-goal-button";
@@ -76,6 +77,7 @@ export default async function AssessmentDetailPage({
       .map((g) => g.testItemId)
   );
   const canManage = canMemberManageGoals(ctx.role);
+  const canDelete = ctx.role === "admin" || ctx.role === "head_coach";
 
   const currentScore = Number(assessment.overallScore ?? 0);
   const prevScore = prevAssessment ? Number(prevAssessment.overallScore ?? 0) : null;
@@ -110,14 +112,18 @@ export default async function AssessmentDetailPage({
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-display text-xl font-bold text-foreground tracking-tight sm:text-2xl">
                 Hasil Assessment Fisik — {assessment.athlete.fullName}
               </h1>
               <Badge variant="accent" className="font-mono text-xs">
                 Grade {grade}
               </Badge>
-              {assessment.assessmentType === "PROGRESS_BASED" ? (
+              {assessment.benchmarkProfile ? (
+                <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30">
+                  🎯 {assessment.benchmarkProfile.name}
+                </Badge>
+              ) : assessment.assessmentType === "PROGRESS_BASED" ? (
                 <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
                   🌱 Mode Progress / Baseline
                 </Badge>
@@ -133,7 +139,7 @@ export default async function AssessmentDetailPage({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/api/assessments/${assessment.id}/pdf`} target="_blank">
             <Button size="xs" className="bg-accent hover:bg-accent/90 text-white font-semibold gap-1.5 shadow-sm">
               <Download className="h-3.5 w-3.5" />
@@ -145,6 +151,12 @@ export default async function AssessmentDetailPage({
               Profil Atlet <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
+          <DeleteAssessmentDialog
+            assessmentId={assessment.id}
+            athleteName={assessment.athlete.fullName}
+            assessmentDate={formatDate(assessment.assessmentDate)}
+            canDelete={canDelete}
+          />
         </div>
       </div>
 
@@ -343,47 +355,66 @@ export default async function AssessmentDetailPage({
                 <TableHead>Item Tes</TableHead>
                 <TableHead>Komponen Fisik</TableHead>
                 <TableHead className="text-right">Hasil Mentah (Raw)</TableHead>
+                <TableHead className="text-right">Benchmark Target</TableHead>
                 <TableHead className="text-right">Skor Terhitung</TableHead>
+                <TableHead className="text-right">GAP (%)</TableHead>
                 <TableHead className="text-right">Aksi Sasaran</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assessment.resultItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-semibold text-xs text-foreground">
-                    {item.testItem.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {item.testItem.physicalComponent ? item.testItem.physicalComponent.replace(/_/g, " ") : "GENERAL"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
-                    {item.rawValue != null
-                      ? `${item.rawValue.toString()} ${item.testItem.unit.toLowerCase()}`
-                      : item.qualitativeValue ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-xs text-accent">
-                    {item.score?.toString() ?? "—"}%
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {canManage && item.testItem.testType === "NUMERIC" && item.testItem.isActive && item.rawValue != null ? (
-                      <AssessmentQuickGoalButton
-                        athleteId={assessment.athleteId}
-                        athleteName={assessment.athlete.fullName}
-                        testItemId={item.testItemId}
-                        testItemName={item.testItem.name}
-                        unit={item.testItem.unit}
-                        scoreDirection={item.testItem.scoreDirection}
-                        currentRawValue={Number(item.rawValue)}
-                        hasActiveGoal={activeGoalsSet.has(item.testItemId)}
-                      />
-                    ) : (
-                      <span className="text-muted text-[11px]">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {assessment.resultItems.map((item) => {
+                const itemScore = item.score != null ? Number(item.score) : 0;
+                const itemGap = Math.max(0, 100 - itemScore);
+                const targetVal =
+                  item.benchmarkValue != null
+                    ? Number(item.benchmarkValue)
+                    : item.testItem.benchmarks?.[0]?.thresholdA != null
+                    ? Number(item.testItem.benchmarks[0].thresholdA)
+                    : null;
+
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-semibold text-xs text-foreground">
+                      {item.testItem.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {item.testItem.physicalComponent ? item.testItem.physicalComponent.replace(/_/g, " ") : "GENERAL"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-semibold text-xs text-foreground">
+                      {item.rawValue != null
+                        ? `${item.rawValue.toString()} ${item.testItem.unit.toLowerCase()}`
+                        : item.qualitativeValue ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-medium text-xs text-muted">
+                      {targetVal != null ? `${targetVal} ${item.testItem.unit.toLowerCase()}` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-xs text-accent">
+                      {item.score?.toString() ?? "—"}%
+                    </TableCell>
+                    <TableCell className={`text-right font-mono font-bold text-xs ${itemGap === 0 ? "text-emerald-500" : "text-amber-500"}`}>
+                      {itemGap.toFixed(0)}%
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canManage && item.testItem.testType === "NUMERIC" && item.testItem.isActive && item.rawValue != null ? (
+                        <AssessmentQuickGoalButton
+                          athleteId={assessment.athleteId}
+                          athleteName={assessment.athlete.fullName}
+                          testItemId={item.testItemId}
+                          testItemName={item.testItem.name}
+                          unit={item.testItem.unit}
+                          scoreDirection={item.testItem.scoreDirection}
+                          currentRawValue={Number(item.rawValue)}
+                          hasActiveGoal={activeGoalsSet.has(item.testItemId)}
+                        />
+                      ) : (
+                        <span className="text-muted text-[11px]">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

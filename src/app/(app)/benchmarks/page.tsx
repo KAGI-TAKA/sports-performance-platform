@@ -79,117 +79,126 @@ export default async function BenchmarksPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {COMPONENT_ORDER.filter((c) => grouped[c]).map((comp) => (
-            <div key={comp} className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-              {/* Component Header */}
-              <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-surface-2/40">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-accent" />
+          {COMPONENT_ORDER.map((comp) => {
+            const items = grouped[comp] ?? [];
+            return (
+              <div key={comp} className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+                {/* Component Header */}
+                <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-surface-2/40">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-accent" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {COMPONENT_LABELS[comp] ?? comp}
+                  </h2>
+                  <span className="ml-auto text-xs text-muted">
+                    {items.length} item tes
+                  </span>
                 </div>
-                <h2 className="text-sm font-semibold text-foreground">
-                  {COMPONENT_LABELS[comp] ?? comp}
-                </h2>
-                <span className="ml-auto text-xs text-muted">
-                  {grouped[comp].length} item tes
-                </span>
-              </div>
 
-              {/* Items Table */}
-              <div className="divide-y divide-border">
-                {grouped[comp].map((item) => {
-                  return (
-                    <div key={item.id} className="px-5 py-4 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-foreground">{item.name}</span>
-                          <span className="text-[10px] font-mono text-muted bg-surface-2 rounded px-1.5 py-0.5 uppercase">
-                            {item.unit}
-                          </span>
-                          {item.testType === "QUALITATIVE" && (
-                            <span className="text-[10px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5">
-                              Rubrik Teknik
-                            </span>
-                          )}
-                          {item.scoreDirection === "HIGHER_IS_BETTER" ? (
-                            <span className="flex items-center gap-0.5 text-[10px] text-success">
-                              <ArrowUp className="h-2.5 w-2.5" /> tinggi lebih baik
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-0.5 text-[10px] text-danger">
-                              <ArrowDown className="h-2.5 w-2.5" /> rendah lebih baik
-                            </span>
-                          )}
-                        </div>
+                {/* Items Table */}
+                {items.length === 0 ? (
+                  <div className="px-5 py-6 text-center text-xs text-muted">
+                    Belum ada item tes untuk komponen ini.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {items.map((item) => {
+                      return (
+                        <div key={item.id} className="px-5 py-4 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-foreground">{item.name}</span>
+                              <span className="text-[10px] font-mono text-muted bg-surface-2 rounded px-1.5 py-0.5 uppercase">
+                                {item.unit}
+                              </span>
+                              {item.testType === "QUALITATIVE" && (
+                                <span className="text-[10px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5">
+                                  Rubrik Teknik
+                                </span>
+                              )}
+                              {item.scoreDirection === "HIGHER_IS_BETTER" ? (
+                                <span className="flex items-center gap-0.5 text-[10px] text-success">
+                                  <ArrowUp className="h-2.5 w-2.5" /> tinggi lebih baik
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-0.5 text-[10px] text-danger">
+                                  <ArrowDown className="h-2.5 w-2.5" /> rendah lebih baik
+                                </span>
+                              )}
+                            </div>
 
-                        {canEdit && <TestItemDeactivateButton testItemId={item.id} itemName={item.name} />}
-                      </div>
+                            {canEdit && <TestItemDeactivateButton testItemId={item.id} itemName={item.name} />}
+                          </div>
 
-                      {/* Benchmarks List (Age & Gender brackets) */}
-                      <div className="space-y-2 pl-2 border-l-2 border-border/80">
-                        {item.benchmarks.length > 0 ? (
-                          item.benchmarks.map((bm) => {
-                            const genderLabel =
-                              bm.gender === "MALE"
-                                ? "👦 Putra"
-                                : bm.gender === "FEMALE"
-                                ? "👧 Putri"
-                                : "🌐 Universal (Putra & Putri)";
+                          {/* Benchmarks List (Age & Gender brackets) */}
+                          <div className="space-y-2 pl-2 border-l-2 border-border/80">
+                            {item.benchmarks.length > 0 ? (
+                              item.benchmarks.map((bm) => {
+                                const genderLabel =
+                                  bm.gender === "MALE"
+                                    ? "👦 Putra"
+                                    : bm.gender === "FEMALE"
+                                    ? "👧 Putri"
+                                    : "🌐 Universal (Putra & Putri)";
 
-                            const ageLabel =
-                              bm.ageMin === 0 && bm.ageMax >= 90
-                                ? "Semua Usia"
-                                : `Usia ${bm.ageMin}–${bm.ageMax} Thn`;
+                                const ageLabel =
+                                  bm.ageMin === 0 && bm.ageMax >= 90
+                                    ? "Semua Usia"
+                                    : `Usia ${bm.ageMin}–${bm.ageMax} Thn`;
 
-                            return (
-                              <div
-                                key={bm.id}
-                                className="flex flex-wrap items-center justify-between gap-3 bg-surface-2/40 rounded-xl p-2.5 border border-border/60"
-                              >
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="font-semibold text-foreground bg-surface-1 px-2 py-0.5 rounded-md border border-border text-[11px]">
-                                    {genderLabel}
-                                  </span>
-                                  <span className="font-mono text-muted text-[11px]">
-                                    {ageLabel}
-                                  </span>
-                                </div>
+                                return (
+                                  <div
+                                    key={bm.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 bg-surface-2/40 rounded-xl p-2.5 border border-border/60"
+                                  >
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="font-semibold text-foreground bg-surface-1 px-2 py-0.5 rounded-md border border-border text-[11px]">
+                                        {genderLabel}
+                                      </span>
+                                      <span className="font-mono text-muted text-[11px]">
+                                        {ageLabel}
+                                      </span>
+                                    </div>
 
+                                    <BenchmarkEditForm
+                                      testItemId={item.id}
+                                      benchmarkId={bm.id}
+                                      gender={bm.gender}
+                                      ageMin={bm.ageMin}
+                                      ageMax={bm.ageMax}
+                                      thresholdA={Number(bm.thresholdA)}
+                                      thresholdB={Number(bm.thresholdB)}
+                                      thresholdC={Number(bm.thresholdC)}
+                                      thresholdD={Number(bm.thresholdD)}
+                                      scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
+                                      canEdit={canEdit}
+                                    />
+                                  </div>
+                                );
+                              })
+                            ) : null}
+
+                            {/* Button to add a new age/gender bracket */}
+                            {canEdit && (
+                              <div className="pt-1">
                                 <BenchmarkEditForm
                                   testItemId={item.id}
-                                  benchmarkId={bm.id}
-                                  gender={bm.gender}
-                                  ageMin={bm.ageMin}
-                                  ageMax={bm.ageMax}
-                                  thresholdA={Number(bm.thresholdA)}
-                                  thresholdB={Number(bm.thresholdB)}
-                                  thresholdC={Number(bm.thresholdC)}
-                                  thresholdD={Number(bm.thresholdD)}
                                   scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
                                   canEdit={canEdit}
                                 />
                               </div>
-                            );
-                          })
-                        ) : null}
-
-                        {/* Button to add a new age/gender bracket */}
-                        {canEdit && (
-                          <div className="pt-1">
-                            <BenchmarkEditForm
-                              testItemId={item.id}
-                              scoreDirection={item.scoreDirection as "HIGHER_IS_BETTER" | "LOWER_IS_BETTER"}
-                              canEdit={canEdit}
-                            />
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <TestItemCreateForm physicalComponent={comp} canCreate={canEdit} />
               </div>
-              <TestItemCreateForm physicalComponent={comp} canCreate={canEdit} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

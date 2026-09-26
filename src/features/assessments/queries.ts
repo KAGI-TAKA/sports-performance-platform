@@ -25,11 +25,43 @@ export async function listTestItems(organizationId: string) {
   return items;
 }
 
+export async function listBenchmarkProfiles(organizationId: string) {
+  let profiles = await prisma.benchmarkProfile.findMany({
+    where: { organizationId, isActive: true },
+    include: {
+      benchmarks: {
+        include: { testItem: true },
+      },
+    },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+
+  if (profiles.length === 0) {
+    try {
+      await seedDefaultTestItemsAndBenchmarks(organizationId);
+      profiles = await prisma.benchmarkProfile.findMany({
+        where: { organizationId, isActive: true },
+        include: {
+          benchmarks: {
+            include: { testItem: true },
+          },
+        },
+        orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      });
+    } catch {
+      // Fallback
+    }
+  }
+
+  return profiles;
+}
+
 export async function getAssessmentById(organizationId: string, id: string) {
   return prisma.assessment.findFirst({
     where: { id, organizationId },
     include: {
       athlete: true,
+      benchmarkProfile: true,
       resultItems: {
         include: {
           testItem: {

@@ -13,6 +13,7 @@ export const PHYSICAL_COMPONENTS: {
   { value: "MUSCULAR_ENDURANCE", label: "Daya Tahan Otot", order: 5, color: "#D4537E" },
   { value: "ANAEROBIC_ENDURANCE", label: "Daya Tahan Anaerobik", order: 6, color: "#D85A30" },
   { value: "AEROBIC_ENDURANCE", label: "Daya Tahan Aerobik", order: 7, color: "#639922" },
+  { value: "COORDINATION", label: "Koordinasi", order: 8, color: "#0EA5E9" },
 ];
 
 // Ambang skor 0-100 → grade huruf. Dipakai di rule engine (Phase AI Analysis)

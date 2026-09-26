@@ -23,7 +23,7 @@ export interface EngineResult {
   itemScores: Record<string, number>;
 }
 
-// 7 komponen fisik standar
+// 8 komponen fisik standar
 export const PHYSICAL_COMPONENTS = [
   "FLEXIBILITY",
   "SPEED",
@@ -32,6 +32,7 @@ export const PHYSICAL_COMPONENTS = [
   "MUSCULAR_ENDURANCE",
   "ANAEROBIC_ENDURANCE",
   "AEROBIC_ENDURANCE",
+  "COORDINATION",
 ] as const;
 
 export interface ProgressItemResult {
@@ -109,57 +110,74 @@ export function pickBestBenchmark(
 }
 
 /**
- * Kalkulasi skor 0-100 untuk item tes mentah.
- * Clamped antara 0 dan 100, aman dari NaN / Infinity / division-by-zero.
+ * Helper untuk menghitung GAP (%) baik dari item langsung maupun dari nilai skor.
+ * - HIGHER_IS_BETTER:
+ *     raw >= target -> GAP 0%
+ *     raw < target -> GAP = 100 - score
+ * - LOWER_IS_BETTER:
+ *     raw <= target -> GAP 0%
+ *     raw > target -> GAP = round(((raw - target) / target) * 100)
+ */
+export function calculateItemGap(itemOrScore: TestItemValue | number): number {
+  if (typeof itemOrScore === "number") {
+    if (isNaN(itemOrScore) || !isFinite(itemOrScore)) return 100;
+    return Math.max(0, Math.round(100 - Math.min(100, Math.max(0, itemOrScore))));
+  }
+
+  const { rawValue, scoreDirection, thresholdA = 80 } = itemOrScore;
+  if (rawValue == null || isNaN(rawValue) || !isFinite(rawValue)) {
+    return 100;
+  }
+  const target = Number(thresholdA) || 1;
+
+  if (scoreDirection === "HIGHER_IS_BETTER") {
+    if (rawValue >= target) return 0;
+    const score = Math.min(100, Math.max(0, Math.round((rawValue / target) * 100)));
+    return Math.max(0, 100 - score);
+  } else {
+    // LOWER_IS_BETTER
+    if (rawValue <= target) return 0;
+    const gap = Math.round(((rawValue - target) / target) * 100);
+    return Math.max(0, gap);
+  }
+}
+
+/**
+ * Kalkulasi skor 0-100 untuk item tes mentah terhadap target benchmark (thresholdA).
+ * Aturan Baru:
+ * - HIGHER_IS_BETTER:
+ *     raw >= target -> score 100, GAP 0%
+ *     raw < target -> score = round((raw / target) * 100), GAP = 100 - score
+ * - LOWER_IS_BETTER:
+ *     raw <= target -> score 100, GAP 0%
+ *     raw > target -> GAP = round(((raw - target) / target) * 100), score = max(0, 100 - GAP)
+ * Score dibatasi min 0 dan max 100. GAP dibatasi min 0 dan tidak pernah negatif.
  */
 export function calculateItemScore(item: TestItemValue): number {
-  const { rawValue, scoreDirection, thresholdA = 80, thresholdB = 60, thresholdC = 40, thresholdD = 20 } = item;
+  const { rawValue, scoreDirection, thresholdA = 80 } = item;
 
   // Penanganan nilai mentah tidak valid / NaN / Infinity
   if (rawValue == null || isNaN(rawValue) || !isFinite(rawValue)) {
     return 0;
   }
 
+  const target = Number(thresholdA) || 1;
+
   // HIGHER_IS_BETTER
   if (scoreDirection === "HIGHER_IS_BETTER") {
-    if (rawValue >= thresholdA) {
-      const extra = ((rawValue - thresholdA) / (thresholdA || 1)) * 10;
-      return Math.min(100, Math.max(0, Math.round(90 + extra)));
+    if (rawValue >= target) {
+      return 100;
     }
-    if (rawValue >= thresholdB) {
-      const denom = thresholdA - thresholdB || 1;
-      return Math.min(100, Math.max(0, Math.round(75 + ((rawValue - thresholdB) / denom) * 14)));
-    }
-    if (rawValue >= thresholdC) {
-      const denom = thresholdB - thresholdC || 1;
-      return Math.min(100, Math.max(0, Math.round(60 + ((rawValue - thresholdC) / denom) * 14)));
-    }
-    if (rawValue >= thresholdD) {
-      const denom = thresholdC - thresholdD || 1;
-      return Math.min(100, Math.max(0, Math.round(40 + ((rawValue - thresholdD) / denom) * 19)));
-    }
-    const denom = thresholdD || 1;
-    return Math.min(100, Math.max(0, Math.round((rawValue / denom) * 40)));
+    const ratioScore = Math.round((rawValue / target) * 100);
+    return Math.min(100, Math.max(0, ratioScore));
   }
 
   // LOWER_IS_BETTER (misal: sprint detik, shuttle run detik)
-  if (rawValue <= thresholdA) {
-    const extra = ((thresholdA - rawValue) / (thresholdA || 1)) * 10;
-    return Math.min(100, Math.max(0, Math.round(90 + extra)));
+  if (rawValue <= target) {
+    return 100;
   }
-  if (rawValue <= thresholdB) {
-    const denom = thresholdB - thresholdA || 1;
-    return Math.min(100, Math.max(0, Math.round(75 + ((thresholdB - rawValue) / denom) * 14)));
-  }
-  if (rawValue <= thresholdC) {
-    const denom = thresholdC - thresholdB || 1;
-    return Math.min(100, Math.max(0, Math.round(60 + ((thresholdC - rawValue) / denom) * 14)));
-  }
-  if (rawValue <= thresholdD) {
-    const denom = thresholdD - thresholdC || 1;
-    return Math.min(100, Math.max(0, Math.round(40 + ((thresholdD - rawValue) / denom) * 19)));
-  }
-  return Math.min(100, Math.max(0, Math.round(40 - (rawValue - thresholdD))));
+  const gapPct = Math.round(((rawValue - target) / target) * 100);
+  return Math.min(100, Math.max(0, 100 - gapPct));
 }
 
 /**
@@ -210,6 +228,7 @@ export function calculateAssessmentEngine(items: TestItemValue[]): EngineResult 
     else if (comp === "AGILITY") recs.push("agility ladder & cone drills");
     else if (comp === "AEROBIC_ENDURANCE") recs.push("aerobic zone 2 running / Yo-Yo interval training");
     else if (comp === "MUSCULAR_ENDURANCE" || comp === "FLEXIBILITY") recs.push("strength training & mobility routine 6-8 minggu");
+    else if (comp === "COORDINATION") recs.push("koordinasi neuromuskular & latihan integrasi gerak");
   });
 
   const bestScore = bestComponent ? (componentScores[bestComponent] ?? 0) : 0;

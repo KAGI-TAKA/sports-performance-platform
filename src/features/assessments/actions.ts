@@ -62,7 +62,28 @@ export async function createAssessment(input: unknown) {
   // 3. Hitung usia atlet secara akurat pada tanggal assessment
   const athleteAge = calculateAgeAtDate(athleteCheck.dateOfBirth, assessmentDate);
 
-  // 4. Ambil data test item & benchmarks milik organisasi secara aman
+  // 4. Ambil BenchmarkProfile yang dipilih jika ada
+  let profileBenchmarks: Array<typeof testItems[0]["benchmarks"][0]> = [];
+  const hasSelectedProfile = Boolean(parsed.benchmarkProfileId);
+
+  if (parsed.benchmarkProfileId) {
+    const profile = await prisma.benchmarkProfile.findFirst({
+      where: {
+        id: parsed.benchmarkProfileId,
+        organizationId: ctx.organizationId,
+        isActive: true,
+      },
+      include: {
+        benchmarks: true,
+      },
+    });
+
+    if (profile) {
+      profileBenchmarks = profile.benchmarks;
+    }
+  }
+
+  // 5. Ambil data test item & benchmarks milik organisasi secara aman
   const testItemIds = parsed.results.map((r) => r.testItemId);
   let testItems = await prisma.testItem.findMany({
     where: {
@@ -92,45 +113,61 @@ export async function createAssessment(input: unknown) {
   }
 
   const testItemMap = new Map(testItems.map((t) => [t.id, t]));
+  const itemBenchmarkTargetMap = new Map<string, number | undefined>();
 
   const engineItems: TestItemValue[] = parsed.results.map((res) => {
     const itemDef = testItemMap.get(res.testItemId);
-    const bm = pickBestBenchmark(itemDef?.benchmarks || [], athleteCheck.gender, athleteAge);
+
+    // KETENTUAN UTAMA:
+    // Jika pelatih memilih BenchmarkProfile, seluruh scoring assessment HARUS mengambil benchmark dari profile tersebut.
+    // Tidak boleh fallback ke benchmark organisasi lainnya jika item tidak ada dalam profile yang dipilih.
+    const itemProfileBms = profileBenchmarks.filter((b) => b.testItemId === res.testItemId);
+    const bm = hasSelectedProfile
+      ? (itemProfileBms.length > 0 ? pickBestBenchmark(itemProfileBms, athleteCheck.gender, athleteAge) : null)
+      : pickBestBenchmark(itemDef?.benchmarks || [], athleteCheck.gender, athleteAge);
+
+    const targetVal = bm ? Number(bm.thresholdA) : undefined;
+    itemBenchmarkTargetMap.set(res.testItemId, targetVal);
 
     return {
       testItemId: res.testItemId,
       physicalComponent: itemDef?.physicalComponent || "FLEXIBILITY",
       rawValue: res.rawValue,
       scoreDirection: itemDef?.scoreDirection || "HIGHER_IS_BETTER",
-      thresholdA: bm ? Number(bm.thresholdA) : undefined,
+      thresholdA: targetVal,
       thresholdB: bm ? Number(bm.thresholdB) : undefined,
       thresholdC: bm ? Number(bm.thresholdC) : undefined,
       thresholdD: bm ? Number(bm.thresholdD) : undefined,
     };
   });
 
-  // 5. Hitung hasil engine server-side (Authoritative Domain Calculation)
+  // 6. Hitung hasil engine server-side (Authoritative Domain Calculation)
   const engineResult = calculateAssessmentEngine(engineItems);
 
   try {
-    // 6. Simpan Assessment, ResultItems, dan Analysis dalam 1 transaksi atomic
+    // 7. Simpan Assessment, ResultItems, dan Analysis dalam 1 transaksi atomic
     const assessment = await prisma.$transaction(async (tx) => {
       const newAssessment = await tx.assessment.create({
         data: {
           organizationId: ctx.organizationId,
           athleteId: parsed.athleteId,
           createdByMemberId: ctx.memberId,
+          benchmarkProfileId: parsed.benchmarkProfileId || null,
           assessmentDate,
           assessmentType: parsed.assessmentType ?? "BENCHMARK_BASED",
           status: "COMPLETED",
           overallScore: engineResult.overallScore,
           overallGrade: engineResult.overallGrade,
           resultItems: {
-            create: parsed.results.map((r) => ({
-              testItemId: r.testItemId,
-              rawValue: r.rawValue,
-              score: engineResult.itemScores[r.testItemId] ?? 0,
-            })),
+            create: parsed.results.map((r) => {
+              const target = itemBenchmarkTargetMap.get(r.testItemId);
+              return {
+                testItemId: r.testItemId,
+                rawValue: r.rawValue,
+                score: engineResult.itemScores[r.testItemId] ?? 0,
+                benchmarkValue: target != null ? target : null,
+              };
+            }),
           },
         },
       });
@@ -143,7 +180,7 @@ export async function createAssessment(input: unknown) {
           weakestComponents: engineResult.weakestComponents,
           insightText: engineResult.insightText,
           recommendationText: engineResult.recommendationText,
-          ruleEngineVersion: "v1.0",
+          ruleEngineVersion: "v2.0-profile-snapshot",
         },
       });
 
@@ -393,6 +430,82 @@ export async function updateAssessmentRecommendation(
     return { success: true };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Gagal memperbarui rekomendasi.";
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function deleteAssessmentAction(
+  assessmentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const ctx = await requireOrgContext();
+
+    // Verify role authorization (only admin and head_coach can delete)
+    const role = (ctx.role || "").toLowerCase();
+    if (role !== "admin" && role !== "head_coach") {
+      return { success: false, error: "Anda tidak memiliki wewenang untuk menghapus asesmen." };
+    }
+
+    const assessment = await prisma.assessment.findFirst({
+      where: {
+        id: assessmentId,
+        organizationId: ctx.organizationId,
+      },
+      select: {
+        id: true,
+        athleteId: true,
+      },
+    });
+
+    if (!assessment) {
+      return { success: false, error: "Asesmen tidak ditemukan atau Anda tidak memiliki akses." };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Reset any AthleteGoal achieved by this assessment back to ACTIVE
+      await tx.athleteGoal.updateMany({
+        where: {
+          achievedAssessmentId: assessmentId,
+          organizationId: ctx.organizationId,
+        },
+        data: {
+          status: "ACTIVE",
+          achievedAt: null,
+          achievedAssessmentId: null,
+        },
+      });
+
+      // 2. Delete child reports
+      await tx.report.deleteMany({
+        where: { assessmentId },
+      });
+
+      // 3. Delete analysis
+      await tx.assessmentAnalysis.deleteMany({
+        where: { assessmentId },
+      });
+
+      // 4. Delete result items
+      await tx.assessmentResultItem.deleteMany({
+        where: { assessmentId },
+      });
+
+      // 5. Delete assessment itself
+      await tx.assessment.delete({
+        where: { id: assessmentId },
+      });
+    });
+
+    revalidatePath("/assessments");
+    revalidatePath(`/athletes/${assessment.athleteId}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/reports");
+    revalidatePath("/progress");
+    revalidatePath("/compare");
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal menghapus asesmen.";
     return { success: false, error: errorMsg };
   }
 }

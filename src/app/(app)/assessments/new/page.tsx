@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { getAthleteById, listAthletes } from "@/features/athletes/queries";
-import { listTestItems, getLatestAssessmentWithResults } from "@/features/assessments/queries";
+import { listTestItems, getLatestAssessmentWithResults, listBenchmarkProfiles } from "@/features/assessments/queries";
 import { calculateAgeAtDate } from "@/features/assessments/engine";
 import { AssessmentWizard } from "@/features/assessments/components/assessment-wizard";
+import { BenchmarkProfileSelector } from "@/features/assessments/components/benchmark-profile-selector";
 import { SquadFieldScoringMatrix } from "@/features/assessments/components/squad-field-scoring-matrix";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,9 @@ import { ArrowLeft, ChevronRight, AlertTriangle, Sparkles, Users, User, Award } 
 export default async function NewAssessmentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ athleteId?: string; mode?: string }>;
+  searchParams: Promise<{ athleteId?: string; mode?: string; profileId?: string; skipProfile?: string }>;
 }) {
-  const { athleteId, mode } = await searchParams;
+  const { athleteId, mode, profileId, skipProfile } = await searchParams;
   const ctx = await requireOrgContext();
 
   const testItemsRaw = await listTestItems(ctx.organizationId);
@@ -197,6 +198,67 @@ export default async function NewAssessmentPage({
     );
   }
 
+  // ── SELEKSI BENCHMARK PROFILE ────────────────────────────
+  // Sebelum wizard dimulai, pelatih memilih standar profil benchmark yang akan digunakan
+  if (!profileId && !skipProfile) {
+    const profiles = await listBenchmarkProfiles(ctx.organizationId);
+
+    if (profiles.length > 0) {
+      const athleteAge = athlete.dateOfBirth
+        ? calculateAgeAtDate(new Date(athlete.dateOfBirth))
+        : 15;
+
+      return (
+        <BenchmarkProfileSelector
+          athlete={{
+            id: athlete.id,
+            fullName: athlete.fullName,
+            gender: athlete.gender,
+            age: athleteAge,
+            trainingLevel: athlete.trainingLevel,
+            sportCategory: athlete.sportCategory,
+          }}
+          profiles={profiles.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            gender: p.gender,
+            ageMin: p.ageMin,
+            ageMax: p.ageMax,
+            sportCategory: p.sportCategory,
+            isDefault: p.isDefault,
+            benchmarkCount: p.benchmarks.length,
+          }))}
+        />
+      );
+    }
+  }
+
+  // Ambil benchmark profile yang dipilih jika ada
+  let selectedBenchmarkProfile = null;
+  if (profileId) {
+    const profiles = await listBenchmarkProfiles(ctx.organizationId);
+    const found = profiles.find((p) => p.id === profileId);
+    if (found) {
+      selectedBenchmarkProfile = {
+        id: found.id,
+        name: found.name,
+        description: found.description,
+        benchmarks: found.benchmarks.map((b) => ({
+          id: b.id,
+          testItemId: b.testItemId,
+          thresholdA: Number(b.thresholdA),
+          thresholdB: Number(b.thresholdB),
+          thresholdC: Number(b.thresholdC),
+          thresholdD: Number(b.thresholdD),
+          ageMin: b.ageMin,
+          ageMax: b.ageMax,
+          gender: b.gender,
+        })),
+      };
+    }
+  }
+
   // Ambil asesmen terakhir atlet untuk perbandingan live progres di wizard
   const [previousAssessmentRaw, { athletes: allAthletes }] = await Promise.all([
     getLatestAssessmentWithResults(ctx.organizationId, athlete.id),
@@ -236,6 +298,7 @@ export default async function NewAssessmentPage({
           trainingLevel: a.trainingLevel,
         }))}
         testItems={testItems}
+        selectedBenchmarkProfile={selectedBenchmarkProfile}
         previousAssessment={previousAssessment}
       />
     </div>

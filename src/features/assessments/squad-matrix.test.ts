@@ -124,16 +124,16 @@ describe("P8-B2: Squad Scoring Engine Calculation & Live Preview", () => {
     expect(scoreA).toBeGreaterThanOrEqual(90);
     expect(scoreToGrade(scoreA)).toBe("A");
 
-    // 4.40s (between thresholdA 4.20 and thresholdB 4.50) -> Score in 80..89 -> Grade B+
+    // 4.80s (slower than target 4.20s: GAP ~14% -> score = 86 -> Grade B+)
     const scoreB = calculateItemScore({
-      rawValue: 4.4,
+      rawValue: 4.8,
       scoreDirection: "LOWER_IS_BETTER",
       thresholdA: 4.2,
       thresholdB: 4.5,
       thresholdC: 4.8,
       thresholdD: 5.2,
     });
-    expect(scoreB).toBeGreaterThanOrEqual(75);
+    expect(scoreB).toBeGreaterThanOrEqual(80);
     expect(scoreB).toBeLessThan(90);
     expect(scoreToGrade(scoreB)).toBe("B+");
   });

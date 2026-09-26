@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateItemScore,
+  calculateItemGap,
   calculateAssessmentEngine,
   calculateProgressAssessmentEngine,
   calculateAgeAtDate,
@@ -87,63 +88,100 @@ describe("pickBestBenchmark()", () => {
   });
 });
 
-// ─── calculateItemScore — HIGHER_IS_BETTER ───────────────────────────────────
+// ─── calculateItemScore & calculateItemGap — HIGHER_IS_BETTER ─────────────
 
-describe("calculateItemScore() — HIGHER_IS_BETTER", () => {
+describe("calculateItemScore() & calculateItemGap() — HIGHER_IS_BETTER", () => {
   const baseItem = {
     testItemId: "test-1",
     physicalComponent: "SPEED" as const,
     scoreDirection: "HIGHER_IS_BETTER" as const,
-    thresholdA: 80,
-    thresholdB: 60,
-    thresholdC: 40,
-    thresholdD: 20,
+    thresholdA: 29,
   };
 
-  it("should return >= 90 when rawValue >= thresholdA", () => {
-    const score = calculateItemScore({ ...baseItem, rawValue: 80 });
-    expect(score).toBeGreaterThanOrEqual(90);
+  it("Kasus Wajib: 29 / 29 -> Score 100% -> GAP 0%", () => {
+    const score = calculateItemScore({ ...baseItem, rawValue: 29 });
+    const gap = calculateItemGap({ ...baseItem, rawValue: 29 });
+
+    expect(score).toBe(100);
+    expect(gap).toBe(0);
+    expect(scoreToGrade(score)).toBe("A");
   });
 
-  it("should return continuous interpolated score between thresholdB and thresholdA", () => {
-    const score = calculateItemScore({ ...baseItem, rawValue: 70 });
-    expect(score).toBeGreaterThanOrEqual(75);
-    expect(score).toBeLessThan(90);
+  it("should cap score at 100 and GAP at 0 when rawValue > thresholdA", () => {
+    const score = calculateItemScore({ ...baseItem, rawValue: 35 });
+    const gap = calculateItemGap({ ...baseItem, rawValue: 35 });
+
+    expect(score).toBe(100);
+    expect(gap).toBe(0);
   });
 
-  it("should clamp scores strictly between 0 and 100", () => {
-    expect(calculateItemScore({ ...baseItem, rawValue: 999 })).toBeLessThanOrEqual(100);
-    expect(calculateItemScore({ ...baseItem, rawValue: -50 })).toBeGreaterThanOrEqual(0);
+  it("should calculate proportional score and gap when rawValue < thresholdA", () => {
+    // 20 / 29 = 0.68965... -> 69%
+    const score = calculateItemScore({ ...baseItem, rawValue: 20 });
+    const gap = calculateItemGap({ ...baseItem, rawValue: 20 });
+
+    expect(score).toBe(69);
+    expect(gap).toBe(31);
+    expect(score + gap).toBe(100);
   });
 
-  it("should return 0 for invalid numbers like NaN or Infinity", () => {
+  it("should clamp scores strictly between 0 and 100 and GAP >= 0", () => {
+    expect(calculateItemScore({ ...baseItem, rawValue: 999 })).toBe(100);
+    expect(calculateItemGap({ ...baseItem, rawValue: 999 })).toBe(0);
+    expect(calculateItemScore({ ...baseItem, rawValue: -50 })).toBe(0);
+    expect(calculateItemGap({ ...baseItem, rawValue: -50 })).toBe(100);
+  });
+
+  it("should return 0 score and 100 gap for invalid numbers like NaN or Infinity", () => {
     expect(calculateItemScore({ ...baseItem, rawValue: NaN })).toBe(0);
+    expect(calculateItemGap({ ...baseItem, rawValue: NaN })).toBe(100);
     expect(calculateItemScore({ ...baseItem, rawValue: Infinity })).toBe(0);
   });
 });
 
-// ─── calculateItemScore — LOWER_IS_BETTER ────────────────────────────────────
+// ─── calculateItemScore & calculateItemGap — LOWER_IS_BETTER ──────────────
 
-describe("calculateItemScore() — LOWER_IS_BETTER", () => {
+describe("calculateItemScore() & calculateItemGap() — LOWER_IS_BETTER", () => {
   const timedItem = {
     testItemId: "test-2",
     physicalComponent: "SPEED" as const,
     scoreDirection: "LOWER_IS_BETTER" as const,
-    thresholdA: 5,   // 5 detik = Grade A
-    thresholdB: 7,
-    thresholdC: 9,
-    thresholdD: 11,
+    thresholdA: 5.0, // 5.0 detik = Target
   };
 
-  it("should return >= 90 when rawValue <= thresholdA (very fast)", () => {
-    const score = calculateItemScore({ ...timedItem, rawValue: 5 });
-    expect(score).toBeGreaterThanOrEqual(90);
+  it("should return score 100 and GAP 0 when rawValue == thresholdA (exact target)", () => {
+    const score = calculateItemScore({ ...timedItem, rawValue: 5.0 });
+    const gap = calculateItemGap({ ...timedItem, rawValue: 5.0 });
+
+    expect(score).toBe(100);
+    expect(gap).toBe(0);
   });
 
-  it("should return lower score when rawValue is higher (slow)", () => {
-    const fastScore = calculateItemScore({ ...timedItem, rawValue: 5 });
-    const slowScore = calculateItemScore({ ...timedItem, rawValue: 15 });
-    expect(fastScore).toBeGreaterThan(slowScore);
+  it("should return score 100 and GAP 0 when rawValue < thresholdA (faster than target)", () => {
+    const score = calculateItemScore({ ...timedItem, rawValue: 4.2 });
+    const gap = calculateItemGap({ ...timedItem, rawValue: 4.2 });
+
+    expect(score).toBe(100);
+    expect(gap).toBe(0);
+  });
+
+  it("should calculate GAP and score accurately when rawValue > thresholdA (slower)", () => {
+    // 6.0s vs target 5.0s -> diff = 1.0s / 5.0s = 20% GAP -> score = 100 - 20 = 80
+    const score = calculateItemScore({ ...timedItem, rawValue: 6.0 });
+    const gap = calculateItemGap({ ...timedItem, rawValue: 6.0 });
+
+    expect(gap).toBe(20);
+    expect(score).toBe(80);
+    expect(scoreToGrade(score)).toBe("B+");
+  });
+
+  it("should clamp minimum score to 0 and GAP >= 0 for extremely slow values", () => {
+    // 15.0s vs target 5.0s -> gap = 200%, score = max(0, 100 - 200) = 0
+    const score = calculateItemScore({ ...timedItem, rawValue: 15.0 });
+    const gap = calculateItemGap({ ...timedItem, rawValue: 15.0 });
+
+    expect(gap).toBe(200);
+    expect(score).toBe(0);
   });
 });
 
@@ -207,6 +245,23 @@ describe("calculateAssessmentEngine()", () => {
     ];
     const result = calculateAssessmentEngine(items);
     expect(result.overallGrade).toBe(scoreToGrade(result.overallScore));
+  });
+
+  it("should handle COORDINATION component seamlessly without breaking calculation", () => {
+    const items = [
+      {
+        testItemId: "t-coord-1",
+        physicalComponent: "COORDINATION" as const,
+        rawValue: 10,
+        scoreDirection: "HIGHER_IS_BETTER" as const,
+        thresholdA: 10,
+      },
+    ];
+    const result = calculateAssessmentEngine(items);
+    expect(result.componentScores["COORDINATION"]).toBe(100);
+    expect(result.overallScore).toBe(100);
+    expect(result.overallGrade).toBe("A");
+    expect(result.bestComponent).toBe("COORDINATION");
   });
 });
 

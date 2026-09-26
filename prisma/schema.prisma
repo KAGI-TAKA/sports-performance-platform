@@ -96,6 +96,7 @@ model Organization {
   testItems        TestItem[]
   assessments      Assessment[]
   benchmarks       Benchmark[]
+  benchmarkProfiles BenchmarkProfile[]
   scheduleSessions ScheduleSession[]
   exercises        Exercise[]
   trainingPlans    TrainingPlan[]
@@ -299,6 +300,7 @@ enum PhysicalComponent {
   MUSCULAR_ENDURANCE
   ANAEROBIC_ENDURANCE
   AEROBIC_ENDURANCE
+  COORDINATION
 }
 
 enum ScoreDirection {
@@ -360,10 +362,11 @@ enum AssessmentType {
 }
 
 model Assessment {
-  id                String @id @default(cuid())
-  organizationId    String
-  athleteId         String
-  createdByMemberId String
+  id                 String           @id @default(cuid())
+  organizationId     String
+  athleteId          String
+  createdByMemberId  String
+  benchmarkProfileId String?
 
   assessmentDate DateTime
   status         AssessmentStatus @default(DRAFT)
@@ -375,16 +378,18 @@ model Assessment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  athlete      Athlete                @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  createdBy    Member                 @relation(fields: [createdByMemberId], references: [id])
-  resultItems  AssessmentResultItem[]
-  analysis     AssessmentAnalysis?
-  reports      Report[]
-  goalsAchieved AthleteGoal[]        @relation("GoalAchievedAssessment")
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  athlete          Athlete           @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdBy        Member            @relation(fields: [createdByMemberId], references: [id])
+  benchmarkProfile BenchmarkProfile? @relation(fields: [benchmarkProfileId], references: [id], onDelete: SetNull)
+  resultItems      AssessmentResultItem[]
+  analysis         AssessmentAnalysis?
+  reports          Report[]
+  goalsAchieved    AthleteGoal[]     @relation("GoalAchievedAssessment")
 
   @@index([organizationId])
   @@index([athleteId, assessmentDate])
+  @@index([benchmarkProfileId])
   @@map("assessment")
 }
 
@@ -396,6 +401,7 @@ model AssessmentResultItem {
   rawValue         Decimal? @db.Decimal(8, 2)
   qualitativeValue String?
   score            Decimal? @db.Decimal(5, 2)
+  benchmarkValue   Decimal? @db.Decimal(8, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -408,13 +414,37 @@ model AssessmentResultItem {
 }
 
 // ============================================================
-// BENCHMARK
+// BENCHMARK PROFILE & BENCHMARK
 // ============================================================
 
-model Benchmark {
-  id             String @id @default(cuid())
+model BenchmarkProfile {
+  id             String   @id @default(cuid())
   organizationId String
-  testItemId     String
+  name           String
+  description    String?
+  gender         Gender?
+  ageMin         Int      @default(0)
+  ageMax         Int      @default(99)
+  sportCategory  String?
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  benchmarks     Benchmark[]
+  assessments    Assessment[]
+
+  @@index([organizationId])
+  @@map("benchmark_profile")
+}
+
+model Benchmark {
+  id                 String  @id @default(cuid())
+  organizationId     String
+  testItemId         String
+  benchmarkProfileId String?
 
   ageMin           Int
   ageMax           Int
@@ -431,10 +461,12 @@ model Benchmark {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  testItem     TestItem     @relation(fields: [testItemId], references: [id], onDelete: Cascade)
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  testItem         TestItem          @relation(fields: [testItemId], references: [id], onDelete: Cascade)
+  benchmarkProfile BenchmarkProfile? @relation(fields: [benchmarkProfileId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, testItemId])
+  @@index([benchmarkProfileId])
   @@map("benchmark")
 }
 

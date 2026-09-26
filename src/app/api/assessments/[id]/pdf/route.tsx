@@ -51,11 +51,14 @@ export async function GET(
       ? athlete.position.replace(/_/g, " ")
       : "—";
 
-    // Build items with benchmark values per item
+    // Build items with benchmark values per item (prefer stored benchmarkValue snapshot)
     const items = assessment.resultItems.map((r) => {
-      const bm = r.testItem.benchmarks?.[0];
-      // Use threshold A as the "ideal" benchmark reference
-      const benchmarkValue = bm ? Number(bm.thresholdA) : undefined;
+      const benchmarkValue =
+        r.benchmarkValue != null
+          ? Number(r.benchmarkValue)
+          : r.testItem.benchmarks?.[0]
+          ? Number(r.testItem.benchmarks[0].thresholdA)
+          : undefined;
       return {
         name: r.testItem.name,
         component: r.testItem.physicalComponent,

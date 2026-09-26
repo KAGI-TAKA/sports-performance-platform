@@ -76,6 +76,7 @@ function formatComponentName(comp: string | null): string {
     MUSCULAR_ENDURANCE: "Daya Tahan Otot",
     ANAEROBIC_ENDURANCE: "Daya Tahan Anaerobik",
     AEROBIC_ENDURANCE: "Daya Tahan Aerobik",
+    COORDINATION: "Koordinasi",
   };
   return map[comp] ?? comp.replace(/_/g, " ");
 }
