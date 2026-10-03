@@ -1,61 +1,30 @@
-import { CheckCircle2, MessageCircle } from "lucide-react";
+﻿"use client";
+
+import { useState } from "react";
+import { CheckCircle2, MessageCircle, MapPin } from "lucide-react";
 import { APP_CONFIG } from "@/lib/constants";
+import { DEFAULT_LANDING_PAGE_CONFIG, type LandingPageConfig } from "@/features/landing-page/types";
 
-export function PricingSection() {
-  const youthPricing = [
-    {
-      type: "Individual Session",
-      price: "Rp150.000",
-      unit: "/ session",
-      capacity: "1 atlet",
-      notes: "Cocok untuk atlet muda yang membutuhkan perhatian penuh, koreksi teknik mendalam, dan program terindividualisasi",
-    },
-    {
-      type: "Duo Session",
-      price: "Rp200.000",
-      unit: "/ session",
-      capacity: "2 athletes",
-      notes: "Cocok untuk 2 atlet dengan cabang olahraga atau fase perkembangan fisik yang sepadan",
-    },
-    {
-      type: "Trio Session",
-      price: "Rp225.000",
-      unit: "/ session",
-      capacity: "3 athletes",
-      notes: "Cocok untuk 3 atlet/rekan tim yang ingin berlatih fisik bersama dengan fokus terarah",
-    },
-    {
-      type: "Group Session",
-      price: "Rp260.000",
-      unit: "/ session",
-      capacity: "Group",
-      notes: "Cocok untuk latihan kelompok atlet yang ingin membangun chemistry dan kapasitas fisik kompetitif",
-    },
-  ];
+interface PricingSectionProps {
+  initialConfig?: LandingPageConfig;
+}
 
-  const multilateralPricing = [
-    {
-      type: "Individual Session",
-      price: "Rp125.000",
-      unit: "/ session",
-      capacity: "1 anak",
-      notes: "Cocok untuk anak yang membutuhkan bimbingan intensif 1-on-1 dalam membangun literasi fisik & pola gerak dasar",
-    },
-    {
-      type: "Duo Session",
-      price: "Rp170.000",
-      unit: "/ session",
-      capacity: "2 children",
-      notes: "Cocok untuk 2 anak/saudara yang ingin belajar koordinasi dan eksplorasi gerak bersama secara menyenangkan",
-    },
-    {
-      type: "Group Session",
-      price: "Rp50.000",
-      unit: "/ child / session",
-      capacity: "Group",
-      notes: "Sesi latihan kelompok terstruktur untuk membangun literasi fisik, kelincahan, reaksi, dan kerja sama tim",
-    },
-  ];
+export function PricingSection({ initialConfig }: PricingSectionProps) {
+  const config = initialConfig || DEFAULT_LANDING_PAGE_CONFIG;
+  const yapAreas = config.pricing.yapAreas && config.pricing.yapAreas.length > 0
+    ? config.pricing.yapAreas
+    : DEFAULT_LANDING_PAGE_CONFIG.pricing.yapAreas;
+
+  const [selectedAreaId, setSelectedAreaId] = useState<string>(yapAreas[0]?.id || "salatiga");
+  const currentArea = yapAreas.find((a) => a.id === selectedAreaId) || yapAreas[0];
+
+  const multilateralPricing = config.pricing.mfdPricing;
+  const targetWaNumber = config.contact.whatsappNumber || APP_CONFIG.whatsappNumber;
+
+  const getWaLink = (programTitle: string) => {
+    const text = `Halo Coach Zulfi, saya ingin berkonsultasi mengenai program "${programTitle}" untuk ananda/atlet kami.`;
+    return `https://wa.me/${targetWaNumber}?text=${encodeURIComponent(text)}`;
+  };
 
   const includedValues = [
     "Program terindividualisasi sesuai fase perkembangan",
@@ -101,11 +70,43 @@ export function PricingSection() {
                 </span>
               </div>
 
+              {/* Dynamic Area Switcher Tabs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-medium">Pilih Wilayah Sesi:</span>
+                  <span className="font-mono text-blue-400 text-[11px] font-semibold">
+                    📍 {currentArea.name}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+                  {yapAreas.map((area) => (
+                    <button
+                      key={area.id}
+                      type="button"
+                      onClick={() => setSelectedAreaId(area.id)}
+                      className={`flex-1 min-w-[120px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        currentArea.id === area.id
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
+                          : "text-slate-400 hover:text-white hover:bg-slate-900/60"
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{area.name}</span>
+                    </button>
+                  ))}
+                </div>
+                {currentArea.venueLocation && (
+                  <p className="text-[11px] text-slate-400 italic pt-0.5">
+                    Venue: {currentArea.venueLocation}
+                  </p>
+                )}
+              </div>
+
               {/* Rate List */}
               <div className="space-y-3.5">
-                {youthPricing.map((item) => (
+                {currentArea.tiers.map((item) => (
                   <div
-                    key={item.type}
+                    key={item.id || item.type}
                     className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-1.5 hover:border-blue-500/50 transition-colors"
                   >
                     <div className="flex items-center justify-between">
@@ -135,7 +136,9 @@ export function PricingSection() {
             </div>
 
             <a
-              href={APP_CONFIG.whatsappInquiryTemplate("Pendaftaran Youth Athlete Performance")}
+              href={getWaLink(
+                `Youth Athlete Performance (${currentArea.name})`
+              )}
               target="_blank"
               rel="noopener noreferrer"
               className="pt-2"
@@ -145,7 +148,9 @@ export function PricingSection() {
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition cursor-pointer"
               >
                 <MessageCircle className="h-4 w-4 text-white" />
-                <span>DAFTAR YOUTH ATHLETE PERFORMANCE</span>
+                <span>
+                  DAFTAR YAP ({currentArea.name.toUpperCase()})
+                </span>
               </button>
             </a>
           </div>
@@ -172,7 +177,7 @@ export function PricingSection() {
               <div className="space-y-3.5">
                 {multilateralPricing.map((item) => (
                   <div
-                    key={item.type}
+                    key={item.id || item.type}
                     className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-1.5 hover:border-emerald-500/50 transition-colors"
                   >
                     <div className="flex items-center justify-between">
@@ -202,7 +207,7 @@ export function PricingSection() {
             </div>
 
             <a
-              href={APP_CONFIG.whatsappInquiryTemplate("Pendaftaran Multilateral Athletic Development")}
+              href={getWaLink("Multilateral Athletic Development")}
               target="_blank"
               rel="noopener noreferrer"
               className="pt-2"

@@ -15,6 +15,7 @@ import { authClient } from "@/lib/auth-client";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { getBreadcrumbTitle } from "@/lib/navigation";
+import { HelpTriggerButton } from "@/features/help";
 
 interface AppHeaderProps {
   userName?: string;
@@ -182,6 +183,9 @@ export function AppHeader({
             <span className="text-[10px]">⌘</span>K
           </kbd>
         </button>
+
+        {/* Contextual In-App Help Trigger Button */}
+        <HelpTriggerButton />
 
         {/* User Badge */}
         <div className="flex items-center gap-2 border-l border-border pl-2.5">

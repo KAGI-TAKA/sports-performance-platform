@@ -6,6 +6,7 @@ import { AppHeader } from "./app-header";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { CommandPalette } from "@/features/command-palette/command-palette";
 import { NavigationProgressBar } from "./navigation-progress";
+import { HelpProvider, HelpDrawer } from "@/features/help";
 
 interface CoachShellProps {
   userName?: string;
@@ -53,24 +54,28 @@ export function CoachShell({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-base text-foreground font-sans antialiased">
-      {/* Navigation Progress Indicator */}
-      <NavigationProgressBar />
+    <HelpProvider role={role}>
+      <div className="flex h-screen overflow-hidden bg-surface-base text-foreground font-sans antialiased">
+        {/* Navigation Progress Indicator */}
+        <NavigationProgressBar />
 
-      {/* Global Command Palette (Ctrl+K) */}
-      <CommandPalette
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-      />
-
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex shrink-0">
-        <AppSidebar
-          collapsed={collapsed}
-          onToggleCollapse={handleToggleCollapse}
-          role={role}
+        {/* Global Command Palette (Ctrl+K) */}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
         />
-      </div>
+
+        {/* Contextual Help Drawer */}
+        <HelpDrawer />
+
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:flex shrink-0">
+          <AppSidebar
+            collapsed={collapsed}
+            onToggleCollapse={handleToggleCollapse}
+            role={role}
+          />
+        </div>
 
       {/* Mobile Sidebar Drawer */}
       {mobileOpen && (
@@ -114,5 +119,6 @@ export function CoachShell({
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav role={role} />
     </div>
+    </HelpProvider>
   );
 }

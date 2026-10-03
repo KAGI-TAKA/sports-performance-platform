@@ -1,26 +1,37 @@
-import { HelpCircle, ChevronDown } from "lucide-react";
+﻿import { Sparkles, MapPin, ShieldCheck, Dumbbell, MessageCircle } from "lucide-react";
+import { APP_CONFIG } from "@/lib/constants";
 
 export function FaqSection() {
-  const faqs = [
+  const infoCards = [
     {
-      q: "Berapa usia minimal atlet yang bisa mengikuti program ini?",
-      a: "Program fisik dirancang aman untuk atlet muda mulai usia 8 tahun hingga usia kompetitif senior (18+ tahun). Menu latihan disesuaikan secara ketat dengan fase pertumbuhan biologis dan kesiapan fisik masing-masing atlet.",
+      icon: Dumbbell,
+      title: "Rentang Usia & Kesiapan Atlet",
+      description:
+        "Program pembinaan fisik dirancang aman dan bertahap untuk atlet muda mulai usia 8 tahun hingga kategori kompetitif senior (18+ tahun). Seluruh menu latihan disesuaikan secara ketat dengan tahapan pertumbuhan biologis dan kesiapan fisik masing-masing individu.",
     },
     {
-      q: "Apakah program ini cocok untuk anak yang baru mulai atau belum pernah latihan fisik?",
-      a: "Sangat cocok. Justru melalui asesmen fisik awal, kami dapat memetakan pondasi gerak dasar (fundamental movement skills) agar anak terbiasa bergerak dengan postur dan teknik yang benar sejak awal tanpa risiko cedera.",
+      icon: ShieldCheck,
+      title: "Pendampingan Pemula & Fondasi Gerak Dasar",
+      description:
+        "Sangat aman bagi anak yang baru memulai atau belum pernah menjalani latihan fisik. Melalui asesmen awal, kami memetakan literasi gerak dasar (fundamental movement skills) agar anak membiasakan postur dan mekanika gerak yang benar tanpa risiko cedera.",
     },
     {
-      q: "Di mana lokasi sesi latihan fisik lapangan diadakan?",
-      a: "Lokasi sesi latihan disepakati bersama saat konsultasi pendaftaran, dapat dilakukan di fasilitas lapangan atletik terdekat, lapangan sintetis/rumput, atau area latihan kebugaran yang terstandar.",
+      icon: MapPin,
+      title: "Wilayah Pelatihan Lapangan (Salatiga & Semarang)",
+      description:
+        "Sesi latihan lapangan diselenggarakan di fasilitas lintasan atletik, lapangan rumput sintetis, atau gym kebugaran terstandar di wilayah Salatiga dan Semarang. Penentuan venue disepakati bersama saat konsultasi agar nyaman dan mudah dijangkau.",
     },
     {
-      q: "Apa saja yang perlu dipersiapkan sebelum sesi pengujian fisik (Physical Assessment)?",
-      a: "Atlet cukup mengenakan pakaian olahraga yang nyaman, sepatu olahraga/lari (running shoes) yang pas, membawa botol air minum, serta memastikan tidur cukup dan makan ringan 1–2 jam sebelum tes.",
+      icon: Sparkles,
+      title: "Persiapan Sesi Asesmen Fisik Perdana",
+      description:
+        "Atlet cukup mengenakan pakaian olahraga yang nyaman, sepatu olahraga/lari yang pas, membawa botol air minum, serta memastikan istirahat cukup dan makan ringan sekitar 1–2 jam sebelum pengujian dimulai.",
     },
     {
-      q: "Bagaimana cara mendaftar dan memulai konsultasi?",
-      a: "Klik tombol 'Konsultasi via WhatsApp' di website ini. Anda akan terhubung langsung dengan Coach Zulfi untuk mendiskusikan usia anak, cabang olahraga, riwayat aktivitas fisik, dan rekomendasi paket program yang tepat.",
+      icon: MessageCircle,
+      title: "Alur Konsultasi & Pendaftaran Program",
+      description:
+        "Pendaftaran diawali dengan konsultasi langsung bersama Coach Zulfi melalui WhatsApp. Anda dapat berdiskusi mengenai usia anak, cabang olahraga spesifik, riwayat aktivitas fisik, hingga rekomendasi paket program (YAP atau MFD) yang paling tepat.",
     },
   ];
 
@@ -29,31 +40,38 @@ export function FaqSection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-12">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
-            Tanya Jawab Umum
+            Panduan Informasi Program
           </span>
           <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-            Pertanyaan yang Sering Diajukan Orang Tua
+            Hal-Hal Penting Sebelum Memulai Latihan
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Hal-hal mendasar yang perlu Anda ketahui sebelum memulai program pembinaan fisik bersama Coach Zulfi.
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            Informasi mendasar seputar kesiapan anak, cakupan area Salatiga &amp; Semarang, serta alur pembinaan terstruktur bersama Coach Zulfi.
           </p>
         </div>
 
         <div className="space-y-4">
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="rounded-2xl border border-slate-800 bg-slate-950 p-5 sm:p-6 space-y-2 hover:border-slate-700 transition"
-            >
-              <h3 className="font-display font-bold text-sm sm:text-base text-white flex items-start gap-2.5">
-                <span className="text-indigo-400 shrink-0 font-mono">Q:</span>
-                <span>{faq.q}</span>
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed pl-6">
-                {faq.a}
-              </p>
-            </div>
-          ))}
+          {infoCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={idx}
+                className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 sm:p-6 space-y-2 hover:border-slate-700 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-display font-bold text-sm sm:text-base text-white">
+                    {card.title}
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-11">
+                  {card.description}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

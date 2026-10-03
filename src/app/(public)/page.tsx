@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import { getLandingPageConfig } from "@/features/landing-page/queries";
 import { PublicNavbar } from "@/features/public-brand/components/public-navbar";
 import { HeroSection } from "@/features/public-brand/components/hero-section";
 import { TrainingReelCarousel } from "@/features/public-brand/components/training-reel-carousel";
@@ -13,6 +14,8 @@ import { WhoItsForSection } from "@/features/public-brand/components/who-its-for
 import { FinalCtaSection } from "@/features/public-brand/components/final-cta-section";
 import { PublicFooter } from "@/features/public-brand/components/public-footer";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Coach Zulfi | Strength & Conditioning & Youth Athletic Development",
   description:
@@ -25,11 +28,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const config = await getLandingPageConfig();
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white">
-      {/* 01. Navigation */}
-      <PublicNavbar />
+      {/* 01. Navigation with Dynamic Announcement Bar */}
+      <PublicNavbar announcement={config.announcement} contact={config.contact} />
 
       {/* 02. Hero Section */}
       <HeroSection />
@@ -55,8 +60,8 @@ export default function LandingPage() {
       {/* 09. PROGRESS YOU CAN UNDERSTAND (Transparent Development Monitoring) */}
       <ClientPortalShowcaseSection />
 
-      {/* 10. Contextual & Transparent Pricing */}
-      <PricingSection />
+      {/* 10. Contextual & Dynamic Pricing Section (Salatiga & Semarang) */}
+      <PricingSection initialConfig={config} />
 
       {/* 11. Self-Identification Decision Aid (Mana Jalur yang Tepat?) */}
       <WhoItsForSection />

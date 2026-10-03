@@ -42,3 +42,5 @@ next-env.d.ts
 
 # scratch & temp
 scratch/
+
+/.next_old/
