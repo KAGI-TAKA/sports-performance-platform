@@ -171,11 +171,19 @@ export default async function AssessmentsPage({
                             </Badge>
                           )}
                         </div>
-                        <Link href={`/assessments/${item.id}`}>
-                          <Button variant="outline" size="xs" className="gap-1 text-xs">
-                            Detail <ChevronRight className="h-3 w-3" />
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Link href={`/assessments/${item.id}`}>
+                            <Button variant="outline" size="xs" className="gap-1 text-xs">
+                              Detail <ChevronRight className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                          <DeleteAssessmentDialog compact={true}
+                            assessmentId={item.id}
+                            athleteName={item.athlete.fullName}
+                            assessmentDate={formatDate(item.assessmentDate)}
+                            canDelete={canDelete}
+                          />
+                        </div>
                       </div>
                     </div>
                   );
@@ -257,11 +265,20 @@ export default async function AssessmentsPage({
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Link href={`/assessments/${item.id}`}>
-                              <Button variant="outline" size="xs" className="gap-1 text-xs">
-                                Detail <ChevronRight className="h-3 w-3" />
-                              </Button>
-                            </Link>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link href={`/assessments/${item.id}`}>
+                                <Button variant="outline" size="xs" className="gap-1 text-xs">
+                                  Detail <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </Link>
+                              <DeleteAssessmentDialog
+                                compact={true}
+                                assessmentId={item.id}
+                                athleteName={item.athlete.fullName}
+                                assessmentDate={formatDate(item.assessmentDate)}
+                                canDelete={canDelete}
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

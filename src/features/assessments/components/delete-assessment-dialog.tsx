@@ -13,6 +13,7 @@ interface DeleteAssessmentDialogProps {
   athleteName: string;
   assessmentDate: string;
   canDelete: boolean;
+  compact?: boolean;
 }
 
 export function DeleteAssessmentDialog({
@@ -20,6 +21,7 @@ export function DeleteAssessmentDialog({
   athleteName,
   assessmentDate,
   canDelete,
+  compact = false,
 }: DeleteAssessmentDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -46,10 +48,13 @@ export function DeleteAssessmentDialog({
         variant="outline"
         size="xs"
         onClick={() => setOpen(true)}
-        className="gap-1.5 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition"
+        className={compact 
+          ? "gap-1 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition px-2" 
+          : "gap-1.5 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition"}
+        title="Hapus Assessment"
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Hapus Assessment
+        <span>{compact ? "Hapus" : "Hapus Assessment"}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
