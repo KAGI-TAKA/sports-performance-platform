@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth-context";
 import { listAssessments, ASSESSMENTS_PER_PAGE } from "@/features/assessments/queries";
 import { calculateAgeAtDate } from "@/features/assessments/engine";
+import { DeleteAssessmentDialog } from "@/features/assessments/components/delete-assessment-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default async function AssessmentsPage({
   const { q, page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const ctx = await requireOrgContext();
+  const canDelete = ctx.role === "admin" || ctx.role === "head_coach";
 
   const { assessments, total } = await listAssessments(ctx.organizationId, {
     search: q,

@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Athlete, AthleteInjuryHistory, Assessment } from "@prisma/client";
 import { InjuryDialog } from "./injury-dialog";
-import { deleteAthleteInjury } from "../actions";
+import { deleteAthleteInjury, deleteAthlete } from "../actions";
 import {
   Ruler,
   Weight,
@@ -56,6 +57,27 @@ export function AthleteDetailPanel({
   athletes?: Array<{ id: string; fullName: string }>;
 }) {
   const [activeTab, setActiveTab] = useState<"assessment" | "progress" | "cedera" | "sessionLogs">("assessment");
+  const router = useRouter();
+  const [isDeletingAthlete, setIsDeletingAthlete] = useState(false);
+
+  async function handleDeleteAthlete() {
+    if (!athlete) return;
+    const ok = window.confirm(
+      "Yakin ingin menghapus / menonaktifkan atlet " + athlete.fullName + "?\n\nData riwayat asesmen dan kehadiran latihan fisik akan tetap diarsipkan secara aman di sistem."
+    );
+    if (!ok) return;
+
+    setIsDeletingAthlete(true);
+    const res = await deleteAthlete(athlete.id);
+    setIsDeletingAthlete(false);
+
+    if (res.success) {
+      router.push("/athletes");
+      router.refresh();
+    } else {
+      alert(res.error || "Gagal menghapus atlet.");
+    }
+  }
   const canManageAthlete = role === "admin" || role === "head_coach";
   const canDelete = canManageAthlete;
 
