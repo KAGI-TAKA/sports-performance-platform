@@ -6,10 +6,10 @@ import { requireOrgContext } from "@/lib/auth-context";
 import { z } from "zod";
 
 const updateBenchmarkSchema = z.object({
-  thresholdA: z.coerce.number().positive("Threshold A harus positif"),
-  thresholdB: z.coerce.number().positive("Threshold B harus positif"),
-  thresholdC: z.coerce.number().positive("Threshold C harus positif"),
-  thresholdD: z.coerce.number().positive("Threshold D harus positif"),
+  thresholdA: z.coerce.number(),
+  thresholdB: z.coerce.number(),
+  thresholdC: z.coerce.number(),
+  thresholdD: z.coerce.number(),
   gender: z.enum(["MALE", "FEMALE", "ALL"]).default("ALL"),
   ageMin: z.coerce.number().min(0).max(99).default(0),
   ageMax: z.coerce.number().min(0).max(99).default(99),

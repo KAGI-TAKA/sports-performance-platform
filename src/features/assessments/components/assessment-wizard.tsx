@@ -74,6 +74,23 @@ interface AssessmentWizardProps {
   } | null;
 }
 
+function getSliderMin(item: TestItemProp): number {
+  if (item.physicalComponent === "FLEXIBILITY") {
+    return -30;
+  }
+  const bm = item.benchmarks[0];
+  if (bm) {
+    const thresholds = [Number(bm.thresholdA), Number(bm.thresholdB), Number(bm.thresholdC), Number(bm.thresholdD)].filter((t) => !isNaN(t));
+    if (thresholds.length > 0) {
+      const minThresh = Math.min(...thresholds);
+      if (minThresh < 0) {
+        return Math.floor(minThresh * 1.5);
+      }
+    }
+  }
+  return 0;
+}
+
 function getSliderMax(item: TestItemProp): number {
   const bm = item.benchmarks[0];
 
@@ -124,7 +141,7 @@ export function AssessmentWizard({
 
   const [assessmentType, setAssessmentType] = useState<"PROGRESS_BASED" | "BENCHMARK_BASED">(defaultMode);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [rawValues, setRawValues] = useState<Record<string, number>>({});
+  const [rawValues, setRawValues] = useState<Record<string, number | string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -164,7 +181,7 @@ export function AssessmentWizard({
     const filledItems: TestItemValue[] = Object.entries(rawValues)
       .map(([id, rawValue]) => {
         const itemDef = testItems.find((t) => t.id === id);
-        if (!itemDef || rawValue == null || isNaN(rawValue)) return null;
+        if (!itemDef || rawValue == null || rawValue === "" || rawValue === "-" || isNaN(Number(rawValue))) return null;
 
         let bm: { thresholdA?: unknown; thresholdB?: unknown; thresholdC?: unknown; thresholdD?: unknown } | null | undefined = null;
 
@@ -251,7 +268,7 @@ export function AssessmentWizard({
       const itemDef = testItems.find((t) => t.id === id);
       const prevItem = previousAssessment?.resultItems.find((r) => r.testItemId === id);
 
-      if (!itemDef || rawValue == null || isNaN(rawValue)) return null;
+      if (!itemDef || rawValue == null || rawValue === "" || rawValue === "-" || isNaN(Number(rawValue))) return null;
 
       const currentVal = Number(rawValue);
       const prevVal = prevItem ? Number(prevItem.rawValue) : null;
@@ -291,7 +308,7 @@ export function AssessmentWizard({
     return { items, improved, declining, stable };
   }, [rawValues, testItems, previousAssessment]);
 
-  const handleValueChange = (testItemId: string, val: number) => {
+  const handleValueChange = (testItemId: string, val: number | string) => {
     setRawValues((prev) => ({
       ...prev,
       [testItemId]: val,
@@ -304,7 +321,7 @@ export function AssessmentWizard({
     setError(null);
 
     const results = Object.entries(rawValues)
-      .filter(([_, rawValue]) => rawValue != null && !isNaN(rawValue) && rawValue > 0)
+      .filter(([_, rawValue]) => rawValue != null && rawValue !== "" && rawValue !== "-" && !isNaN(Number(rawValue)))
       .map(([testItemId, rawValue]) => ({
         testItemId,
         rawValue: Number(rawValue),
@@ -507,7 +524,8 @@ export function AssessmentWizard({
             <div className="space-y-5">
               {componentTestItems.map((item, itemIdx) => {
                 const isQualitative = item.testType === "QUALITATIVE";
-                const val = rawValues[item.id] ?? 0;
+                const numericVal = Number(rawValues[item.id]);
+                const val = !isNaN(numericVal) ? numericVal : 0;
                 const prevItem = previousAssessment?.resultItems.find((r) => r.testItemId === item.id);
 
                 if (isQualitative) {
@@ -557,8 +575,10 @@ export function AssessmentWizard({
 
                 // Live Delta calculation per item
                 let deltaBadge = null;
-                if (prevItem && rawValues[item.id] != null && !isNaN(rawValues[item.id]) && rawValues[item.id] > 0) {
-                  const currentInput = Number(rawValues[item.id]);
+                const rawValStr = rawValues[item.id];
+                const hasValidVal = rawValStr != null && rawValStr !== "" && rawValStr !== "-" && !isNaN(Number(rawValStr));
+                if (prevItem && hasValidVal) {
+                  const currentInput = Number(rawValStr);
                   const diff = currentInput - prevItem.rawValue;
                   const isImproved =
                     item.scoreDirection === "HIGHER_IS_BETTER" ? diff > 0 : diff < 0;
@@ -605,11 +625,15 @@ export function AssessmentWizard({
                           ref={(el) => {
                             inputRefs.current[item.id] = el;
                           }}
-                          type="number"
-                          step="0.01"
+                          type="text"
                           inputMode="decimal"
                           value={rawValues[item.id] ?? ""}
-                          onChange={(e) => handleValueChange(item.id, Number(e.target.value))}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(",", ".");
+                            if (v === "" || v === "-" || /^-?\d*\.?\d*$/.test(v)) {
+                              handleValueChange(item.id, v);
+                            }
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
@@ -629,7 +653,7 @@ export function AssessmentWizard({
 
                     <input
                       type="range"
-                      min="0"
+                      min={getSliderMin(item)}
                       max={getSliderMax(item)}
                       step="0.5"
                       value={val}

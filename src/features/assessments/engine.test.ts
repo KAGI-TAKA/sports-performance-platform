@@ -317,4 +317,23 @@ describe("calculateProgressAssessmentEngine()", () => {
     expect(result.itemProgress[0].trend).toBe("IMPROVED");
     expect(result.itemProgress[0].delta).toBe(-0.4);
   });
+
+  it("should accurately handle negative assessment values for flexibility (e.g., -10 cm to -7 cm)", () => {
+    const currentItems = [
+      {
+        testItemId: "item-flex",
+        testItemName: "Sit and Reach",
+        unit: "CM",
+        scoreDirection: "HIGHER_IS_BETTER" as const,
+        rawValue: -7,
+      },
+    ];
+    const previousItems = [{ testItemId: "item-flex", rawValue: -10 }];
+    const result = calculateProgressAssessmentEngine(currentItems, previousItems);
+    expect(result.improvedCount).toBe(1);
+    expect(result.itemProgress[0].trend).toBe("IMPROVED");
+    expect(result.itemProgress[0].delta).toBe(3);
+    expect(result.itemProgress[0].currentRawValue).toBe(-7);
+    expect(result.itemProgress[0].previousRawValue).toBe(-10);
+  });
 });

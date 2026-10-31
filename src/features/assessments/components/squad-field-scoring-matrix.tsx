@@ -88,16 +88,18 @@ export function SquadFieldScoringMatrix({
     [testItems, selectedTestItemId]
   );
 
-  // Handle raw value input change with comma-to-dot normalization
+  // Handle raw value input change with comma-to-dot normalization and negative number support
   const handleRawValueChange = (athleteId: string, value: string) => {
     const normalized = value.replace(",", ".");
-    setEntries((prev) => ({
-      ...prev,
-      [athleteId]: {
-        ...prev[athleteId],
-        rawValueString: normalized,
-      },
-    }));
+    if (normalized === "" || normalized === "-" || /^-?\d*\.?\d*$/.test(normalized)) {
+      setEntries((prev) => ({
+        ...prev,
+        [athleteId]: {
+          ...prev[athleteId],
+          rawValueString: normalized,
+        },
+      }));
+    }
   };
 
   const handleNotesChange = (athleteId: string, notes: string) => {
@@ -125,7 +127,7 @@ export function SquadFieldScoringMatrix({
   const filledEntriesCount = useMemo(() => {
     return Object.values(entries).filter((e) => {
       const val = parseFloat(e.rawValueString);
-      return !isNaN(val) && val > 0;
+      return !isNaN(val) && e.rawValueString.trim() !== "" && e.rawValueString.trim() !== "-";
     }).length;
   }, [entries]);
 
@@ -140,7 +142,7 @@ export function SquadFieldScoringMatrix({
 
     for (const [athleteId, data] of Object.entries(entries)) {
       const val = parseFloat(data.rawValueString);
-      if (!isNaN(val) && val > 0) {
+      if (!isNaN(val) && data.rawValueString.trim() !== "" && data.rawValueString.trim() !== "-") {
         payloadEntries.push({
           athleteId,
           rawValue: val,
@@ -298,7 +300,7 @@ export function SquadFieldScoringMatrix({
             filteredAthletes.map((athlete, idx) => {
               const entry = entries[athlete.id] || { rawValueString: "", notes: "" };
               const val = parseFloat(entry.rawValueString);
-              const hasValidVal = !isNaN(val) && val > 0;
+              const hasValidVal = !isNaN(val) && entry.rawValueString.trim() !== "" && entry.rawValueString.trim() !== "-";
 
               // Calculate live preview score using existing engine logic
               const athleteAge = calculateAgeAtDate(

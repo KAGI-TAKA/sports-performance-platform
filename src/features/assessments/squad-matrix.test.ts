@@ -42,13 +42,13 @@ describe("P8-B2: Squad Assessment Zod Schema Validation", () => {
     expect(parsed.success).toBe(false);
   });
 
-  it("should reject raw values that are zero or negative", () => {
+  it("should accept valid raw values including zero and negative values (e.g. flexibility sit-and-reach)", () => {
     const entryZero = { athleteId: "ath-1", rawValue: 0 };
-    const entryNegative = { athleteId: "ath-1", rawValue: -3.5 };
+    const entryNegative = { athleteId: "ath-1", rawValue: -7 };
     const entryPositive = { athleteId: "ath-1", rawValue: 4.2 };
 
-    expect(squadAssessmentEntrySchema.safeParse(entryZero).success).toBe(false);
-    expect(squadAssessmentEntrySchema.safeParse(entryNegative).success).toBe(false);
+    expect(squadAssessmentEntrySchema.safeParse(entryZero).success).toBe(true);
+    expect(squadAssessmentEntrySchema.safeParse(entryNegative).success).toBe(true);
     expect(squadAssessmentEntrySchema.safeParse(entryPositive).success).toBe(true);
   });
 

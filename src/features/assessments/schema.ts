@@ -22,7 +22,7 @@ export const squadAssessmentEntrySchema = z.object({
   athleteId: z.string().min(1, "ID Atlet wajib ada"),
   rawValue: z.coerce
     .number()
-    .positive("Nilai tes harus angka positif")
+    .min(-9999.99, "Nilai tes terlalu rendah")
     .max(9999.99, "Nilai tes melebihi batas wajar"),
   notes: z.string().optional(),
 });
